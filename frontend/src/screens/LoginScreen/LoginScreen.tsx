@@ -1,50 +1,65 @@
-import React, { useState } from 'react';
+import React, { JSX, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './LoginScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
+import type { AuthActionResult, LoginCredentials } from '../../services/AuthService';
 
-const LoginScreen = ({ onLogin }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
+interface LoginScreenProps {
+  onLogin: (credentials: LoginCredentials) => Promise<AuthActionResult>;
+}
+
+interface LoginFormData {
+  login: string;
+  password: string;
+}
+
+const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [formData, setFormData] = useState<LoginFormData>({
     login: '',
-    password: ''
+    password: '',
   });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+  const togglePasswordVisibility = (): void => {
+    setShowPassword((prev) => !prev);
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    const fieldName = name as keyof LoginFormData;
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [fieldName]: value,
     }));
+
     setError('');
   };
 
-  const validateForm = () => {
+  const validateForm = (): boolean => {
     if (!formData.login.trim()) {
       setError('Введите логин или email');
       return false;
     }
-    
+
     if (!formData.password.trim()) {
       setError('Введите пароль');
       return false;
     }
-    
+
     return true;
   };
 
-  const handleLogin = async (event) => {
+  const handleLogin = async (
+    event: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     event.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -53,19 +68,19 @@ const LoginScreen = ({ onLogin }) => {
     setError('');
 
     try {
-      const credentials = {
-        login: formData.login,
-        password: formData.password
+      const credentials: LoginCredentials = {
+        login: formData.login.trim(),
+        password: formData.password,
       };
-      
+
       const result = await onLogin(credentials);
-      
+
       if (result.success) {
         navigate('/main');
       } else {
         setError(result.message || 'Неверный логин или пароль');
       }
-    } catch (err) {
+    } catch (err: unknown) {
       setError('Ошибка при входе. Попробуйте еще раз.');
       console.error('Login error:', err);
     } finally {
@@ -73,7 +88,7 @@ const LoginScreen = ({ onLogin }) => {
     }
   };
 
-  const goToWelcome = () => {
+  const goToWelcome = (): void => {
     navigate('/');
   };
 
@@ -85,24 +100,24 @@ const LoginScreen = ({ onLogin }) => {
           <p>Главное — ты не останавливаешься</p>
           <p>И мы будем с тобой на каждом вдохе</p>
         </div>
-        
+
         <form className="login-form" onSubmit={handleLogin} noValidate>
           <h3 className="entry">ВХОД В АККАУНТ</h3>
-          
+
           <div className="flower-icon">
             <img src={logo} alt="Цветочек" />
           </div>
-          
+
           {error && (
             <div className="error-message">
               <span className="error-icon">⚠</span>
               {error}
             </div>
           )}
-          
+
           <div className="input-group">
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="login"
               placeholder="логин или email"
               className="login-input"
@@ -114,10 +129,10 @@ const LoginScreen = ({ onLogin }) => {
               aria-invalid={!!error}
             />
           </div>
-          
+
           <div className="input-group password-group">
-            <input 
-              type={showPassword ? "text" : "password"}
+            <input
+              type={showPassword ? 'text' : 'password'}
               name="password"
               placeholder="пароль"
               className="login-input password-input"
@@ -125,35 +140,35 @@ const LoginScreen = ({ onLogin }) => {
               onChange={handleChange}
               disabled={loading}
               required
-              minLength="6"
+              minLength={6}
               aria-label="Пароль"
               aria-invalid={!!error}
             />
-            <button 
+            <button
               type="button"
               className="password-toggle"
               onClick={togglePasswordVisibility}
               disabled={loading}
-              aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
-              tabIndex="0"
+              aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+              tabIndex={0}
             >
               <img
-                src={showPassword ? eyeHide : eyeShow} 
-                alt={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                src={showPassword ? eyeHide : eyeShow}
+                alt={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                 className="password-icon"
               />
             </button>
           </div>
 
-          <button 
-            className="login-button" 
+          <button
+            className="login-button"
             type="submit"
             disabled={loading}
             aria-busy={loading}
           >
             {loading ? 'ВХОД...' : 'Войти'}
           </button>
-          
+
           <div className="login-options">
             <div className="options-left">
               <Link to="/register" className="register">
@@ -163,9 +178,9 @@ const LoginScreen = ({ onLogin }) => {
           </div>
         </form>
       </div>
-      
+
       <div className="welcome-back-container">
-        <button 
+        <button
           type="button"
           className="welcome-back-btn"
           onClick={goToWelcome}

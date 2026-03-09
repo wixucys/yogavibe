@@ -1,53 +1,73 @@
-import React, { useState } from 'react';
+import React, { JSX, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './RegisterScreen.css';
-import logo from '../LoginScreen/flower.svg';
-import eyeShow from '../LoginScreen/eye-show.svg';
-import eyeHide from '../LoginScreen/eye-hide.svg';
+import logo from './flower.svg';
+import eyeShow from './eye-show.svg';
+import eyeHide from './eye-hide.svg';
+import type { AuthActionResult, RegisterData } from '../../services/AuthService';
 
-const RegisterScreen = ({ onRegister }) => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [formData, setFormData] = useState({
+interface RegisterScreenProps {
+  onRegister: (userData: RegisterData) => Promise<AuthActionResult>;
+}
+
+interface RegisterFormData {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+interface RegisterFormErrors {
+  username?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+  general?: string;
+}
+
+const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+  const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<RegisterFormErrors>({});
+  const [loading, setLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
+  const togglePasswordVisibility = (): void => {
+    setShowPassword((prev) => !prev);
   };
 
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword(!showConfirmPassword);
+  const toggleConfirmPasswordVisibility = (): void => {
+    setShowConfirmPassword((prev) => !prev);
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    const fieldName = name as keyof RegisterFormData;
+
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [fieldName]: value,
     }));
-    
-    // Очищаем ошибку для конкретного поля при вводе
-    if (errors[name]) {
-      setErrors(prev => ({
+
+    if (errors[fieldName]) {
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [fieldName]: '',
       }));
     }
   };
 
-  const validateForm = () => {
-    const newErrors = {};
+  const validateForm = (): boolean => {
+    const newErrors: RegisterFormErrors = {};
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const usernameRegex = /^[a-zA-Z0-9_]+$/;
 
-    // Проверка username
     if (!formData.username.trim()) {
       newErrors.username = 'Введите имя пользователя';
     } else if (formData.username.length < 3) {
@@ -57,8 +77,7 @@ const RegisterScreen = ({ onRegister }) => {
     } else if (!usernameRegex.test(formData.username)) {
       newErrors.username = 'Имя может содержать только буквы, цифры и подчеркивания';
     }
-    
-    // Проверка email
+
     if (!formData.email.trim()) {
       newErrors.email = 'Введите email';
     } else if (!emailRegex.test(formData.email)) {
@@ -66,8 +85,7 @@ const RegisterScreen = ({ onRegister }) => {
     } else if (formData.email.length > 100) {
       newErrors.email = 'Email должен быть не более 100 символов';
     }
-    
-    // Проверка пароля
+
     if (!formData.password.trim()) {
       newErrors.password = 'Введите пароль';
     } else if (formData.password.length < 6) {
@@ -75,54 +93,62 @@ const RegisterScreen = ({ onRegister }) => {
     } else if (formData.password.length > 100) {
       newErrors.password = 'Пароль должен быть не более 100 символов';
     }
-    
-    // Проверка подтверждения пароля
+
     if (!formData.confirmPassword.trim()) {
       newErrors.confirmPassword = 'Подтвердите пароль';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Пароли не совпадают';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
-    
+
     setLoading(true);
     setErrors({});
 
     try {
-      const userData = {
+      const userData: RegisterData = {
         username: formData.username.trim(),
         email: formData.email.trim().toLowerCase(),
-        password: formData.password
+        password: formData.password,
       };
-      
+
       const result = await onRegister(userData);
-      
-      if (result && result.success) {
+
+      if (result.success) {
         navigate('/main');
       } else {
-        const errorMessage = result?.message || 'Ошибка регистрации. Попробуйте еще раз.';
-        setErrors({ general: errorMessage });
+        setErrors({
+          general: result.message || 'Ошибка регистрации. Попробуйте еще раз.',
+        });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('RegisterScreen: Registration error:', error);
-      setErrors({ 
-        general: error.message || 'Ошибка при регистрации. Попробуйте еще раз.' 
+
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Ошибка при регистрации. Попробуйте еще раз.';
+
+      setErrors({
+        general: message,
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const goToWelcome = () => {
+  const goToWelcome = (): void => {
     navigate('/');
   };
 
@@ -134,24 +160,24 @@ const RegisterScreen = ({ onRegister }) => {
           <p>Главное — ты не останавливаешься</p>
           <p>И мы будем с тобой на каждом вдохе</p>
         </div>
-        
+
         <form className="register-form" onSubmit={handleRegister} noValidate>
           <h3 className="entry">РЕГИСТРАЦИЯ</h3>
-          
+
           <div className="flower-icon">
             <img src={logo} alt="Цветок" loading="lazy" />
           </div>
-          
+
           {errors.general && (
             <div className="error-message">
               <span className="error-icon">⚠</span>
               {errors.general}
             </div>
           )}
-          
+
           <div className="input-group">
-            <input 
-              type="text" 
+            <input
+              type="text"
               name="username"
               placeholder="логин (для входа)"
               className={`register-input ${errors.username ? 'input-error' : ''}`}
@@ -159,13 +185,13 @@ const RegisterScreen = ({ onRegister }) => {
               onChange={handleChange}
               disabled={loading}
               required
-              minLength="3"
-              maxLength="50"
+              minLength={3}
+              maxLength={50}
               pattern="[a-zA-Z0-9_]+"
               title="Только буквы, цифры и подчеркивания"
               aria-label="Имя пользователя (логин)"
               aria-invalid={!!errors.username}
-              aria-describedby={errors.username ? "username-error" : undefined}
+              aria-describedby={errors.username ? 'username-error' : undefined}
             />
             {errors.username && (
               <span className="field-error" id="username-error" role="alert">
@@ -173,10 +199,10 @@ const RegisterScreen = ({ onRegister }) => {
               </span>
             )}
           </div>
-          
+
           <div className="input-group">
-            <input 
-              type="email" 
+            <input
+              type="email"
               name="email"
               placeholder="email"
               className={`register-input ${errors.email ? 'input-error' : ''}`}
@@ -184,10 +210,10 @@ const RegisterScreen = ({ onRegister }) => {
               onChange={handleChange}
               disabled={loading}
               required
-              maxLength="100"
+              maxLength={100}
               aria-label="Email"
               aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? "email-error" : undefined}
+              aria-describedby={errors.email ? 'email-error' : undefined}
             />
             {errors.email && (
               <span className="field-error" id="email-error" role="alert">
@@ -195,10 +221,10 @@ const RegisterScreen = ({ onRegister }) => {
               </span>
             )}
           </div>
-          
+
           <div className="input-group password-group">
-            <input 
-              type={showPassword ? "text" : "password"}
+            <input
+              type={showPassword ? 'text' : 'password'}
               name="password"
               placeholder="пароль"
               className={`register-input password-input ${errors.password ? 'input-error' : ''}`}
@@ -206,23 +232,23 @@ const RegisterScreen = ({ onRegister }) => {
               onChange={handleChange}
               disabled={loading}
               required
-              minLength="6"
-              maxLength="100"
+              minLength={6}
+              maxLength={100}
               aria-label="Пароль"
               aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? "password-error" : undefined}
+              aria-describedby={errors.password ? 'password-error' : undefined}
             />
-            <button 
+            <button
               type="button"
               className="password-toggle"
               onClick={togglePasswordVisibility}
               disabled={loading}
-              aria-label={showPassword ? "Скрыть пароль" : "Показать пароль"}
+              aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
               aria-pressed={showPassword}
             >
               <img
-                src={showPassword ? eyeHide : eyeShow} 
-                alt={showPassword ? "Скрыть пароль" : "Показать пароль"}
+                src={showPassword ? eyeHide : eyeShow}
+                alt={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                 className="password-icon"
               />
             </button>
@@ -234,8 +260,8 @@ const RegisterScreen = ({ onRegister }) => {
           </div>
 
           <div className="input-group password-group">
-            <input 
-              type={showConfirmPassword ? "text" : "password"}
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
               name="confirmPassword"
               placeholder="подтвердите пароль"
               className={`register-input password-input ${errors.confirmPassword ? 'input-error' : ''}`}
@@ -243,23 +269,23 @@ const RegisterScreen = ({ onRegister }) => {
               onChange={handleChange}
               disabled={loading}
               required
-              minLength="6"
-              maxLength="100"
+              minLength={6}
+              maxLength={100}
               aria-label="Подтверждение пароля"
               aria-invalid={!!errors.confirmPassword}
-              aria-describedby={errors.confirmPassword ? "confirm-password-error" : undefined}
+              aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
             />
-            <button 
+            <button
               type="button"
               className="password-toggle"
               onClick={toggleConfirmPasswordVisibility}
               disabled={loading}
-              aria-label={showConfirmPassword ? "Скрыть пароль" : "Показать пароль"}
+              aria-label={showConfirmPassword ? 'Скрыть пароль' : 'Показать пароль'}
               aria-pressed={showConfirmPassword}
             >
               <img
-                src={showConfirmPassword ? eyeHide : eyeShow} 
-                alt={showConfirmPassword ? "Скрыть пароль" : "Показать пароль"}
+                src={showConfirmPassword ? eyeHide : eyeShow}
+                alt={showConfirmPassword ? 'Скрыть пароль' : 'Показать пароль'}
                 className="password-icon"
               />
             </button>
@@ -270,15 +296,15 @@ const RegisterScreen = ({ onRegister }) => {
             )}
           </div>
 
-          <button 
-            className="register-button" 
+          <button
+            className="register-button"
             type="submit"
             disabled={loading}
             aria-busy={loading}
           >
             {loading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
-          
+
           <div className="register-options">
             <Link to="/login" className="login-link">
               Уже есть аккаунт? Войти
@@ -286,9 +312,9 @@ const RegisterScreen = ({ onRegister }) => {
           </div>
         </form>
       </div>
-      
+
       <div className="welcome-back-container">
-        <button 
+        <button
           type="button"
           className="welcome-back-btn"
           onClick={goToWelcome}

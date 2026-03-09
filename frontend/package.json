@@ -33,12 +33,16 @@
     "react-toastify": "^11.0.5"
   },
   "devDependencies": {
+    "@types/node": "^25.3.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "eslint": "^8.57.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^4.6.2",
     "gh-pages": "^6.3.0",
     "prettier": "^3.7.4",
-    "react-scripts": "5.0.1"
+    "react-scripts": "5.0.1",
+    "typescript": "^5.9.3"
   },
   "browserslist": {
     "production": [

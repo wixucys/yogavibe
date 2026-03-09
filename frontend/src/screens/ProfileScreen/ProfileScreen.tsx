@@ -1,15 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import PropTypes from 'prop-types';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from 'react';
 import UserService from '../../services/UserService';
 import AuthService from '../../services/AuthService';
+import type { User } from '../../services/AuthService';
 import './ProfileScreen.css';
 
 // Константы для полей профиля
-const BACKEND_FIELDS = ['city', 'yoga_style', 'experience', 'goals'];
-const READONLY_FIELDS = ['username'];
-const TEXTAREA_FIELDS = ['goals', 'healthInfo', 'contactInfo', 'knownStyles', 'communicationStyle', 'mentorPreferences', 'additionalInfo'];
+const BACKEND_FIELDS = ['city', 'yoga_style', 'experience', 'goals'] as const;
+const READONLY_FIELDS = ['username'] as const;
 
-// Метаданные полей для лучшей организации
 const FIELD_CONFIGS = {
   username: { label: 'Имя пользователя', type: 'readonly', section: 'ОБО МНЕ' },
   age: { label: 'Возраст', type: 'local', section: 'ОБО МНЕ' },
@@ -25,26 +29,81 @@ const FIELD_CONFIGS = {
   mentorshipDuration: { label: 'Срок работы', type: 'local', section: 'ФОРМАТ РАБОТЫ' },
   communicationStyle: { label: 'Стиль общения', type: 'local', section: 'ПРЕДПОЧТЕНИЯ', textarea: true },
   mentorPreferences: { label: 'Требования к ментору', type: 'local', section: 'ПРЕДПОЧТЕНИЯ', textarea: true },
-  additionalInfo: { label: 'Дополнительная информация', type: 'local', section: 'ДОПОЛНИТЕЛЬНО', textarea: true }
-};
+  additionalInfo: { label: 'Дополнительная информация', type: 'local', section: 'ДОПОЛНИТЕЛЬНО', textarea: true },
+} as const;
 
 // Максимальный размер файла фото (5MB)
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 
-const ProfileScreen = ({ user, onUpdateProfile }) => {
-  const fileInputRef = useRef(null);
-  
-  // Основное состояние профиля
-  const [profile, setProfile] = useState({
-    // Бэкендные поля
+type BackendField = (typeof BACKEND_FIELDS)[number];
+type ReadonlyField = (typeof READONLY_FIELDS)[number];
+type FieldName = keyof typeof FIELD_CONFIGS;
+type FieldType = 'readonly' | 'local' | 'backend';
+
+interface ProfileState {
+  city: string;
+  yoga_style: string;
+  experience: string;
+  goals: string;
+  username: string;
+  age: string;
+  contactInfo: string;
+  knownStyles: string;
+  healthInfo: string;
+  preferredFormat: string;
+  meetingFrequency: string;
+  mentorshipDuration: string;
+  communicationStyle: string;
+  mentorPreferences: string;
+  additionalInfo: string;
+  photo: string | null;
+}
+
+interface ProfileScreenProps {
+  user?: User | null;
+  onUpdateProfile?: (userId: string | number, data: Partial<ProfileState>) => void;
+}
+
+interface FieldConfigItem {
+  label: string;
+  type: FieldType;
+  section: string;
+  textarea?: boolean;
+}
+
+interface GroupedField {
+  name: FieldName;
+  label: string;
+  type: FieldType;
+  isTextArea: boolean;
+}
+
+type GroupedFields = Record<string, GroupedField[]>;
+
+type ServerProfile = Partial<Pick<ProfileState, 'city' | 'yoga_style' | 'experience' | 'goals' | 'username'>> & {
+  id?: string | number;
+  [key: string]: unknown;
+};
+
+type LocalProfile = Partial<ProfileState>;
+
+interface FileReaderError extends Error {
+  [key: string]: unknown;
+}
+
+const ProfileScreen = ({
+  user = null,
+  onUpdateProfile = () => {},
+}: ProfileScreenProps): JSX.Element => {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [profile, setProfile] = useState<ProfileState>({
     city: '',
     yoga_style: '',
     experience: '',
     goals: '',
     username: '',
-    
-    // Локальные поля
     age: '',
     contactInfo: '',
     knownStyles: '',
@@ -55,57 +114,54 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
     communicationStyle: '',
     mentorPreferences: '',
     additionalInfo: '',
-    photo: null
+    photo: null,
   });
 
-  // UI состояния
-  const [currentUser, setCurrentUser] = useState(null);
-  const [editingField, setEditingField] = useState(null);
-  const [tempValue, setTempValue] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState(null);
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [error, setError] = useState(null);
+  const [currentUser, setCurrentUser] = useState<ServerProfile | null>(null);
+  const [editingField, setEditingField] = useState<FieldName | null>(null);
+  const [tempValue, setTempValue] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Загрузка профиля
-  const loadProfile = useCallback(async () => {
+  const loadProfile = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const userId = user?.id || AuthService.getCurrentUser()?.id;
+
       if (!userId) {
         throw new Error('Пользователь не найден');
       }
 
-      // Загрузка данных
-      let serverProfile = {};
+      let serverProfile: ServerProfile = {};
+
       try {
-        serverProfile = await UserService.getProfile();
+        serverProfile = (await UserService.getProfile()) as ServerProfile;
       } catch (serverError) {
         console.warn('Не удалось загрузить профиль с сервера:', serverError);
       }
 
-      // getLocalProfile - СИНХРОННЫЙ метод
-      let localProfile = {};
+      let localProfile: LocalProfile = {};
+
       try {
-        localProfile = UserService.getLocalProfile(userId);
+        localProfile = (UserService.getLocalProfile(userId) as LocalProfile) || {};
       } catch (localError) {
         console.warn('Не удалось загрузить локальный профиль:', localError);
       }
 
       setCurrentUser(serverProfile || {});
 
-      // Создаем объединенный профиль
-      const mergedProfile = {
+      const mergedProfile: ProfileState = {
         city: serverProfile?.city || '',
         yoga_style: serverProfile?.yoga_style || '',
         experience: serverProfile?.experience || '',
         goals: serverProfile?.goals || '',
         username: serverProfile?.username || '',
-        
         age: localProfile?.age || '',
         contactInfo: localProfile?.contactInfo || '',
         knownStyles: localProfile?.knownStyles || '',
@@ -116,16 +172,15 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
         communicationStyle: localProfile?.communicationStyle || '',
         mentorPreferences: localProfile?.mentorPreferences || '',
         additionalInfo: localProfile?.additionalInfo || '',
-        photo: localProfile?.photo || null
+        photo: localProfile?.photo || null,
       };
 
       setProfile(mergedProfile);
-      
+
       if (localProfile?.photo) {
         setPhotoPreview(localProfile.photo);
       }
-      
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('ProfileScreen: Error loading profile:', error);
       setError('Ошибка загрузки профиля. Проверьте подключение к интернету.');
     } finally {
@@ -134,29 +189,28 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
   }, [user]);
 
   useEffect(() => {
-    loadProfile();
+    void loadProfile();
   }, [loadProfile]);
 
-  // Обработка редактирования полей
-  const startEditing = (fieldName, currentValue) => {
-    if (READONLY_FIELDS.includes(fieldName)) {
-      alert('Это поле нельзя изменить');
+  const startEditing = (fieldName: FieldName, currentValue: string | null | undefined): void => {
+    if (READONLY_FIELDS.includes(fieldName as ReadonlyField)) {
+      window.alert('Это поле нельзя изменить');
       return;
     }
+
     setEditingField(fieldName);
     setTempValue(currentValue || '');
   };
 
-  const saveField = useCallback(async () => {
+  const saveField = useCallback(async (): Promise<void> => {
     if (!editingField) return;
 
     const fieldName = editingField;
     const newValue = tempValue.trim();
 
-    // Обновляем состояние
-    setProfile(prev => ({
+    setProfile((prev) => ({
       ...prev,
-      [fieldName]: newValue
+      [fieldName]: newValue,
     }));
 
     setEditingField(null);
@@ -164,136 +218,157 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
 
     try {
       const userId = user?.id || AuthService.getCurrentUser()?.id;
-      
+
       if (!userId) {
         throw new Error('Пользователь не найден');
       }
-      
-      if (BACKEND_FIELDS.includes(fieldName)) {
-        // Сохраняем в бэкенд
+
+      if (BACKEND_FIELDS.includes(fieldName as BackendField)) {
         const backendData = { [fieldName]: newValue || null };
         const updatedUser = await UserService.updateProfile(backendData);
+
         if (updatedUser) {
-          setCurrentUser(prev => ({ ...prev, ...backendData }));
+          setCurrentUser((prev) => ({
+            ...(prev || {}),
+            ...backendData,
+          }));
         }
       } else {
-        // Сохраняем локально (синхронно)
         UserService.saveLocalProfile(userId, { [fieldName]: newValue });
       }
 
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    } catch (error) {
+      window.setTimeout(() => setSaveSuccess(false), 2000);
+    } catch (error: unknown) {
       console.error(`Error saving field ${fieldName}:`, error);
       setError('Ошибка сохранения. Попробуйте еще раз.');
     }
   }, [editingField, tempValue, user]);
 
-  const cancelEditing = () => {
+  const cancelEditing = (): void => {
     setEditingField(null);
     setTempValue('');
   };
 
-  const handleKeyDown = useCallback((e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      saveField();
-    } else if (e.key === 'Escape') {
-      cancelEditing();
-    }
-  }, [saveField]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        void saveField();
+      } else if (e.key === 'Escape') {
+        cancelEditing();
+      }
+    },
+    [saveField]
+  );
 
-  // Работа с фото
-  const validatePhotoFile = (file) => {
-    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+  const validatePhotoFile = (file: File): true => {
+    if (!ALLOWED_FILE_TYPES.includes(file.type as (typeof ALLOWED_FILE_TYPES)[number])) {
       throw new Error('Пожалуйста, выберите изображение (JPG, PNG, GIF, WebP)');
     }
 
     if (file.size > MAX_PHOTO_SIZE) {
-      throw new Error(`Файл слишком большой. Максимальный размер ${MAX_PHOTO_SIZE / 1024 / 1024}MB`);
+      throw new Error(
+        `Файл слишком большой. Максимальный размер ${MAX_PHOTO_SIZE / 1024 / 1024}MB`
+      );
     }
 
     return true;
   };
 
-  const handlePhotoUpload = useCallback(async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handlePhotoUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    try {
-      validatePhotoFile(file);
-      setIsUploadingPhoto(true);
+      try {
+        validatePhotoFile(file);
+        setIsUploadingPhoto(true);
 
-      const base64String = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+        const base64String = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
 
-      setPhotoPreview(base64String);
-      setProfile(prev => ({ ...prev, photo: base64String }));
+          reader.onloadend = () => {
+            if (typeof reader.result === 'string') {
+              resolve(reader.result);
+            } else {
+              reject(new Error('Не удалось прочитать файл'));
+            }
+          };
 
-      const userId = user?.id || AuthService.getCurrentUser()?.id;
-      if (userId) {
-        UserService.saveProfilePhoto(userId, base64String); // Синхронно
+          reader.onerror = () => {
+            reject(new Error('Ошибка чтения файла'));
+          };
+
+          reader.readAsDataURL(file);
+        });
+
+        setPhotoPreview(base64String);
+        setProfile((prev) => ({ ...prev, photo: base64String }));
+
+        const userId = user?.id || AuthService.getCurrentUser()?.id;
+        if (userId) {
+          UserService.saveProfilePhoto(userId, base64String);
+        }
+
+        setSaveSuccess(true);
+        window.setTimeout(() => setSaveSuccess(false), 2000);
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : 'Ошибка при загрузке изображения';
+        window.alert(message);
+      } finally {
+        setIsUploadingPhoto(false);
+
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
       }
+    },
+    [user]
+  );
 
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 2000);
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      setIsUploadingPhoto(false);
-      // Сбрасываем input для возможности повторной загрузки того же файла
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  }, [user]);
-
-  const removePhoto = useCallback(() => {
+  const removePhoto = useCallback((): void => {
     if (!window.confirm('Удалить фото профиля?')) return;
 
     setPhotoPreview(null);
-    setProfile(prev => ({ ...prev, photo: null }));
+    setProfile((prev) => ({ ...prev, photo: null }));
 
     const userId = user?.id || AuthService.getCurrentUser()?.id;
     if (userId) {
-      UserService.saveProfilePhoto(userId, null); // Синхронно
+      UserService.saveProfilePhoto(userId, null);
     }
   }, [user]);
 
-  // Сохранение всех данных
-  const handleSaveAll = useCallback(async () => {
+  const handleSaveAll = useCallback(async (): Promise<void> => {
     setIsSaving(true);
     setError(null);
 
     try {
       const userId = user?.id || AuthService.getCurrentUser()?.id;
+
       if (!userId) {
         throw new Error('Пользователь не найден');
       }
 
-      // Разделяем данные для бэкенда и локального хранилища
-      const backendData = {};
-      const localData = {};
+      const backendData: Partial<ProfileState> = {};
+      const localData: Partial<ProfileState> = {};
 
       Object.entries(profile).forEach(([key, value]) => {
-        if (BACKEND_FIELDS.includes(key)) {
-          backendData[key] = value || null;
+        if (BACKEND_FIELDS.includes(key as BackendField)) {
+          (backendData as Record<string, unknown>)[key] = value || null;
         } else if (key !== 'username' && key !== 'photo') {
-          localData[key] = value;
+          (localData as Record<string, unknown>)[key] = value;
         }
       });
 
-      // Сохраняем локальные данные (синхронно)
       try {
         if (Object.keys(localData).length > 0) {
           UserService.saveLocalProfile(userId, localData);
         }
-        
-        // Сохраняем фото (синхронно)
+
         if (profile.photo !== null) {
           UserService.saveProfilePhoto(userId, profile.photo);
         }
@@ -301,8 +376,8 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
         console.warn('Ошибка сохранения локальных данных:', localError);
       }
 
-      // Сохраняем бэкендные данные (асинхронно)
-      let updatedUser = null;
+      let updatedUser: unknown = null;
+
       if (Object.keys(backendData).length > 0) {
         try {
           updatedUser = await UserService.updateProfile(backendData);
@@ -313,16 +388,19 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
       }
 
       if (updatedUser) {
-        setCurrentUser(prev => ({ ...prev, ...backendData }));
+        setCurrentUser((prev) => ({
+          ...(prev || {}),
+          ...backendData,
+        }));
       }
 
       setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      window.setTimeout(() => setSaveSuccess(false), 3000);
 
-      if (onUpdateProfile && currentUser?.id) {
+      if (currentUser?.id) {
         onUpdateProfile(currentUser.id, backendData);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('ProfileScreen: Error saving all:', error);
       setError('Ошибка сохранения. Проверьте подключение к интернету.');
     } finally {
@@ -330,127 +408,143 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
     }
   }, [profile, currentUser, user, onUpdateProfile]);
 
-  // Группировка полей по секциям
-  const groupedFields = useMemo(() => {
-    const groups = {};
-    
+  const groupedFields = useMemo<GroupedFields>(() => {
+    const groups: GroupedFields = {};
+
     Object.entries(FIELD_CONFIGS).forEach(([fieldName, config]) => {
-      if (!groups[config.section]) {
-        groups[config.section] = [];
+      const typedConfig = config as FieldConfigItem;
+      const section = typedConfig.section;
+
+      if (!groups[section]) {
+        groups[section] = [];
       }
-      groups[config.section].push({
-        name: fieldName,
-        label: config.label,
-        type: config.type,
-        isTextArea: config.textarea || false
+
+      groups[section].push({
+        name: fieldName as FieldName,
+        label: typedConfig.label,
+        type: typedConfig.type,
+        isTextArea: typedConfig.textarea || false,
       });
     });
-    
+
     return groups;
   }, []);
 
-  // Рендер поля
-  const renderField = useCallback((field) => {
-    const { name, label, isTextArea, type } = field;
-    const value = profile[name];
-    const isEditing = editingField === name;
-    const isReadOnly = READONLY_FIELDS.includes(name);
-    
-    if (isReadOnly) {
+  const renderField = useCallback(
+    (field: GroupedField): JSX.Element => {
+      const { name, label, isTextArea, type } = field;
+      const value = profile[name];
+      const isEditing = editingField === name;
+      const isReadOnly = READONLY_FIELDS.includes(name as ReadonlyField);
+
+      if (isReadOnly) {
+        return (
+          <div className="profile-field" key={name}>
+            <div className="field-header">
+              <label className="field-label">
+                {label}:
+                <span className="read-only-badge" title="Нельзя изменить">
+                  🔒
+                </span>
+              </label>
+            </div>
+            <div className="field-value read-only">{value || 'Не указано'}</div>
+          </div>
+        );
+      }
+
       return (
         <div className="profile-field" key={name}>
           <div className="field-header">
             <label className="field-label">
               {label}:
-              <span className="read-only-badge" title="Нельзя изменить">🔒</span>
+              {type === 'backend' && (
+                <span
+                  className="backend-badge"
+                  title="Синхронизируется с сервером"
+                >
+                  🌐
+                </span>
+              )}
             </label>
-          </div>
-          <div className="field-value read-only">
-            {value || 'Не указано'}
-          </div>
-        </div>
-      );
-    }
-    
-    return (
-      <div className="profile-field" key={name}>
-        <div className="field-header">
-          <label className="field-label">
-            {label}:
-            {type === 'backend' && (
-              <span className="backend-badge" title="Синхронизируется с сервером">🌐</span>
+
+            {!isEditing && value && (
+              <button
+                className="profile-edit-btn"
+                onClick={() => startEditing(name, value)}
+                aria-label={`Редактировать ${label.toLowerCase()}`}
+                type="button"
+              >
+                ✎
+              </button>
             )}
-          </label>
-          {!isEditing && value && (
-            <button 
-              className="profile-edit-btn"
-              onClick={() => startEditing(name, value)}
-              aria-label={`Редактировать ${label.toLowerCase()}`}
+          </div>
+
+          {isEditing ? (
+            <div className="edit-container">
+              {isTextArea ? (
+                <textarea
+                  value={tempValue}
+                  onChange={(e) => setTempValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="profile-textarea"
+                  rows={3}
+                  autoFocus
+                  placeholder={`Введите ${label.toLowerCase()}`}
+                  maxLength={1000}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={tempValue}
+                  onChange={(e) => setTempValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="profile-input"
+                  autoFocus
+                  placeholder={`Введите ${label.toLowerCase()}`}
+                  maxLength={100}
+                />
+              )}
+
+              <div className="edit-actions">
+                <button
+                  className="save-small-btn"
+                  onClick={() => {
+                    void saveField();
+                  }}
+                  disabled={isSaving}
+                  aria-label="Сохранить"
+                  type="button"
+                >
+                  ✓
+                </button>
+                <button
+                  className="cancel-small-btn"
+                  onClick={cancelEditing}
+                  aria-label="Отмена"
+                  type="button"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          ) : value ? (
+            <div className="field-value">{value}</div>
+          ) : (
+            <button
+              className="add-btn"
+              onClick={() => startEditing(name, '')}
+              aria-label={`Добавить ${label.toLowerCase()}`}
+              type="button"
             >
-              ✎
+              + Добавить
             </button>
           )}
         </div>
-        
-        {isEditing ? (
-          <div className="edit-container">
-            {isTextArea ? (
-              <textarea
-                value={tempValue}
-                onChange={(e) => setTempValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="profile-textarea"
-                rows="3"
-                autoFocus
-                placeholder={`Введите ${label.toLowerCase()}`}
-                maxLength={1000}
-              />
-            ) : (
-              <input
-                type="text"
-                value={tempValue}
-                onChange={(e) => setTempValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                className="profile-input"
-                autoFocus
-                placeholder={`Введите ${label.toLowerCase()}`}
-                maxLength={100}
-              />
-            )}
-            <div className="edit-actions">
-              <button 
-                className="save-small-btn"
-                onClick={saveField}
-                disabled={isSaving}
-                aria-label="Сохранить"
-              >
-                ✓
-              </button>
-              <button 
-                className="cancel-small-btn"
-                onClick={cancelEditing}
-                aria-label="Отмена"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        ) : value ? (
-          <div className="field-value">
-            {value}
-          </div>
-        ) : (
-          <button 
-            className="add-btn"
-            onClick={() => startEditing(name, '')}
-            aria-label={`Добавить ${label.toLowerCase()}`}
-          >
-            + Добавить
-          </button>
-        )}
-      </div>
-    );
-  }, [profile, editingField, tempValue, isSaving, saveField, cancelEditing, handleKeyDown]);
+      );
+    },
+    [profile, editingField, tempValue, isSaving, saveField, handleKeyDown]
+  );
 
   if (isLoading) {
     return (
@@ -474,12 +568,11 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
               ⚠️ {error}
             </div>
           )}
-          
+
           <div className="profile-layout">
-            {/* Левая колонка - фото и личная информация */}
             <div className="profile-left">
               <div className="photo-section">
-                <button 
+                <button
                   className={`photo-placeholder ${photoPreview ? 'has-photo' : ''}`}
                   onClick={() => fileInputRef.current?.click()}
                   type="button"
@@ -487,9 +580,9 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
                   aria-label="Изменить фото профиля"
                 >
                   {photoPreview ? (
-                    <img 
-                      src={photoPreview} 
-                      alt="Фото профиля" 
+                    <img
+                      src={photoPreview}
+                      alt="Фото профиля"
                       className="profile-photo"
                       loading="lazy"
                     />
@@ -499,13 +592,14 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
                       <div>Добавить фото</div>
                     </div>
                   )}
+
                   <div className="photo-overlay">
                     <span className="upload-text">
                       {isUploadingPhoto ? 'Загрузка...' : 'Изменить фото'}
                     </span>
                   </div>
                 </button>
-                
+
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -515,10 +609,10 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
                   disabled={isUploadingPhoto}
                   aria-label="Выберите фото профиля"
                 />
-                
+
                 <div className="photo-actions">
                   {photoPreview && (
-                    <button 
+                    <button
                       className="remove-btn"
                       onClick={removePhoto}
                       disabled={isUploadingPhoto}
@@ -528,14 +622,11 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
                     </button>
                   )}
                 </div>
-                
-                <div className="photo-hint">
-                  JPG, PNG, GIF, WebP до 5MB
-                </div>
+
+                <div className="photo-hint">JPG, PNG, GIF, WebP до 5MB</div>
               </div>
             </div>
 
-            {/* Правая колонка - поля анкеты */}
             <div className="profile-right">
               <div className="sections-container">
                 {Object.entries(groupedFields).map(([sectionTitle, fields]) => (
@@ -551,15 +642,18 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
           <div className="profile-footer">
             <div className="footer-actions">
               <div className="save-section">
-                <button 
-                  className="save-btn" 
-                  onClick={handleSaveAll}
+                <button
+                  className="save-btn"
+                  onClick={() => {
+                    void handleSaveAll();
+                  }}
                   disabled={isSaving}
                   type="button"
                   aria-label="Сохранить все изменения"
                 >
                   {isSaving ? 'СОХРАНЕНИЕ...' : 'СОХРАНИТЬ ВСЁ'}
                 </button>
+
                 {saveSuccess && (
                   <div className="save-success" role="status">
                     ✓ Изменения сохранены
@@ -572,19 +666,6 @@ const ProfileScreen = ({ user, onUpdateProfile }) => {
       </div>
     </div>
   );
-};
-
-ProfileScreen.propTypes = {
-  user: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    username: PropTypes.string
-  }),
-  onUpdateProfile: PropTypes.func
-};
-
-ProfileScreen.defaultProps = {
-  user: null,
-  onUpdateProfile: () => {}
 };
 
 export default ProfileScreen;

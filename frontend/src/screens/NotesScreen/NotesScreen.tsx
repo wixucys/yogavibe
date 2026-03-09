@@ -1,41 +1,75 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { JSX, useEffect, useRef, useState } from 'react';
 import './NotesScreen.css';
 import NotesService from '../../services/NotesService';
 
-const NotesScreen = () => {
-  // Состояние для списка заметок
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Состояние для новой заметки
-  const [newNote, setNewNote] = useState('');
-  
-  // Состояние для редактирования заметок
-  const [editingNoteId, setEditingNoteId] = useState(null);
-  const [editingText, setEditingText] = useState('');
-  
-  // Реф для отслеживания кликов вне области редактирования
-  const editModeRef = useRef(null);
+type NoteId = string | number;
 
-  // Загрузка заметок при монтировании компонента
-  useEffect(() => {
-    loadNotes();
-  }, []);
+interface Note {
+  id: NoteId;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-  // Загрузка заметок с сервера
-  const loadNotes = async () => {
+interface NoteApiItem {
+  id: NoteId;
+  text?: string;
+  content?: string;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+  modified?: string;
+  date?: string;
+  [key: string]: unknown;
+}
+
+interface NotesServiceResult {
+  success: boolean;
+  data?: NoteApiItem[] | NoteApiItem;
+  message?: string;
+}
+
+const NotesScreen = (): JSX.Element => {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const [newNote, setNewNote] = useState<string>('');
+
+  const [editingNoteId, setEditingNoteId] = useState<NoteId | null>(null);
+  const [editingText, setEditingText] = useState<string>('');
+
+  const editModeRef = useRef<HTMLDivElement | null>(null);
+
+  const normalizeNote = (note: NoteApiItem, fallbackText = ''): Note => ({
+    id: note.id,
+    text: note.text || note.content || fallbackText,
+    createdAt:
+      note.createdAt ||
+      note.created_at ||
+      note.date ||
+      new Date().toISOString(),
+    updatedAt:
+      note.updatedAt ||
+      note.updated_at ||
+      note.modified ||
+      note.createdAt ||
+      note.created_at ||
+      note.date ||
+      new Date().toISOString(),
+  });
+
+  const loadNotes = async (): Promise<void> => {
     setLoading(true);
+
     try {
-      const result = await NotesService.getNotes();
-      console.log('Notes loaded:', result); // Для отладки
+      const result = (await NotesService.getNotes()) as NotesServiceResult;
+      console.log('Notes loaded:', result);
+
       if (result.success) {
-        // Нормализуем данные: гарантируем наличие всех полей
-        const normalizedNotes = (result.data || []).map(note => ({
-          id: note.id,
-          text: note.text || note.content || '',
-          createdAt: note.createdAt || note.created_at || note.date || new Date().toISOString(),
-          updatedAt: note.updatedAt || note.updated_at || note.modified || note.createdAt || note.created_at || note.date || new Date().toISOString()
-        }));
+        const normalizedNotes = ((result.data as NoteApiItem[] | undefined) || []).map((note) =>
+          normalizeNote(note)
+        );
         setNotes(normalizedNotes);
       } else {
         setNotes([]);
@@ -48,48 +82,52 @@ const NotesScreen = () => {
     }
   };
 
-  // Добавление новой заметки
-  const addNote = async (text) => {
+  useEffect(() => {
+    void loadNotes();
+  }, []);
+
+  const addNote = async (text: string): Promise<void> => {
     if (!text.trim()) return;
-    
+
     try {
-      const result = await NotesService.createNote(text);
-      console.log('Note created:', result); // Для отладки
-      if (result.success) {
-        // Нормализуем новую заметку
-        const newNote = {
-          id: result.data.id,
-          text: result.data.text || result.data.content || text,
-          createdAt: result.data.createdAt || result.data.created_at || new Date().toISOString(),
-          updatedAt: result.data.updatedAt || result.data.updated_at || result.data.createdAt || result.data.created_at || new Date().toISOString()
-        };
-        setNotes(prevNotes => [newNote, ...prevNotes]);
+      const result = (await NotesService.createNote(text)) as NotesServiceResult;
+      console.log('Note created:', result);
+
+      if (result.success && result.data && !Array.isArray(result.data)) {
+        const createdNote = normalizeNote(result.data, text);
+        setNotes((prevNotes) => [createdNote, ...prevNotes]);
       }
     } catch (error) {
       console.error('Error creating note:', error);
     }
   };
 
-  // Обновление существующей заметки
-  const updateNote = async (id, text) => {
+  const updateNote = async (id: NoteId, text: string): Promise<void> => {
     if (!text.trim()) return;
-    
+
     try {
-      const result = await NotesService.updateNote(id, text);
-      console.log('Note updated:', result); // Для отладки
-      if (result.success) {
-        // Нормализуем обновленную заметку
-        const updatedNote = {
+      const result = (await NotesService.updateNote(id, text)) as NotesServiceResult;
+      console.log('Note updated:', result);
+
+      if (result.success && result.data && !Array.isArray(result.data)) {
+        const existingNote = notes.find((n) => n.id === id);
+
+        const updatedNote: Note = {
           id: result.data.id,
           text: result.data.text || result.data.content || text,
-          createdAt: result.data.createdAt || result.data.created_at || notes.find(n => n.id === id)?.createdAt || new Date().toISOString(),
-          updatedAt: result.data.updatedAt || result.data.updated_at || new Date().toISOString()
+          createdAt:
+            result.data.createdAt ||
+            result.data.created_at ||
+            existingNote?.createdAt ||
+            new Date().toISOString(),
+          updatedAt:
+            result.data.updatedAt ||
+            result.data.updated_at ||
+            new Date().toISOString(),
         };
-        
-        setNotes(prevNotes => 
-          prevNotes.map(note => 
-            note.id === id ? updatedNote : note
-          )
+
+        setNotes((prevNotes) =>
+          prevNotes.map((note) => (note.id === id ? updatedNote : note))
         );
       }
     } catch (error) {
@@ -97,16 +135,15 @@ const NotesScreen = () => {
     }
   };
 
-  // Удаление заметки
-  const deleteNote = async (id) => {
+  const deleteNote = async (id: NoteId): Promise<void> => {
     if (!window.confirm('Вы уверены, что хотите удалить эту заметку?')) return;
-    
+
     try {
-      const result = await NotesService.deleteNote(id);
+      const result = (await NotesService.deleteNote(id)) as NotesServiceResult;
+
       if (result.success) {
-        setNotes(prevNotes => prevNotes.filter(note => note.id !== id));
-        
-        // Если удаляем редактируемую заметку, сбрасываем режим редактирования
+        setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
+
         if (editingNoteId === id) {
           setEditingNoteId(null);
           setEditingText('');
@@ -117,67 +154,74 @@ const NotesScreen = () => {
     }
   };
 
-  // Начало редактирования заметки
-  const startEditing = (note) => {
+  const startEditing = (note: Note): void => {
     setEditingNoteId(note.id);
     setEditingText(note.text);
   };
 
-  // Сохранение отредактированной заметки
-  const saveEditing = async (id) => {
+  const saveEditing = async (id: NoteId): Promise<void> => {
     await updateNote(id, editingText);
     setEditingNoteId(null);
     setEditingText('');
   };
 
-  // Отмена редактирования
-  const cancelEditing = () => {
+  const cancelEditing = (): void => {
     setEditingNoteId(null);
     setEditingText('');
   };
 
-  // Добавление новой заметки из UI
-  const handleAddNote = () => {
+  const handleAddNote = (): void => {
     const trimmedText = newNote.trim();
     if (trimmedText === '') return;
-    
-    addNote(trimmedText);
+
+    void addNote(trimmedText);
     setNewNote('');
   };
 
-  // Обработка нажатия Enter для добавления заметки
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>
+  ): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleAddNote();
     }
   };
 
-  // Обработчик клика вне поля редактирования
-  const handleClickOutside = (e) => {
-    if (editingNoteId && editModeRef.current && !editModeRef.current.contains(e.target)) {
+  const handleClickOutside = (e: MouseEvent): void => {
+    const targetNode = e.target as Node | null;
+
+    if (
+      editingNoteId !== null &&
+      editModeRef.current &&
+      targetNode &&
+      !editModeRef.current.contains(targetNode)
+    ) {
       if (editingText.trim() !== '') {
-        saveEditing(editingNoteId);
+        void saveEditing(editingNoteId);
       } else {
         cancelEditing();
       }
     }
   };
 
-  // Добавляем обработчик кликов при редактировании
   useEffect(() => {
-    if (editingNoteId) {
+    if (editingNoteId !== null) {
       document.addEventListener('mousedown', handleClickOutside);
+
       return () => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }
+
+    return;
   }, [editingNoteId, editingText]);
 
-  // Фокус на поле ввода при редактировании
   useEffect(() => {
-    if (editingNoteId && editModeRef.current) {
-      const textarea = editModeRef.current.querySelector('.note-edit-textarea');
+    if (editingNoteId !== null && editModeRef.current) {
+      const textarea = editModeRef.current.querySelector(
+        '.note-edit-textarea'
+      ) as HTMLTextAreaElement | null;
+
       if (textarea) {
         textarea.focus();
         textarea.setSelectionRange(textarea.value.length, textarea.value.length);
@@ -185,51 +229,49 @@ const NotesScreen = () => {
     }
   }, [editingNoteId]);
 
-  // Форматирование даты (улучшенная версия)
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     if (!dateString) return 'Дата не указана';
-    
+
     try {
-      // Пробуем разные форматы дат
-      let date;
-      
-      // Если это ISO строка (например, "2024-01-15T10:30:00Z")
+      let date: Date;
+
       if (dateString.includes('T')) {
         date = new Date(dateString);
-      } 
-      // Если это строка в формате "15.01.2024, 10:30"
-      else if (dateString.includes(',')) {
+      } else if (dateString.includes(',')) {
         const [datePart, timePart] = dateString.split(', ');
         const [day, month, year] = datePart.split('.');
         const [hours, minutes] = timePart.split(':');
-        date = new Date(year, month - 1, day, hours, minutes);
-      }
-      // Пытаемся просто создать Date объект
-      else {
+        date = new Date(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(hours),
+          Number(minutes)
+        );
+      } else {
         date = new Date(dateString);
       }
-      
-      if (isNaN(date.getTime())) {
-        return dateString; // Возвращаем исходную строку если не удалось распарсить
+
+      if (Number.isNaN(date.getTime())) {
+        return dateString;
       }
-      
+
       return new Intl.DateTimeFormat('ru-RU', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       }).format(date);
     } catch (error) {
       console.warn('Error formatting date:', dateString, error);
-      return dateString; // Возвращаем исходную строку в случае ошибки
+      return dateString;
     }
   };
 
-  // Проверяем, отличаются ли даты создания и обновления
-  const isDateDifferent = (createdAt, updatedAt) => {
+  const isDateDifferent = (createdAt: string, updatedAt: string): boolean => {
     if (!createdAt || !updatedAt) return false;
-    
+
     try {
       const createdDate = new Date(createdAt);
       const updatedDate = new Date(updatedAt);
@@ -239,7 +281,6 @@ const NotesScreen = () => {
     }
   };
 
-  // Рендеринг экрана загрузки
   if (loading) {
     return (
       <div className="notes-page">
@@ -259,31 +300,30 @@ const NotesScreen = () => {
   return (
     <div className="notes-page">
       <div className="notes-container">
-        {/* Заголовок раздела заметок */}
         <div className="notes-header">
           <h2>Мои заметки</h2>
           <p>Записывайте свои мысли, идеи и наблюдения о практике йоги</p>
         </div>
 
-        {/* Форма для добавления новой заметки */}
         <div className="add-note-section">
           <div className="note-input-container">
             <textarea
               value={newNote}
               onChange={(e) => setNewNote(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="Напишите свою заметку..."
               className="note-textarea"
-              rows="4"
-              maxLength="1000"
+              rows={4}
+              maxLength={1000}
               aria-label="Поле для ввода новой заметки"
             />
             <div className="note-input-actions">
-              <button 
+              <button
                 onClick={handleAddNote}
                 disabled={newNote.trim() === ''}
                 className="add-note-btn"
                 aria-label="Добавить заметку"
+                type="button"
               >
                 Добавить заметку
               </button>
@@ -292,54 +332,53 @@ const NotesScreen = () => {
           </div>
         </div>
 
-        {/* Контейнер со списком заметок */}
         <div className="notes-content">
           <div className="notes-list-container">
             <div className="notes-list">
               {notes.length === 0 ? (
-                // Сообщение при отсутствии заметок
                 <div className="no-notes">
                   <p>У вас пока нет заметок</p>
                   <span>Начните добавлять свои мысли и наблюдения!</span>
                 </div>
               ) : (
-                // Список заметок
                 notes.map((note) => (
                   <div key={note.id} className="note-card">
                     {editingNoteId === note.id ? (
-                      // Режим редактирования заметки
                       <div className="note-edit-mode" ref={editModeRef}>
                         <textarea
                           value={editingText}
                           onChange={(e) => setEditingText(e.target.value)}
                           className="note-edit-textarea"
-                          rows="4"
-                          maxLength="1000"
+                          rows={4}
+                          maxLength={1000}
                           aria-label="Редактирование заметки"
                         />
                         <div className="note-edit-info">
                           <span className="edit-char-count">{editingText.length}/1000</span>
                         </div>
                         <div className="note-edit-actions">
-                          <button 
-                            onClick={() => saveEditing(note.id)}
+                          <button
+                            onClick={() => {
+                              void saveEditing(note.id);
+                            }}
                             disabled={editingText.trim() === ''}
                             className="save-btn"
                             aria-label="Сохранить изменения"
+                            type="button"
                           >
                             Сохранить
                           </button>
-                          <button 
+                          <button
                             onClick={cancelEditing}
                             className="cancel-btn"
                             aria-label="Отменить редактирование"
+                            type="button"
                           >
                             Отмена
                           </button>
                         </div>
                       </div>
                     ) : (
-                      // Режим просмотра заметки
                       <>
                         <div className="note-content">
                           <p>{note.text}</p>
@@ -356,17 +395,21 @@ const NotesScreen = () => {
                             )}
                           </div>
                           <div className="note-actions">
-                            <button 
+                            <button
                               onClick={() => startEditing(note)}
                               className="edit-btn"
                               aria-label="Редактировать заметку"
+                              type="button"
                             >
                               Редактировать
                             </button>
-                            <button 
-                              onClick={() => deleteNote(note.id)}
+                            <button
+                              onClick={() => {
+                                void deleteNote(note.id);
+                              }}
                               className="delete-btn"
                               aria-label="Удалить заметку"
+                              type="button"
                             >
                               Удалить
                             </button>

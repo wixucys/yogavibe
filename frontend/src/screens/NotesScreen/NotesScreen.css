@@ -1,0 +1,463 @@
+/* NotesScreen.css */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+
+/* Основной контейнер страницы заметок */
+.notes-page {
+  min-height: calc(100vh - 5.625rem);
+  padding: 2.5rem;
+  display: flex;
+  justify-content: center;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Контейнер для всего контента заметок */
+.notes-container {
+  background-image: url('../../../public/assets/images/background_2.png');
+  background-size: cover;
+  background-position: center;
+  max-width: 50rem;
+  width: 100%;
+  background: rgba(228, 216, 210, 0.9);
+  border-radius: 1.25rem;
+  padding: 1.875rem;
+  box-shadow: 0 0.5rem 2rem rgba(105, 80, 92, 0.1);
+  height: calc(100vh - 11.25rem);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Заголовок раздела заметок */
+.notes-header {
+  text-align: center;
+  margin-bottom: 1.5625rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 0.125rem solid #69505c;
+  flex-shrink: 0;
+}
+
+.notes-header h2 {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 2.2rem;
+  margin-bottom: 0.625rem;
+}
+
+.notes-header p {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #35252c;
+  font-size: 1.1rem;
+  max-width: 37.5rem;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* Секция для добавления новой заметки */
+.add-note-section {
+  background: #ded8d2;
+  border-radius: 0.9375rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5625rem;
+  box-shadow: 0 0.25rem 0.9375rem rgba(105, 80, 92, 0.08);
+  flex-shrink: 0;
+}
+
+/* Контейнер для поля ввода и кнопки */
+.note-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9375rem;
+}
+
+.char-count {
+  margin-left: 20px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+  color: #69505c;
+  font-weight: 500;
+}
+
+/* Поле для ввода текста новой заметки */
+.note-textarea {
+  width: 100%;
+  padding: 0.9375rem;
+  border: 0.125rem solid #ded8d2;
+  border-radius: 0.75rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  color: #35252c;
+  background: white;
+  resize: vertical;
+  min-height: 6.25rem;
+  transition: border-color 0.3s ease;
+}
+
+.note-textarea:focus {
+  outline: none;
+  border-color: #69505c;
+}
+
+.note-textarea::placeholder {
+  color: #999;
+}
+
+/* Кнопка добавления новой заметки */
+.add-note-btn {
+  align-self: flex-end;
+  background: #69505c;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.625rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-note-btn:hover:not(:disabled) {
+  background: #35252c;
+  transform: translateY(-0.125rem);
+}
+
+.add-note-btn:disabled {
+  background: #c6b3b6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Основной контейнер для списка заметок */
+.notes-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Контейнер с прокруткой для списка заметок */
+.notes-list-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 0.9375rem;
+  background: #ded8d2;
+  padding: 0.3125rem;
+}
+
+/* Кастомный скроллбар */
+.notes-list-container::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.notes-list-container::-webkit-scrollbar-track {
+  background: #ded8d2;
+  border-radius: 0.25rem;
+}
+
+.notes-list-container::-webkit-scrollbar-thumb {
+  background: #69505c;
+  border-radius: 0.25rem;
+}
+
+.notes-list-container::-webkit-scrollbar-thumb:hover {
+  background: #35252c;
+}
+
+/* Список всех заметок */
+.notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9375rem;
+  padding: 0.625rem;
+}
+
+/* Сообщение при отсутствии заметок */
+.no-notes {
+  text-align: center;
+  padding: 3.75rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.no-notes p {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: #69505c;
+  font-size: 1.3rem;
+  margin-bottom: 0.625rem;
+}
+
+.no-notes span {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #35252c;
+  font-size: 1rem;
+}
+
+/* Карточка отдельной заметки */
+.note-card {
+  background: #e4d8d2;
+  border-radius: 0.9375rem;
+  padding: 1.25rem;
+  box-shadow: 0 0.25rem 0.9375rem rgba(105, 80, 92, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  flex-shrink: 0;
+}
+
+.note-card:hover {
+  transform: translateY(-0.1875rem);
+  box-shadow: 0 0.375rem 1.25rem rgba(105, 80, 92, 0.12);
+}
+
+/* Содержимое заметки */
+.note-content p {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #35252c;
+  font-size: 1rem;
+  line-height: 1.6;
+  margin-bottom: 0.9375rem;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Футер карточки с датой и действиями */
+.note-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.note-date {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #69505c;
+  font-size: 0.85rem;
+}
+
+.note-updated {
+  margin-left: 10px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #69505c;
+  font-size: 0.85rem;
+}
+
+/* Кнопки действий с заметкой */
+.note-actions {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.edit-btn, .delete-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-btn {
+  background: #F6C0CA;
+  color: #69505c;
+}
+
+.edit-btn:hover {
+  background: #e8acb8;
+  transform: translateY(-0.0625rem);
+}
+
+.delete-btn {
+  background: #69505c;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #35252c;
+  transform: translateY(-0.0625rem);
+}
+
+/* Режим редактирования заметки */
+.note-edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9375rem;
+}
+
+/* Поле для редактирования текста заметки */
+.note-edit-textarea {
+  width: 100%;
+  padding: 0.9375rem;
+  border: 0.125rem solid #69505c;
+  border-radius: 0.75rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  color: #35252c;
+  background: white;
+  resize: vertical;
+  min-height: 6.25rem;
+  transition: border-color 0.3s ease;
+}
+
+.note-edit-textarea:focus {
+  outline: none;
+  border-color: #69505c;
+}
+
+/* Кнопки в режиме редактирования */
+.note-edit-actions {
+  display: flex;
+  gap: 0.625rem;
+  justify-content: flex-end;
+}
+
+.save-btn, .cancel-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-btn {
+  background: #69505c;
+  color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #35252c;
+  transform: translateY(-0.0625rem);
+}
+
+.save-btn:disabled {
+  background: #c6b3b6;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.cancel-btn {
+  background: #ded8d2;
+  color: #69505c;
+  border: 0.0625rem solid #69505c;
+}
+
+.cancel-btn:hover {
+  background: #c6b3b6;
+  transform: translateY(-0.0625rem);
+}
+
+.loading-notes {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  flex: 1;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(105, 80, 92, 0.3);
+  border-radius: 50%;
+  border-top-color: #69505c;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.note-edit-info {
+  text-align: right;
+  margin-bottom: 10px;
+}
+
+.edit-char-count {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+  color: #69505c;
+  font-weight: 500;
+}
+
+/* Контейнер для действий с полем ввода */
+.note-input-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+
+/* Адаптивность для планшетов */
+@media (max-width: 48rem) {
+  .notes-page {
+    padding: 1.25rem;
+  }
+  
+  .notes-container {
+    padding: 1.25rem;
+    height: calc(100vh - 8.75rem);
+  }
+  
+  .notes-header h2 {
+    font-size: 1.8rem;
+  }
+  
+  .add-note-section {
+    padding: 0.9375rem;
+  }
+  
+  .note-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .note-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 30rem) {
+  .notes-page {
+    padding: 0.9375rem;
+  }
+  
+  .notes-container {
+    padding: 0.9375rem;
+    height: calc(100vh - 7.5rem);
+  }
+  
+  .notes-header h2 {
+    font-size: 1.6rem;
+  }
+  
+  .notes-header p {
+    font-size: 1rem;
+  }
+  
+  .add-note-section {
+    padding: 0.75rem;
+  }
+  
+  .note-edit-actions {
+    flex-direction: column;
+  }
+  
+  .save-btn, .cancel-btn {
+    width: 100%;
+  }
+}

@@ -1,0 +1,452 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+
+/* Основной контейнер */
+.mentor-profile-page {
+  min-height: 100vh;
+  background-image: url('../../../public/assets/images/background_2.png');
+  background-size: cover;
+  background-position: center;
+  font-family: 'Montserrat', sans-serif;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.mentor-profile-content {
+  width: 100%;
+  max-width: 90rem;
+}
+
+.mentor-profile-card {
+  background: rgba(228, 216, 210, 0.95);
+  border-radius: 1.25rem;
+  padding: 2rem;
+  box-shadow: 0 0.5rem 2rem rgba(105, 80, 92, 0.1);
+}
+
+/* Заголовок */
+.mentor-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(105, 80, 92, 0.2);
+}
+
+.mentor-profile-header h1 {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.back-btn {
+  background: #69505c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.back-btn:hover {
+  background: #35252c;
+  transform: translateY(-2px);
+}
+
+/* Двухколоночный лейаут */
+.mentor-profile-layout {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.mentor-profile-left {
+  flex: 0 0 350px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.mentor-profile-right {
+  flex: 1;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+/* Секция с фото */
+.mentor-photo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mentor-photo-placeholder {
+  width: 300px;
+  height: 300px;
+  background: #ded8d2;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #69505c;
+  position: relative;
+  overflow: hidden;
+}
+
+.mentor-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0.625rem;
+}
+
+.mentor-photo-text {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #69505c;
+  font-size: 1.2rem;
+  text-align: center;
+}
+
+.mentor-icon {
+  font-size: 5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Основная информация */
+.mentor-basic-info {
+  background: #f5f0ec;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.mentor-name {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 1.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.mentor-rating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.rating-stars {
+  color: #FFD700;
+  font-size: 1.2rem;
+}
+
+.rating-value {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: #69505c;
+  font-size: 1.1rem;
+}
+
+.reviews-count {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.mentor-price-tag {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: #F6C0CA;
+  border-radius: 0.5rem;
+}
+
+.price-label {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  color: #69505c;
+  font-size: 1rem;
+}
+
+.price-value {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  color: #35252c;
+  font-size: 1.3rem;
+}
+
+.mentor-location {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #35252c;
+}
+
+.location-icon {
+  font-size: 1.2rem;
+}
+
+/* Кнопка записи */
+.book-btn-large {
+  width: 100%;
+  padding: 1rem;
+  background: #69505c;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: auto;
+}
+
+.book-btn-large:hover {
+  background: #35252c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(105, 80, 92, 0.3);
+}
+
+/* Правая колонка - анкета */
+.sections-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.mentor-section {
+  background: #f5f0ec;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  border: 1px solid #ded8d2;
+}
+
+.mentor-section h3 {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(105, 80, 92, 0.2);
+}
+
+.field-group {
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.field-group:last-child {
+  margin-bottom: 0;
+}
+
+.field-group.full-width {
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-group label {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  color: #69505c;
+  font-size: 0.9rem;
+  min-width: 180px;
+}
+
+.field-value {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #35252c;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  flex: 1;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  border: 1px solid #ded8d2;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.philosophy-text, .achievements-text {
+  font-style: italic;
+  line-height: 1.6;
+}
+
+.achievements-text {
+  white-space: pre-wrap;
+}
+
+/* Отзывы */
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.review-item {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #ded8d2;
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.review-author {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: #69505c;
+  font-size: 0.9rem;
+}
+
+.review-date {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.8rem;
+  color: #999;
+}
+
+.review-text {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 500;
+  color: #35252c;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* Экран загрузки (дублирование с другими файлами) */
+.mentor-profile-loading,
+.mentor-profile-not-found {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: rgba(228, 216, 210, 0.9);
+  text-align: center;
+}
+
+.mentor-profile-not-found h2 {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(105, 80, 92, 0.3);
+  border-radius: 50%;
+  border-top-color: #69505c;
+  animation: spin 1s ease-in-out infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Кастомный скроллбар */
+.mentor-profile-right::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mentor-profile-right::-webkit-scrollbar-track {
+  background: #ded8d2;
+  border-radius: 3px;
+}
+
+.mentor-profile-right::-webkit-scrollbar-thumb {
+  background: #69505c;
+  border-radius: 3px;
+}
+
+.mentor-profile-right::-webkit-scrollbar-thumb:hover {
+  background: #35252c;
+}
+
+/* Адаптивность */
+@media (max-width: 1024px) {
+  .mentor-profile-layout {
+    flex-direction: column;
+  }
+  
+  .mentor-profile-left {
+    flex: none;
+    width: 100%;
+  }
+  
+  .mentor-profile-right {
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .mentor-profile-page {
+    padding: 1rem;
+  }
+  
+  .mentor-profile-card {
+    padding: 1rem;
+  }
+  
+  .mentor-photo-placeholder {
+    width: 250px;
+    height: 250px;
+  }
+  
+  .field-group {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .field-group label {
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .mentor-profile-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .mentor-photo-placeholder {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .mentor-name {
+    font-size: 1.4rem;
+  }
+}

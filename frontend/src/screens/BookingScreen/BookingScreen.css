@@ -1,0 +1,376 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+
+.booking-page {
+  min-height: 100vh;
+  background-image: url('../../../public/assets/images/background_2.png');
+  background-size: cover;
+  background-position: center;
+  font-family: 'Montserrat', sans-serif;
+  padding: 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.booking-container {
+  width: 100%;
+  max-width: 800px;
+  background: rgba(228, 216, 210, 0.95);
+  border-radius: 1.25rem;
+  padding: 2rem;
+  box-shadow: 0 0.5rem 2rem rgba(105, 80, 92, 0.1);
+}
+
+/* Заголовок */
+.booking-header {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(105, 80, 92, 0.2);
+}
+
+.booking-header h1 {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+.back-btn {
+  background: #69505c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.back-btn:hover:not(:disabled) {
+  background: #35252c;
+  transform: translateY(-2px);
+}
+
+.back-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.back-btn:focus {
+  outline: 2px solid #69505c;
+  outline-offset: 2px;
+}
+
+/* Сообщение об ошибке */
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #f5c6cb;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Информация о менторе */
+.mentor-summary {
+  background: #f5f0ec;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.mentor-summary h2 {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+}
+
+.mentor-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 150px;
+}
+
+.detail-label {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  color: #69505c;
+  font-size: 0.9rem;
+}
+
+.detail-value {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: #35252c;
+  font-size: 1rem;
+}
+
+.detail-value.price {
+  color: #69505c;
+  font-size: 1.1rem;
+}
+
+/* Форма */
+.booking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-section {
+  background: #f5f0ec;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.form-section h3 {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(105, 80, 92, 0.2);
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 600;
+  color: #69505c;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  height: 48px;
+  padding: 0.75rem;
+  border: 1px solid #ded8d2;
+  border-radius: 0.5rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.9rem;
+  color: #35252c;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #69505c;
+}
+
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+  background: #f5f0ec;
+  cursor: not-allowed;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Итоговая стоимость */
+.price-summary {
+  background: #f5f0ec;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.price-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
+  color: #35252c;
+}
+
+.price-row:not(.price-total) {
+  color: #666;
+}
+
+.price-total {
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid #69505c;
+  font-weight: 700;
+}
+
+.total-amount {
+  font-size: 1.2rem;
+  color: #69505c;
+  margin-left: 20px;
+}
+
+/* Кнопки */
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.cancel-btn,
+.submit-btn {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 900;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-btn {
+  background: #ded8d2;
+  color: #69505c;
+  border: 2px solid #69505c;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #c6b3b6;
+}
+
+.submit-btn {
+  background: #69505c;
+  color: white;
+  border: none;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #35252c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(105, 80, 92, 0.3);
+}
+
+.cancel-btn:disabled,
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cancel-btn:focus,
+.submit-btn:focus {
+  outline: 2px solid #69505c;
+  outline-offset: 2px;
+}
+
+/* Состояния загрузки и ошибок */
+.booking-loading,
+.booking-not-found {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  text-align: center;
+}
+
+.booking-not-found h2 {
+  font-family: 'Source Serif Pro', serif;
+  font-weight: 900;
+  color: #69505c;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(105, 80, 92, 0.2);
+  border-top-color: #69505c;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .booking-page {
+    padding: 1rem;
+  }
+  
+  .booking-container {
+    padding: 1rem;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .mentor-details {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .detail-item {
+    min-width: auto;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .booking-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .booking-header h1 {
+    font-size: 1.5rem;
+  }
+}

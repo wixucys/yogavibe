@@ -21,3 +21,35 @@ export interface RegisterData {
   email: string;
   password: string;
 }
+
+export interface AuthCheckResult {
+  isAuthenticated: boolean;
+  user?: User;
+}
+
+export interface AuthSuccessResult {
+  success: true;
+  user?: User;
+  message?: string;
+}
+
+export interface AuthErrorResult {
+  success: false;
+  message: string;
+}
+
+export type AuthActionResult = AuthSuccessResult | AuthErrorResult;
+
+export interface UpdateProfileResultSuccess {
+  success: true;
+  user: User;
+}
+
+export interface UpdateProfileResultError {
+  success: false;
+  message: string;
+}
+
+export type UpdateProfileResult =
+  | UpdateProfileResultSuccess
+  | UpdateProfileResultError;

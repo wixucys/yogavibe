@@ -1,44 +1,15 @@
-import ApiService, {
-  ApiError,
-  type User,
-  type AuthResponse,
-  type LoginCredentials,
-  type RegisterData,
-} from './ApiService';
+import ApiService, { ApiError } from './ApiService';
+import type { User } from '../types/user';
+import type {
+  AuthResponse,
+  LoginCredentials,
+  RegisterData,
+  AuthCheckResult,
+  AuthActionResult,
+  UpdateProfileResult,
+} from '../types/auth';
 
 export type { User, LoginCredentials, RegisterData };
-
-export interface AuthCheckResult {
-  isAuthenticated: boolean;
-  user?: User;
-}
-
-export interface AuthSuccessResult {
-  success: true;
-  user?: User;
-  message?: string;
-}
-
-export interface AuthErrorResult {
-  success: false;
-  message: string;
-}
-
-export type AuthActionResult = AuthSuccessResult | AuthErrorResult;
-
-export interface UpdateProfileResultSuccess {
-  success: true;
-  user: User;
-}
-
-export interface UpdateProfileResultError {
-  success: false;
-  message: string;
-}
-
-export type UpdateProfileResult =
-  | UpdateProfileResultSuccess
-  | UpdateProfileResultError;
 
 class AuthService {
   static async checkAuth(): Promise<AuthCheckResult> {
@@ -66,10 +37,14 @@ class AuthService {
       }
 
       console.log('AuthService: Getting current user from API...');
-      const userData = await ApiService.getCurrentUser().catch((error: unknown) => {
+
+      let userData: User | null = null;
+
+      try {
+        userData = await ApiService.getCurrentUser();
+      } catch (error: unknown) {
         console.error('AuthService: Error getting current user:', error);
-        return null;
-      });
+      }
 
       if (userData) {
         console.log('AuthService: User data received:', userData);
@@ -116,27 +91,22 @@ class AuthService {
     } catch (error: unknown) {
       console.error('AuthService: Login error:', error);
 
-      const apiError = error as ApiError;
-      let message = 'Ошибка при входе';
+      const message = this.getErrorMessage(error, 'Ошибка при входе');
 
-      if (apiError.status === 401) {
-        message = 'Неверный логин или пароль';
-      } else if (apiError.status === 403) {
-        message = 'Пользователь деактивирован';
-      } else if (
-        apiError.status === 0 ||
-        apiError.message?.includes('Failed to fetch')
-      ) {
-        message = 'Сервер недоступен. Проверьте подключение к интернету.';
-      } else if (
-        apiError.body &&
-        typeof apiError.body === 'object' &&
-        'detail' in apiError.body &&
-        typeof (apiError.body as { detail?: unknown }).detail === 'string'
-      ) {
-        message = (apiError.body as { detail: string }).detail;
-      } else if (apiError.message) {
-        message = apiError.message;
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          return {
+            success: false,
+            message: 'Неверный логин или пароль',
+          };
+        }
+
+        if (error.status === 403) {
+          return {
+            success: false,
+            message: 'Пользователь деактивирован',
+          };
+        }
       }
 
       return {
@@ -179,39 +149,20 @@ class AuthService {
     } catch (error: unknown) {
       console.error('AuthService: Registration error:', error);
 
-      const apiError = error as ApiError;
-      let message = 'Ошибка при регистрации';
+      if (error instanceof ApiError && error.status === 400) {
+        const detailMessage = this.getApiErrorDetail(error);
 
-      if (apiError.status === 400) {
-        if (
-          apiError.body &&
-          typeof apiError.body === 'object' &&
-          'detail' in apiError.body &&
-          typeof (apiError.body as { detail?: unknown }).detail === 'string'
-        ) {
-          message = (apiError.body as { detail: string }).detail;
-        } else {
-          message = 'Пользователь с таким email или именем уже существует';
-        }
-      } else if (
-        apiError.status === 0 ||
-        apiError.message?.includes('Failed to fetch')
-      ) {
-        message = 'Сервер недоступен. Проверьте подключение к интернету.';
-      } else if (
-        apiError.body &&
-        typeof apiError.body === 'object' &&
-        'detail' in apiError.body &&
-        typeof (apiError.body as { detail?: unknown }).detail === 'string'
-      ) {
-        message = (apiError.body as { detail: string }).detail;
-      } else if (apiError.message) {
-        message = apiError.message;
+        return {
+          success: false,
+          message:
+            detailMessage ||
+            'Пользователь с таким email или именем уже существует',
+        };
       }
 
       return {
         success: false,
-        message,
+        message: this.getErrorMessage(error, 'Ошибка при регистрации'),
       };
     }
   }
@@ -242,7 +193,7 @@ class AuthService {
   }
 
   static async updateProfile(
-    profileData: Record<string, unknown>
+    profileData: Partial<User>
   ): Promise<UpdateProfileResult> {
     try {
       console.log('AuthService: Updating profile:', profileData);
@@ -258,27 +209,54 @@ class AuthService {
     } catch (error: unknown) {
       console.error('AuthService: Update profile error:', error);
 
-      const apiError = error as ApiError;
-      let message = 'Ошибка при обновлении профиля';
-
-      if (
-        apiError.body &&
-        typeof apiError.body === 'object' &&
-        'detail' in apiError.body &&
-        typeof (apiError.body as { detail?: unknown }).detail === 'string'
-      ) {
-        message = (apiError.body as { detail: string }).detail;
-      }
-
       return {
         success: false,
-        message,
+        message: this.getErrorMessage(error, 'Ошибка при обновлении профиля'),
       };
     }
   }
 
   static clearAuth(): void {
     ApiService.clearAuth();
+  }
+
+  private static getErrorMessage(
+    error: unknown,
+    fallbackMessage: string
+  ): string {
+    if (error instanceof ApiError) {
+      if (error.status === 0 || error.message.includes('Failed to fetch')) {
+        return 'Сервер недоступен. Проверьте подключение к интернету.';
+      }
+
+      const detailMessage = this.getApiErrorDetail(error);
+      if (detailMessage) {
+        return detailMessage;
+      }
+
+      if (error.message) {
+        return error.message;
+      }
+    }
+
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+
+    return fallbackMessage;
+  }
+
+  private static getApiErrorDetail(error: ApiError): string | null {
+    if (
+      error.body &&
+      typeof error.body === 'object' &&
+      'detail' in error.body &&
+      typeof (error.body as { detail?: unknown }).detail === 'string'
+    ) {
+      return (error.body as { detail: string }).detail;
+    }
+
+    return null;
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
@@ -7,18 +7,19 @@ import MainScreen from './screens/MainScreen/MainScreen';
 import MentorProfileScreen from './screens/MentorsProfile/MentorProfileScreen';
 import BookingScreen from './screens/BookingScreen/BookingScreen';
 import BookingConfirmationScreen from './screens/BookingConfirm/BookingConfirmationScreen';
-import AuthService, {
-  type User,
-  type AuthCheckResult,
-  type AuthActionResult,
-  type LoginCredentials,
-  type RegisterData,
-} from './services/AuthService';
+import AuthService from './services/AuthService';
+import type {
+  AuthCheckResult,
+  AuthActionResult,
+  LoginCredentials,
+  RegisterData,
+} from './types/auth';
+import type { User } from './types/user'
 import './App.css';
 
-function App(): JSX.Element {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -26,12 +27,11 @@ function App(): JSX.Element {
       try {
         const authResult: AuthCheckResult = await AuthService.checkAuth();
         setIsAuthenticated(authResult.isAuthenticated);
-
-        if (authResult.user) {
-          setUser(authResult.user);
-        }
+        setUser(authResult.user ?? null);
       } catch (error: unknown) {
         console.error('Auth check error:', error);
+        setUser(null);
+        setIsAuthenticated(false);
       } finally {
         setLoading(false);
       }
@@ -49,26 +49,28 @@ function App(): JSX.Element {
       const result = await AuthService.login(credentials);
       console.log('App: Login result:', result);
 
-      if (result.success) {
-        const currentUser = AuthService.getCurrentUser();
-        console.log('App: Current user after login:', currentUser);
+      if (!result.success) {
+        console.log('App: Login failed:', result.message);
+        return result;
+      }
 
-        if (currentUser) {
-          setUser(currentUser);
-          setIsAuthenticated(true);
-          return { success: true, message: 'Вход выполнен успешно' };
-        }
+      const currentUser = result.user ?? AuthService.getCurrentUser();
+      console.log('App: Current user after login:', currentUser);
 
+      if (!currentUser) {
         return {
           success: false,
           message: 'Пользователь не найден после входа',
         };
       }
 
-      console.log('App: Login failed:', result.message);
+      setUser(currentUser);
+      setIsAuthenticated(true);
+
       return {
-        success: false,
-        message: result.message || 'Ошибка при входе',
+        success: true,
+        user: currentUser,
+        message: 'Вход выполнен успешно',
       };
     } catch (error) {
       console.error('App: Login error:', error);
@@ -88,26 +90,28 @@ function App(): JSX.Element {
       const result = await AuthService.register(userData);
       console.log('App: Registration result:', result);
 
-      if (result.success) {
-        const currentUser = AuthService.getCurrentUser();
-        console.log('App: Current user after registration:', currentUser);
+      if (!result.success) {
+        console.log('App: Registration failed:', result.message);
+        return result;
+      }
 
-        if (currentUser) {
-          setUser(currentUser);
-          setIsAuthenticated(true);
-          return { success: true, message: 'Регистрация успешна' };
-        }
+      const currentUser = result.user ?? AuthService.getCurrentUser();
+      console.log('App: Current user after registration:', currentUser);
 
+      if (!currentUser) {
         return {
           success: false,
           message: 'Пользователь не создан',
         };
       }
 
-      console.log('App: Registration failed:', result.message);
+      setUser(currentUser);
+      setIsAuthenticated(true);
+
       return {
-        success: false,
-        message: result.message || 'Ошибка при регистрации',
+        success: true,
+        user: currentUser,
+        message: 'Регистрация успешна',
       };
     } catch (error) {
       console.error('App: Registration error:', error);
@@ -125,6 +129,8 @@ function App(): JSX.Element {
       setIsAuthenticated(false);
     } catch (error) {
       console.error('Logout error:', error);
+      setUser(null);
+      setIsAuthenticated(false);
     }
   };
 

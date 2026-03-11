@@ -1,36 +1,9 @@
-import ApiService, { type User } from './ApiService';
-
-export interface LocalProfileData {
-  age?: string;
-  contactInfo?: string;
-  knownStyles?: string;
-  healthInfo?: string;
-  preferredFormat?: string;
-  meetingFrequency?: string;
-  mentorshipDuration?: string;
-  communicationStyle?: string;
-  mentorPreferences?: string;
-  additionalInfo?: string;
-  photo?: string | null;
-  [key: string]: unknown;
-}
-
-export interface UpdateProfileInput {
-  city?: string | null;
-  yoga_style?: string | null;
-  knownStyles?: string | null;
-  experience?: string | null;
-  experienceYears?: string | null;
-  goals?: string | null;
-  [key: string]: unknown;
-}
-
-type UserId = string | number;
+import ApiService from './ApiService';
+import type { User, UserId, LocalProfileData, UpdateProfileInput } from '../types/user';
 
 type StoredProfilesMap = Record<string, LocalProfileData>;
 
 class UserService {
-  // Получение профиля пользователя с сервера
   static async getProfile(): Promise<User> {
     try {
       console.log('UserService: Getting user profile from server...');
@@ -43,12 +16,11 @@ class UserService {
     }
   }
 
-  // Обновление профиля пользователя
   static async updateProfile(profileData: UpdateProfileInput): Promise<User> {
     try {
       console.log('UserService: Updating profile with:', profileData);
 
-      const backendData = {
+      const backendData: Partial<User> = {
         city: profileData.city || null,
         yoga_style: profileData.yoga_style || profileData.knownStyles || null,
         experience: profileData.experience || profileData.experienceYears || null,
@@ -60,9 +32,7 @@ class UserService {
       const response = await ApiService.updateUserProfile(backendData);
       console.log('UserService: Profile updated successfully:', response);
 
-      if (response) {
-        ApiService.setUserData(response);
-      }
+      ApiService.setUserData(response);
 
       return response;
     } catch (error) {
@@ -71,7 +41,6 @@ class UserService {
     }
   }
 
-  // Загрузка фото профиля (локальное хранилище)
   static saveProfilePhoto(userId: UserId, photoData: string | null): boolean {
     try {
       const allProfiles = this.getAllProfiles();
@@ -90,7 +59,6 @@ class UserService {
     }
   }
 
-  // Получение локальных данных профиля
   static getLocalProfile(userId: UserId): LocalProfileData {
     try {
       const allProfiles = this.getAllProfiles();
@@ -101,7 +69,6 @@ class UserService {
     }
   }
 
-  // Сохранение локальных данных профиля
   static saveLocalProfile(userId: UserId, profileData: LocalProfileData): boolean {
     try {
       const allProfiles = this.getAllProfiles();
@@ -123,6 +90,7 @@ class UserService {
   private static getAllProfiles(): StoredProfilesMap {
     try {
       const raw = localStorage.getItem('yogavibe_profiles');
+
       if (!raw) {
         return {};
       }

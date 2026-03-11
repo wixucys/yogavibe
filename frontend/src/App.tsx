@@ -4,9 +4,9 @@ import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen/RegisterScreen';
 import MainScreen from './screens/MainScreen/MainScreen';
-// import MentorProfileScreen from './screens/MentorsProfile/MentorProfileScreen';
-// import BookingScreen from './screens/BookingScreen/BookingScreen';
-// import BookingConfirmationScreen from './screens/BookingConfirm/BookingConfirmationScreen';
+import MentorProfileScreen from './screens/MentorsProfile/MentorProfileScreen';
+import BookingScreen from './screens/BookingScreen/BookingScreen';
+import BookingConfirmationScreen from './screens/BookingConfirm/BookingConfirmationScreen';
 import AuthService, {
   type User,
   type AuthCheckResult,
@@ -168,7 +168,7 @@ function App(): JSX.Element {
               )
             }
           />
-          {/* <Route
+          <Route
             path="/mentor/:mentorId"
             element={isAuthenticated ? <MentorProfileScreen /> : <Navigate to="/login" />}
           />
@@ -180,7 +180,7 @@ function App(): JSX.Element {
             path="/booking-confirmation"
             element={isAuthenticated ? <BookingConfirmationScreen /> : <Navigate to="/login" />}
           />
-          <Route path="*" element={<Navigate to="/" />} /> */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
     </Router>

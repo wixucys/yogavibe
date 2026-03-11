@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { JSX, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
@@ -16,7 +16,7 @@ import AuthService, {
 } from './services/AuthService';
 import './App.css';
 
-function App() {
+function App(): JSX.Element {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -30,7 +30,7 @@ function App() {
         if (authResult.user) {
           setUser(authResult.user);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Auth check error:', error);
       } finally {
         setLoading(false);

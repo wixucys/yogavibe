@@ -1,5 +1,10 @@
 import ApiService from './ApiService';
-import type { User, UserId, LocalProfileData, UpdateProfileInput } from '../types/user';
+import type { 
+  User, 
+  UserId, 
+  LocalProfileData, 
+  UpdateProfileInput 
+} from '../types/user';
 
 type StoredProfilesMap = Record<string, LocalProfileData>;
 

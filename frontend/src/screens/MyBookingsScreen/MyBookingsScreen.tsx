@@ -77,6 +77,12 @@ interface LocalBookingItem {
   updated_at?: string;
   sessionType?: SessionType;
   session_type?: SessionType;
+  mentor?: {
+    name?: string;
+    city?: string;
+    yoga_style?: string;
+    [key: string]: unknown;
+  };
   [key: string]: unknown;
 }
 

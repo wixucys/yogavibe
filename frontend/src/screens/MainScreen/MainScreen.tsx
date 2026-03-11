@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { JSX, useEffect, useRef, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './MainScreen.css';
 import NotesScreen from '../NotesScreen/NotesScreen';

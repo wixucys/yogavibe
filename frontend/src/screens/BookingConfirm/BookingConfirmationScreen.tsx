@@ -1,58 +1,90 @@
-import React, { useState, useEffect } from 'react';
+import React, { JSX, useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import './BookingConfirmationScreen.css';
 
-const BookingConfirmationScreen = () => {
+type SessionType = 'individual' | 'group';
+type BookingStatus = 'active' | 'completed' | 'cancelled' | 'confirmed' | string;
+
+interface BookingConfirmationMentor {
+  id?: string | number;
+  name?: string;
+  city?: string;
+  yogaStyle?: string;
+  [key: string]: unknown;
+}
+
+interface BookingConfirmationData {
+  id: string | number;
+  mentorName?: string;
+  sessionDate: string;
+  durationMinutes?: number;
+  sessionType?: SessionType;
+  price?: number;
+  totalPrice?: number;
+  status?: BookingStatus;
+  notes?: string;
+  [key: string]: unknown;
+}
+
+interface BookingConfirmationLocationState {
+  bookingData?: BookingConfirmationData;
+  mentor?: BookingConfirmationMentor;
+}
+
+const BookingConfirmationScreen = (): JSX.Element => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [bookingData, setBookingData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [mentor, setMentor] = useState(null);
-  const [error, setError] = useState(null);
+  const locationState = location.state as BookingConfirmationLocationState | null;
+
+  const [bookingData, setBookingData] = useState<BookingConfirmationData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [mentor, setMentor] = useState<BookingConfirmationMentor | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadBookingData = () => {
+    const loadBookingData = (): void => {
       try {
-        if (location.state?.bookingData && location.state?.mentor) {
-          const data = location.state.bookingData;
-          const mentorInfo = location.state.mentor;
-          
-          // Валидация данных
+        if (locationState?.bookingData && locationState?.mentor) {
+          const data = locationState.bookingData;
+          const mentorInfo = locationState.mentor;
+
           if (!data.id || !data.sessionDate) {
             throw new Error('Неполные данные бронирования');
           }
-          
+
           setBookingData(data);
           setMentor(mentorInfo);
           setError(null);
         } else {
           setError('Данные бронирования не найдены');
         }
-      } catch (err) {
-        setError(`Ошибка загрузки: ${err.message}`);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'Неизвестная ошибка';
+        setError(`Ошибка загрузки: ${message}`);
         console.error('Error loading booking data:', err);
       } finally {
         setLoading(false);
       }
     };
-    
-    loadBookingData();
-  }, [location]);
 
-  const handleGoToMain = () => {
+    loadBookingData();
+  }, [locationState]);
+
+  const handleGoToMain = (): void => {
     navigate('/main');
   };
 
-  const handleGoToMyBookings = () => {
+  const handleGoToMyBookings = (): void => {
     navigate('/main', { state: { activeNav: 'МОИ ЗАПИСИ' } });
   };
 
-  const extractTimeFromDate = (dateString) => {
+  const extractTimeFromDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
+
       return date.toLocaleTimeString('ru-RU', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch (error) {
       console.error('Error parsing date:', error);
@@ -60,14 +92,15 @@ const BookingConfirmationScreen = () => {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     try {
       const date = new Date(dateString);
+
       return date.toLocaleDateString('ru-RU', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -75,8 +108,8 @@ const BookingConfirmationScreen = () => {
     }
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('ru-RU').format(price) + ' ₽';
+  const formatPrice = (price: number): string => {
+    return `${new Intl.NumberFormat('ru-RU').format(price)} ₽`;
   };
 
   if (loading) {
@@ -105,18 +138,14 @@ const BookingConfirmationScreen = () => {
       <div className="confirmation-container">
         <div className="confirmation-header">
           <h1>Запись подтверждена!</h1>
-          <p className="confirmation-subtitle">
-            Ваша сессия успешно забронирована
-          </p>
+          <p className="confirmation-subtitle">Ваша сессия успешно забронирована</p>
         </div>
 
-        <div className="success-icon-large">
-          ✓
-        </div>
+        <div className="success-icon-large">✓</div>
 
         <div className="booking-summary">
           <h2>Детали вашей записи</h2>
-          
+
           <div className="summary-grid">
             <div className="summary-item">
               <span className="summary-label">Ментор:</span>
@@ -124,58 +153,60 @@ const BookingConfirmationScreen = () => {
                 {mentor?.name || bookingData.mentorName || 'Не указан'}
               </span>
             </div>
-            
+
             <div className="summary-item">
               <span className="summary-label">Дата:</span>
               <span className="summary-value">{formatDate(bookingData.sessionDate)}</span>
             </div>
-            
+
             <div className="summary-item">
               <span className="summary-label">Время:</span>
               <span className="summary-value">
                 {extractTimeFromDate(bookingData.sessionDate)}
               </span>
             </div>
-            
+
             <div className="summary-item">
               <span className="summary-label">Длительность:</span>
-              <span className="summary-value">{bookingData.durationMinutes || 60} минут</span>
+              <span className="summary-value">
+                {bookingData.durationMinutes || 60} минут
+              </span>
             </div>
-            
+
             <div className="summary-item">
               <span className="summary-label">Тип сессии:</span>
               <span className="summary-value">
                 {bookingData.sessionType === 'group' ? 'Групповая' : 'Индивидуальная'}
               </span>
             </div>
-            
+
             <div className="summary-item">
               <span className="summary-label">Стоимость:</span>
               <span className="summary-value price">
                 {formatPrice(bookingData.price || bookingData.totalPrice || 0)}
               </span>
             </div>
-            
+
             <div className="summary-item full-width">
               <span className="summary-label">Номер записи:</span>
               <span className="summary-value booking-id">
-                #{bookingData.id.toString().padStart(6, '0')}
+                #{String(bookingData.id).padStart(6, '0')}
               </span>
             </div>
-            
+
             <div className="summary-item full-width">
               <span className="summary-label">Статус:</span>
               <span className="summary-value status-confirmed">
-                {bookingData.status === 'confirmed' ? '✅ Активная' : '⏳ Ожидает подтверждения'}
+                {bookingData.status === 'confirmed'
+                  ? '✅ Активная'
+                  : '⏳ Ожидает подтверждения'}
               </span>
             </div>
-            
+
             {bookingData.notes && (
               <div className="summary-item full-width">
                 <span className="summary-label">Ваши пожелания:</span>
-                <span className="summary-value">
-                  {bookingData.notes}
-                </span>
+                <span className="summary-value">{bookingData.notes}</span>
               </div>
             )}
           </div>
@@ -184,8 +215,8 @@ const BookingConfirmationScreen = () => {
         <div className="contact-info">
           <h3>Контактная информация</h3>
           <p>
-            Если у вас возникли вопросы, напишите нам на support@yogavibe.ru 
-            или позвоните по номеру 8-800-XXX-XX-XX
+            Если у вас возникли вопросы, напишите нам на support@yogavibe.ru или
+            позвоните по номеру 8-800-XXX-XX-XX
           </p>
           {mentor && (
             <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>
@@ -195,17 +226,19 @@ const BookingConfirmationScreen = () => {
         </div>
 
         <div className="confirmation-actions">
-          <button 
-            onClick={handleGoToMain} 
+          <button
+            onClick={handleGoToMain}
             className="action-btn primary"
             aria-label="Перейти на главную страницу"
+            type="button"
           >
             На главную
           </button>
-          <button 
-            onClick={handleGoToMyBookings} 
+          <button
+            onClick={handleGoToMyBookings}
             className="action-btn secondary"
             aria-label="Посмотреть все мои записи"
+            type="button"
           >
             Мои записи
           </button>

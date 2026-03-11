@@ -1,69 +1,127 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import BookingService from '../../services/BookingService';
 import ApiService from '../../services/ApiService';
 import './BookingScreen.css';
 
-const BookingScreen = () => {
-  const { mentorId } = useParams();
+type SessionType = 'individual' | 'group';
+
+interface MentorApiResponse {
+  id: number | string;
+  name: string;
+  description?: string;
+  gender: string;
+  city: string;
+  price: number;
+  yoga_style: string;
+  rating?: number;
+  experience_years?: number;
+  photo_url?: string | null;
+  is_available?: boolean;
+  [key: string]: unknown;
+}
+
+interface BookingMentor {
+  id: number | string;
+  name: string;
+  description?: string;
+  gender: string;
+  city: string;
+  price: number;
+  yogaStyle: string;
+  rating?: number;
+  experienceYears?: number;
+  photoUrl?: string | null;
+  isAvailable?: boolean;
+  availability?: string[];
+}
+
+interface BookingFormData {
+  sessionDate: string;
+  time: string;
+  durationMinutes: string;
+  notes: string;
+  sessionType: SessionType;
+}
+
+interface CreateBookingError extends Error {
+  userMessage?: string;
+  body?: {
+    detail?: string;
+    [key: string]: unknown;
+  };
+}
+
+interface BookingLocationState {
+  mentor?: BookingMentor;
+}
+
+const BookingScreen = (): JSX.Element => {
+  const { mentorId } = useParams<{ mentorId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const [mentor, setMentor] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isBooking, setIsBooking] = useState(false);
-  const [error, setError] = useState(null);
-  
-  const [bookingData, setBookingData] = useState({
+
+  const locationState = location.state as BookingLocationState | null;
+
+  const [mentor, setMentor] = useState<BookingMentor | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isBooking, setIsBooking] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [bookingData, setBookingData] = useState<BookingFormData>({
     sessionDate: '',
     time: '',
     durationMinutes: '60',
     notes: '',
-    sessionType: 'individual'
+    sessionType: 'individual',
   });
 
-  // Генерация временных слотов
-  const timeSlots = useMemo(() => {
-    const slots = [];
+  const timeSlots = useMemo<string[]>(() => {
+    const slots: string[] = [];
+
     for (let hour = 9; hour <= 20; hour++) {
       for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const time = `${hour.toString().padStart(2, '0')}:${minute
+          .toString()
+          .padStart(2, '0')}`;
         slots.push(time);
       }
     }
+
     return slots;
   }, []);
 
   useEffect(() => {
-    const fetchMentor = async () => {
+    const fetchMentor = async (): Promise<void> => {
       setLoading(true);
       setError(null);
-      
+
       try {
-        if (location.state?.mentor) {
-          setMentor(location.state.mentor);
+        if (locationState?.mentor) {
+          setMentor(locationState.mentor);
         } else {
           await loadMentorData();
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error loading mentor:', error);
         setError('Не удалось загрузить данные ментора');
       } finally {
         setLoading(false);
       }
     };
-    
-    fetchMentor();
-  }, [mentorId, location.state?.mentor]);
 
-  const loadMentorData = async () => {
+    void fetchMentor();
+  }, [mentorId, locationState?.mentor]);
+
+  const loadMentorData = async (): Promise<void> => {
     try {
       console.log(`Loading mentor ${mentorId} from API...`);
-      const response = await ApiService.request(`/mentors/${mentorId}`, {
-        method: 'GET'
+
+      const response = await ApiService.request<MentorApiResponse>(`/mentors/${mentorId}`, {
+        method: 'GET',
       });
-      
-      const formattedMentor = {
+
+      const formattedMentor: BookingMentor = {
         id: response.id,
         name: response.name,
         description: response.description,
@@ -75,9 +133,9 @@ const BookingScreen = () => {
         experienceYears: response.experience_years,
         photoUrl: response.photo_url,
         isAvailable: response.is_available,
-        availability: ["Пн-Пт: 9:00-18:00", "Сб: 10:00-15:00"]
+        availability: ['Пн-Пт: 9:00-18:00', 'Сб: 10:00-15:00'],
       };
-      
+
       setMentor(formattedMentor);
     } catch (error) {
       console.error('Error loading mentor from API:', error);
@@ -85,56 +143,66 @@ const BookingScreen = () => {
     }
   };
 
-  const handleInputChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setBookingData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  }, []);
+  const handleInputChange = useCallback(
+    (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    ): void => {
+      const { name, value } = e.target;
+      const fieldName = name as keyof BookingFormData;
 
-  const isTimeAvailable = useCallback((selectedTime) => {
-    if (!mentor?.availability) return true;
-    
-    // Базовая проверка (9:00-18:00 по умолчанию)
-    const [hours, minutes] = selectedTime.split(':').map(Number);
-    const selectedHour = hours + minutes / 60;
-    
-    return selectedHour >= 9 && selectedHour <= 18;
-  }, [mentor]);
+      setBookingData((prev) => ({
+        ...prev,
+        [fieldName]: value,
+      }));
+    },
+    []
+  );
 
-  const calculateTotalPrice = useCallback(() => {
+  const isTimeAvailable = useCallback(
+    (selectedTime: string): boolean => {
+      if (!mentor?.availability) return true;
+
+      const [hours, minutes] = selectedTime.split(':').map(Number);
+      const selectedHour = hours + minutes / 60;
+
+      return selectedHour >= 9 && selectedHour <= 18;
+    },
+    [mentor]
+  );
+
+  const calculateTotalPrice = useCallback((): number => {
     if (!mentor) return 0;
-    
+
     const basePrice = mentor.price || 0;
     const durationMultiplier = parseInt(bookingData.durationMinutes, 10) / 60;
     const typeMultiplier = bookingData.sessionType === 'group' ? 0.7 : 1;
-    
+
     return Math.round(basePrice * durationMultiplier * typeMultiplier);
   }, [mentor, bookingData.durationMinutes, bookingData.sessionType]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    
+
     if (!bookingData.sessionDate || !bookingData.time) {
-      alert('Пожалуйста, выберите дату и время для записи');
+      window.alert('Пожалуйста, выберите дату и время для записи');
       return;
     }
 
-    // Валидация даты
     const selectedDate = new Date(bookingData.sessionDate);
     const now = new Date();
+
     selectedDate.setHours(0, 0, 0, 0);
     now.setHours(0, 0, 0, 0);
-    
+
     if (selectedDate < now) {
-      alert('Дата не может быть в прошлом');
+      window.alert('Дата не может быть в прошлом');
       return;
     }
 
-    // Проверка доступности времени
     if (!isTimeAvailable(bookingData.time)) {
-      alert('Выбранное время недоступно. Пожалуйста, выберите время с 9:00 до 18:00');
+      window.alert(
+        'Выбранное время недоступно. Пожалуйста, выберите время с 9:00 до 18:00'
+      );
       return;
     }
 
@@ -142,53 +210,57 @@ const BookingScreen = () => {
     setError(null);
 
     try {
-      // Формируем корректную дату и время
       const [hours, minutes] = bookingData.time.split(':').map(Number);
       const sessionDateTime = new Date(bookingData.sessionDate);
       sessionDateTime.setHours(hours, minutes, 0, 0);
-      
-      // Проверяем, что выбранное время в будущем
+
       if (sessionDateTime <= new Date()) {
-        alert('Выбранное время уже прошло');
+        window.alert('Выбранное время уже прошло');
         setIsBooking(false);
         return;
       }
 
+      const parsedMentorId = mentorId ? parseInt(mentorId, 10) : NaN;
+
       const bookingToCreate = {
-        mentor_id: parseInt(mentorId, 10),
+        mentor_id: parsedMentorId,
         session_date: sessionDateTime.toISOString(),
         duration_minutes: parseInt(bookingData.durationMinutes, 10),
         notes: bookingData.notes,
-        session_type: bookingData.sessionType
+        session_type: bookingData.sessionType,
       };
 
       console.log('Creating booking with data:', bookingToCreate);
-      
+
       const createdBooking = await BookingService.createBooking(bookingToCreate);
-      
-      navigate('/booking-confirmation', { 
-        state: { 
+
+      navigate('/booking-confirmation', {
+        state: {
           bookingData: createdBooking,
-          mentor: mentor 
-        } 
+          mentor,
+        },
       });
-      
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error creating booking:', error);
-      const errorMessage = error.userMessage || error.message || 'Ошибка при создании записи';
+
+      const bookingError = error as CreateBookingError;
+      const errorMessage =
+        bookingError.userMessage ||
+        bookingError.message ||
+        'Ошибка при создании записи';
+
       setError(errorMessage);
-      alert(`Не удалось создать запись: ${errorMessage}`);
+      window.alert(`Не удалось создать запись: ${errorMessage}`);
     } finally {
       setIsBooking(false);
     }
   };
 
-  const handleBackClick = useCallback(() => {
+  const handleBackClick = useCallback((): void => {
     navigate(`/mentor/${mentorId}`);
   }, [navigate, mentorId]);
 
-  // Получение минимальной даты для input[type="date"]
-  const minDate = useMemo(() => {
+  const minDate = useMemo<string>(() => {
     return new Date().toISOString().split('T')[0];
   }, []);
 
@@ -211,7 +283,7 @@ const BookingScreen = () => {
         <div className="booking-container">
           <div className="booking-not-found">
             <h2>Ментор не найден</h2>
-            <button onClick={() => navigate('/main')} className="back-btn">
+            <button onClick={() => navigate('/main')} className="back-btn" type="button">
               Вернуться к списку менторов
             </button>
           </div>
@@ -224,11 +296,12 @@ const BookingScreen = () => {
     <div className="booking-page">
       <div className="booking-container">
         <div className="booking-header">
-          <button 
+          <button
             onClick={handleBackClick}
             className="back-btn"
             aria-label="Вернуться к профилю ментора"
             disabled={isBooking}
+            type="button"
           >
             ← Назад
           </button>
@@ -262,6 +335,7 @@ const BookingScreen = () => {
         <form className="booking-form" onSubmit={handleSubmit} noValidate>
           <div className="form-section">
             <h3>Выберите дату и время</h3>
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="sessionDate">Дата*</label>
@@ -276,7 +350,7 @@ const BookingScreen = () => {
                   disabled={isBooking}
                 />
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="time">Время*</label>
                 <select
@@ -288,8 +362,10 @@ const BookingScreen = () => {
                   disabled={isBooking}
                 >
                   <option value="">Выберите время</option>
-                  {timeSlots.map(time => (
-                    <option key={time} value={time}>{time}</option>
+                  {timeSlots.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -338,7 +414,7 @@ const BookingScreen = () => {
                 value={bookingData.notes}
                 onChange={handleInputChange}
                 placeholder="Опишите, что вы хотели бы проработать, есть ли особенности здоровья или другие пожелания..."
-                rows="4"
+                rows={4}
                 disabled={isBooking}
               />
             </div>
@@ -356,7 +432,11 @@ const BookingScreen = () => {
               </div>
               <div className="price-row">
                 <span>Тип сессии:</span>
-                <span>{bookingData.sessionType === 'individual' ? 'Индивидуальная' : 'Групповая'}</span>
+                <span>
+                  {bookingData.sessionType === 'individual'
+                    ? 'Индивидуальная'
+                    : 'Групповая'}
+                </span>
               </div>
               <div className="price-total">
                 <span>Итого к оплате:</span>

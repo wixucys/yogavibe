@@ -1,3 +1,14 @@
+import type { User } from '../types/user';
+import type {
+  AuthTokens,
+  AuthResponse,
+  LoginCredentials,
+  RegisterData,
+} from '../types/auth';
+import type { MentorFilters } from '../types/mentor';
+import type { NoteData } from '../types/note';
+import type { BookingData } from '../types/booking';
+
 class ApiError extends Error {
   status?: number;
   body?: unknown;
@@ -8,52 +19,6 @@ class ApiError extends Error {
     this.status = status;
     this.body = body;
   }
-}
-
-export interface User {
-  id?: string | number;
-  username?: string;
-  email?: string;
-  city?: string;
-  yoga_style?: string;
-  [key: string]: unknown;
-}
-
-export interface AuthTokens {
-  access_token: string;
-  refresh_token: string;
-}
-
-export interface AuthResponse extends Partial<AuthTokens> {
-  user?: User;
-  [key: string]: unknown;
-}
-
-export interface LoginCredentials {
-  login?: string;
-  email?: string;
-  password: string;
-}
-
-export interface RegisterData {
-  username: string;
-  email: string;
-  password: string;
-}
-
-export interface MentorFilters {
-  city?: string;
-  yoga_style?: string;
-  skip?: number | string;
-  limit?: number | string;
-}
-
-export interface NoteData {
-  [key: string]: unknown;
-}
-
-export interface BookingData {
-  [key: string]: unknown;
 }
 
 type JsonBody = object | unknown[];
@@ -73,17 +38,26 @@ class ApiService {
     options: RequestOptions = {}
   ): Promise<T> {
     const token = localStorage.getItem('yogavibe_token');
+    const { body, headers: customHeaders = {}, ...restOptions } = options;
+
+    const isNativeBody =
+      typeof body === 'string' ||
+      body instanceof FormData ||
+      body instanceof URLSearchParams ||
+      body instanceof Blob ||
+      body instanceof ArrayBuffer;
 
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
+      ...customHeaders,
     };
+
+    if (body !== undefined && body !== null && !isNativeBody) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
-
-    const { body, ...restOptions } = options;
 
     const config: RequestInit = {
       ...restOptions,
@@ -91,25 +65,17 @@ class ApiService {
     };
 
     if (body !== undefined && body !== null) {
-      const isNativeBody =
-        typeof body === 'string' ||
-        body instanceof FormData ||
-        body instanceof URLSearchParams ||
-        body instanceof Blob ||
-        body instanceof ArrayBuffer;
-
       config.body = isNativeBody ? body : JSON.stringify(body);
     }
 
-    try {
-      const url = endpoint.startsWith('/')
-        ? `${this.BASE_URL}${endpoint}`
-        : `${this.BASE_URL}/${endpoint}`;
+    const url = endpoint.startsWith('/')
+      ? `${this.BASE_URL}${endpoint}`
+      : `${this.BASE_URL}/${endpoint}`;
 
+    try {
       const response = await fetch(url, config);
 
       if (response.status === 401 && endpoint !== this.REFRESH_ENDPOINT) {
-        console.log('Token expired, trying to refresh...');
         const refreshSuccess = await this.refreshAccessToken();
 
         if (refreshSuccess) {
@@ -126,33 +92,26 @@ class ApiService {
           };
 
           if (body !== undefined && body !== null) {
-            const isNativeBody =
-              typeof body === 'string' ||
-              body instanceof FormData ||
-              body instanceof URLSearchParams ||
-              body instanceof Blob ||
-              body instanceof ArrayBuffer;
-
             retryConfig.body = isNativeBody ? body : JSON.stringify(body);
           }
 
           const retryResponse = await fetch(url, retryConfig);
-          return this._handleResponse<T>(retryResponse);
+          return this.handleResponse<T>(retryResponse);
         }
 
         this.clearAuth();
         window.location.href = '/login';
-        throw new Error('Session expired. Please login again.');
+        throw new ApiError('Session expired. Please login again.', 401);
       }
 
-      return this._handleResponse<T>(response);
+      return this.handleResponse<T>(response);
     } catch (error) {
       console.error(`API request error (${endpoint}):`, error);
       throw error;
     }
   }
 
-  static async _handleResponse<T = unknown>(response: Response): Promise<T> {
+  private static async handleResponse<T>(response: Response): Promise<T> {
     if (response.status === 204) {
       return null as T;
     }
@@ -165,10 +124,12 @@ class ApiService {
 
       try {
         errorBody = isJson
-          ? await response.json().catch(() => ({ detail: 'Unknown error' }))
-          : await response.text().catch(() => 'Unknown error');
+          ? await response.json()
+          : await response.text();
       } catch {
-        errorBody = { detail: `HTTP ${response.status}: Failed to parse error response` };
+        errorBody = {
+          detail: `HTTP ${response.status}: Failed to parse error response`,
+        };
       }
 
       const message =
@@ -183,23 +144,21 @@ class ApiService {
     }
 
     try {
-      return (isJson ? await response.json() : await response.text()) as T;
+      if (isJson) {
+        return (await response.json()) as T;
+      }
+
+      return (await response.text()) as T;
     } catch {
-      throw new Error('Failed to parse response');
+      throw new ApiError('Failed to parse response', response.status);
     }
   }
 
   static async refreshAccessToken(): Promise<boolean> {
     const refreshToken = localStorage.getItem('yogavibe_refresh_token');
 
-    if (refreshToken && refreshToken.includes('mock_')) {
-      console.log('Mock token detected, clearing auth');
+    if (!refreshToken || refreshToken.includes('mock_')) {
       this.clearAuth();
-      return false;
-    }
-
-    if (!refreshToken) {
-      console.log('No refresh token available');
       return false;
     }
 
@@ -212,18 +171,16 @@ class ApiService {
         body: JSON.stringify({ refresh_token: refreshToken }),
       });
 
-      if (response.ok) {
-        const data = (await response.json()) as AuthTokens;
-
-        localStorage.setItem('yogavibe_token', data.access_token);
-        localStorage.setItem('yogavibe_refresh_token', data.refresh_token);
-
-        console.log('Token refreshed successfully');
-        return true;
+      if (!response.ok) {
+        return false;
       }
 
-      console.log('Refresh token is invalid');
-      return false;
+      const data = (await response.json()) as AuthTokens;
+
+      localStorage.setItem('yogavibe_token', data.access_token);
+      localStorage.setItem('yogavibe_refresh_token', data.refresh_token);
+
+      return true;
     } catch (error) {
       console.error('Token refresh error:', error);
       return false;
@@ -277,7 +234,7 @@ class ApiService {
 
     if (refreshToken) {
       try {
-        await this.request('/auth/logout', {
+        await this.request<void>('/auth/logout', {
           method: 'POST',
           body: { refresh_token: refreshToken },
         });
@@ -293,7 +250,7 @@ class ApiService {
     return this.request<User>('/users/me');
   }
 
-  static async updateUserProfile(userData: Record<string, unknown>): Promise<User> {
+  static async updateUserProfile(userData: Partial<User>): Promise<User> {
     return this.request<User>('/users/me', {
       method: 'PUT',
       body: userData,
@@ -303,8 +260,8 @@ class ApiService {
   static async getMentors<T = unknown>(filters: MentorFilters = {}): Promise<T> {
     const queryParams = new URLSearchParams();
 
-    if (filters.city) queryParams.append('city', String(filters.city));
-    if (filters.yoga_style) queryParams.append('yoga_style', String(filters.yoga_style));
+    if (filters.city) queryParams.append('city', filters.city);
+    if (filters.yoga_style) queryParams.append('yoga_style', filters.yoga_style);
     if (filters.skip !== undefined) queryParams.append('skip', String(filters.skip));
     if (filters.limit !== undefined) queryParams.append('limit', String(filters.limit));
 
@@ -363,7 +320,7 @@ class ApiService {
   }
 
   static isAuthenticated(): boolean {
-    return !!localStorage.getItem('yogavibe_token');
+    return Boolean(localStorage.getItem('yogavibe_token'));
   }
 
   static getUserData(): User | null {

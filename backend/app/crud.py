@@ -3,30 +3,41 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, select, delete
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
+
 import models_db as models
 import schemas
 from utils import get_password_hash, verify_password
 
 
-# CRUD операции для пользователей
+# CRUD ОПЕРАЦИИ ДЛЯ ПОЛЬЗОВАТЕЛЕЙ
 class UserCRUD:
     @staticmethod
     def get_user(db: Session, user_id: int) -> Optional[models.User]:
         # Получить пользователя по ID
         return db.get(models.User, user_id)
-    
+
     @staticmethod
     def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
         # Получить пользователя по email
         stmt = select(models.User).where(models.User.email == email)
         return db.scalar(stmt)
-    
+
     @staticmethod
     def get_user_by_username(db: Session, username: str) -> Optional[models.User]:
         # Получить пользователя по имени пользователя
         stmt = select(models.User).where(models.User.username == username)
         return db.scalar(stmt)
-    
+
+    @staticmethod
+    def get_users(
+        db: Session,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[models.User]:
+        # Получить список пользователей
+        stmt = select(models.User).order_by(models.User.created_at.desc()).offset(skip).limit(limit)
+        return list(db.scalars(stmt))
+
     @staticmethod
     def authenticate_user(db: Session, login: str, password: str) -> Optional[models.User]:
         # Аутентификация пользователя по email или username
@@ -37,102 +48,169 @@ class UserCRUD:
             )
         )
         user = db.scalar(stmt)
-        
+
         if not user:
             return None
         if not verify_password(password, user.hashed_password):
             return None
         return user
-    
+
     @staticmethod
     def create_user(db: Session, user_data: schemas.UserCreate) -> models.User:
         # Создать нового пользователя
         hashed_password = get_password_hash(user_data.password)
-        
+
         user = models.User(
             username=user_data.username,
             email=user_data.email,
             hashed_password=hashed_password,
+            role="user",
         )
-        
+
         db.add(user)
         db.commit()
         db.refresh(user)
         return user
-    
+
     @staticmethod
     def update_user(db: Session, user_id: int, updates: dict) -> Optional[models.User]:
         # Обновить данные пользователя
         user = UserCRUD.get_user(db, user_id)
         if not user:
             return None
-        
+
         for key, value in updates.items():
             if hasattr(user, key) and value is not None:
                 setattr(user, key, value)
-        
+
+        db.commit()
+        db.refresh(user)
+        return user
+
+    @staticmethod
+    def admin_update_user(
+        db: Session,
+        user_id: int,
+        updates: dict
+    ) -> Optional[models.User]:
+        # Админское обновление пользователя
+        user = UserCRUD.get_user(db, user_id)
+        if not user:
+            return None
+
+        for key, value in updates.items():
+            if hasattr(user, key) and value is not None:
+                setattr(user, key, value)
+
         db.commit()
         db.refresh(user)
         return user
 
 
-# CRUD операции для менторов
+# CRUD ОПЕРАЦИИ ДЛЯ МЕНТОРОВ
 class MentorCRUD:
     @staticmethod
     def get_mentor(db: Session, mentor_id: int) -> Optional[models.Mentor]:
         # Получить ментора по ID
         return db.get(models.Mentor, mentor_id)
-    
+
+    @staticmethod
+    def get_mentor_by_user_id(db: Session, user_id: int) -> Optional[models.Mentor]:
+        # Получить профиль ментора по user_id
+        stmt = select(models.Mentor).where(models.Mentor.user_id == user_id)
+        return db.scalar(stmt)
+
     @staticmethod
     def get_mentors(
-        db: Session, 
-        skip: int = 0, 
+        db: Session,
+        skip: int = 0,
         limit: int = 100,
         city: Optional[str] = None,
         yoga_style: Optional[str] = None
     ) -> List[models.Mentor]:
         # Получить список менторов с фильтрацией
         stmt = select(models.Mentor).where(models.Mentor.is_available == True)
-        
+
         if city:
             stmt = stmt.where(models.Mentor.city == city)
         if yoga_style:
             stmt = stmt.where(models.Mentor.yoga_style == yoga_style)
-        
-        stmt = stmt.offset(skip).limit(limit)
+
+        stmt = stmt.order_by(models.Mentor.created_at.desc()).offset(skip).limit(limit)
         return list(db.scalars(stmt))
-    
+
     @staticmethod
     def create_mentor(db: Session, mentor_data: schemas.MentorCreate) -> models.Mentor:
         # Создать нового ментора
+        user = UserCRUD.get_user(db, mentor_data.user_id)
+        if not user:
+            raise ValueError("Пользователь для ментора не найден")
+
+        if user.role not in ["mentor", "admin"]:
+            raise ValueError("У пользователя должна быть роль mentor или admin")
+
+        existing_mentor = MentorCRUD.get_mentor_by_user_id(db, mentor_data.user_id)
+        if existing_mentor:
+            raise ValueError("Для этого пользователя профиль ментора уже существует")
+
         mentor = models.Mentor(**mentor_data.model_dump())
         db.add(mentor)
         db.commit()
         db.refresh(mentor)
         return mentor
 
+    @staticmethod
+    def update_mentor(
+        db: Session,
+        mentor_id: int,
+        updates: dict
+    ) -> Optional[models.Mentor]:
+        # Обновить ментора
+        mentor = MentorCRUD.get_mentor(db, mentor_id)
+        if not mentor:
+            return None
 
-# CRUD операции для заметок
+        for key, value in updates.items():
+            if hasattr(mentor, key) and value is not None:
+                setattr(mentor, key, value)
+
+        db.commit()
+        db.refresh(mentor)
+        return mentor
+
+    @staticmethod
+    def delete_mentor(db: Session, mentor_id: int) -> bool:
+        # Удалить ментора
+        mentor = MentorCRUD.get_mentor(db, mentor_id)
+        if not mentor:
+            return False
+
+        db.delete(mentor)
+        db.commit()
+        return True
+
+
+# CRUD ОПЕРАЦИИ ДЛЯ ЗАМЕТОК
 class NoteCRUD:
     @staticmethod
     def get_note(db: Session, note_id: int) -> Optional[models.Note]:
         # Получить заметку по ID
         return db.get(models.Note, note_id)
-    
+
     @staticmethod
     def get_user_notes(
-        db: Session, 
-        user_id: int, 
-        skip: int = 0, 
+        db: Session,
+        user_id: int,
+        skip: int = 0,
         limit: int = 100
     ) -> List[models.Note]:
         # Получить заметки пользователя
         stmt = select(models.Note).where(
             models.Note.user_id == user_id
         ).order_by(models.Note.created_at.desc()).offset(skip).limit(limit)
-        
+
         return list(db.scalars(stmt))
-    
+
     @staticmethod
     def create_note(db: Session, note_data: schemas.NoteCreate, user_id: int) -> models.Note:
         # Создать новую заметку
@@ -144,65 +222,88 @@ class NoteCRUD:
         db.commit()
         db.refresh(note)
         return note
-    
+
     @staticmethod
     def update_note(db: Session, note_id: int, updates: schemas.NoteCreate) -> Optional[models.Note]:
         # Обновить заметку
         note = NoteCRUD.get_note(db, note_id)
         if not note:
             return None
-        
+
         note.text = updates.text
         note.updated_at = datetime.now(timezone.utc)
-        
+
         db.commit()
         db.refresh(note)
         return note
-    
+
     @staticmethod
     def delete_note(db: Session, note_id: int) -> bool:
         # Удалить заметку
         note = NoteCRUD.get_note(db, note_id)
         if not note:
             return False
-        
+
         db.delete(note)
         db.commit()
         return True
 
 
-# CRUD операции для бронирований
+# CRUD ОПЕРАЦИИ ДЛЯ БРОНИРОВАНИЙ
 class BookingCRUD:
     @staticmethod
     def get_booking(db: Session, booking_id: int) -> Optional[models.Booking]:
         # Получить бронирование по ID
         return db.get(models.Booking, booking_id)
-    
+
     @staticmethod
     def get_user_bookings(
-        db: Session, 
-        user_id: int, 
-        skip: int = 0, 
+        db: Session,
+        user_id: int,
+        skip: int = 0,
         limit: int = 100
     ) -> List[models.Booking]:
         # Получить бронирования пользователя
         stmt = select(models.Booking).where(
             models.Booking.user_id == user_id
         ).order_by(models.Booking.session_date.desc()).offset(skip).limit(limit)
-        
+
         return list(db.scalars(stmt))
-    
+
+    @staticmethod
+    def get_mentor_bookings(
+        db: Session,
+        mentor_id: int,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[models.Booking]:
+        # Получить бронирования конкретного ментора
+        stmt = select(models.Booking).where(
+            models.Booking.mentor_id == mentor_id
+        ).order_by(models.Booking.session_date.desc()).offset(skip).limit(limit)
+
+        return list(db.scalars(stmt))
+
     @staticmethod
     def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: int) -> models.Booking:
         # Создать новое бронирование
         mentor = MentorCRUD.get_mentor(db, booking_data.mentor_id)
         if not mentor:
             raise ValueError("Ментор не найден")
-        
+
         # Проверяем доступность ментора
         if not mentor.is_available:
             raise ValueError("Ментор временно недоступен")
-        
+
+        # Нельзя создать запись в прошлом
+        now = datetime.now(timezone.utc)
+        session_date = booking_data.session_date
+        if session_date.tzinfo is None:
+            session_date = session_date.replace(tzinfo=timezone.utc)
+
+        if session_date <= now:
+            raise ValueError("Нельзя создать бронирование на прошедшее время")
+
         conflicting_booking = db.scalar(
             select(models.Booking).where(
                 and_(
@@ -212,14 +313,14 @@ class BookingCRUD:
                 )
             )
         )
-        
+
         if conflicting_booking:
             raise ValueError("На это время уже есть бронирование")
-        
+
         # Расчет цены
         hours = math.ceil(booking_data.duration_minutes / 60)
         price = mentor.price * hours
-        
+
         booking = models.Booking(
             user_id=user_id,
             mentor_id=booking_data.mentor_id,
@@ -229,39 +330,39 @@ class BookingCRUD:
             notes=booking_data.notes,
             status="pending"
         )
-        
+
         db.add(booking)
         db.commit()
         db.refresh(booking)
         return booking
-    
+
     @staticmethod
     def update_booking_status(db: Session, booking_id: int, status: str) -> Optional[models.Booking]:
         # Обновить статус бронирования
         booking = BookingCRUD.get_booking(db, booking_id)
         if not booking:
             return None
-        
+
         booking.status = status
         booking.updated_at = datetime.now(timezone.utc)
-        
+
         db.commit()
         db.refresh(booking)
         return booking
 
 
-# CRUD операции для refresh токенов
+# CRUD ОПЕРАЦИИ ДЛЯ REFRESH ТОКЕНОВ
 class RefreshTokenCRUD:
     @staticmethod
     def create_token(db: Session, token: str, user_id: int, expires_delta: timedelta) -> models.RefreshToken:
         # Создать новый refresh токен
         expires_at = datetime.now(timezone.utc) + expires_delta
-        
+
         # Сначала проверяем, нет ли такого токена
         existing_token = db.query(models.RefreshToken).filter(
             models.RefreshToken.token == token
         ).first()
-        
+
         if existing_token:
             # Если токен уже существует, обновляем его
             existing_token.expires_at = expires_at
@@ -269,19 +370,19 @@ class RefreshTokenCRUD:
             db.commit()
             db.refresh(existing_token)
             return existing_token
-        
+
         # Если токена нет, создаем новый
         refresh_token = models.RefreshToken(
             token=token,
             user_id=user_id,
             expires_at=expires_at
         )
-        
+
         db.add(refresh_token)
         db.commit()
         db.refresh(refresh_token)
         return refresh_token
-    
+
     @staticmethod
     def get_token(db: Session, token: str) -> Optional[models.RefreshToken]:
         # Получить refresh токен
@@ -291,18 +392,18 @@ class RefreshTokenCRUD:
             models.RefreshToken.expires_at > datetime.now(timezone.utc)
         )
         return db.scalar(stmt)
-    
+
     @staticmethod
     def deactivate_token(db: Session, token: str) -> bool:
         # Деактивировать refresh токен
         refresh_token = RefreshTokenCRUD.get_token(db, token)
         if not refresh_token:
             return False
-        
+
         refresh_token.is_active = False
         db.commit()
         return True
-    
+
     @staticmethod
     def clear_expired_tokens(db: Session, user_id: int) -> None:
         # Очистить просроченные токены пользователя
@@ -314,7 +415,7 @@ class RefreshTokenCRUD:
         db.commit()
 
 
-# Создание экземпляров CRUD классов
+# СОЗДАНИЕ ЭКЗЕМПЛЯРОВ CRUD КЛАССОВ
 user_crud = UserCRUD()
 mentor_crud = MentorCRUD()
 note_crud = NoteCRUD()

@@ -68,14 +68,14 @@ class AuthService {
   static async login(credentials: LoginCredentials): Promise<AuthActionResult> {
     try {
       console.log('AuthService: Logging in with:', {
-        login: credentials.login ?? credentials.email,
+        login: credentials.login,
         password: '***',
       });
 
       const response: AuthResponse = await ApiService.login(credentials);
       console.log('AuthService: Login response:', response);
 
-      if (response.access_token && response.user) {
+      if (response.access_token && response.refresh_token && response.user) {
         console.log('AuthService: Login successful');
         return {
           success: true,
@@ -133,7 +133,7 @@ class AuthService {
       const response: AuthResponse = await ApiService.register(registrationData);
       console.log('AuthService: Registration response:', response);
 
-      if (response.access_token && response.user) {
+      if (response.access_token && response.refresh_token && response.user) {
         console.log('AuthService: Registration successful');
         return {
           success: true,
@@ -218,6 +218,18 @@ class AuthService {
 
   static clearAuth(): void {
     ApiService.clearAuth();
+  }
+
+  static isAdmin(user: User | null): boolean {
+    return user?.role === 'admin';
+  }
+
+  static isMentor(user: User | null): boolean {
+    return user?.role === 'mentor';
+  }
+
+  static isRegularUser(user: User | null): boolean {
+    return user?.role === 'user';
   }
 
   private static getErrorMessage(

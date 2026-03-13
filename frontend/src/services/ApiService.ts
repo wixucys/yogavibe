@@ -5,9 +5,9 @@ import type {
   LoginCredentials,
   RegisterData,
 } from '../types/auth';
-import type { MentorFilters } from '../types/mentor';
-import type { NoteData } from '../types/note';
-import type { BookingData } from '../types/booking';
+import type { MentorFilters, Mentor } from '../types/mentor';
+import type { NoteData, Note } from '../types/note';
+import type { BookingData, Booking } from '../types/booking';
 
 class ApiError extends Error {
   status?: number;
@@ -123,9 +123,7 @@ class ApiService {
       let errorBody: unknown;
 
       try {
-        errorBody = isJson
-          ? await response.json()
-          : await response.text();
+        errorBody = isJson ? await response.json() : await response.text();
       } catch {
         errorBody = {
           detail: `HTTP ${response.status}: Failed to parse error response`,
@@ -257,7 +255,7 @@ class ApiService {
     });
   }
 
-  static async getMentors<T = unknown>(filters: MentorFilters = {}): Promise<T> {
+  static async getMentors(filters: MentorFilters = {}): Promise<Mentor[]> {
     const queryParams = new URLSearchParams();
 
     if (filters.city) queryParams.append('city', filters.city);
@@ -268,55 +266,73 @@ class ApiService {
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/mentors?${queryString}` : '/mentors';
 
-    return this.request<T>(endpoint);
+    return this.request<Mentor[]>(endpoint);
   }
 
-  static async getMentorById<T = unknown>(mentorId: string | number): Promise<T> {
-    return this.request<T>(`/mentors/${mentorId}`);
+  static async getMentorById(mentorId: string | number): Promise<Mentor> {
+    return this.request<Mentor>(`/mentors/${mentorId}`);
   }
 
-  static async getNotes<T = unknown>(skip = 0, limit = 100): Promise<T> {
-    return this.request<T>(`/notes?skip=${skip}&limit=${limit}`);
+  static async getMyMentorProfile(): Promise<Mentor> {
+    return this.request<Mentor>('/mentor/me');
   }
 
-  static async createNote<T = unknown>(noteData: NoteData): Promise<T> {
-    return this.request<T>('/notes', {
+  static async updateMyMentorProfile(profileData: Partial<Mentor>): Promise<Mentor> {
+    return this.request<Mentor>('/mentor/me', {
+      method: 'PUT',
+      body: profileData,
+    });
+  }
+
+  static async getNotes(skip = 0, limit = 100): Promise<Note[]> {
+    return this.request<Note[]>(`/notes?skip=${skip}&limit=${limit}`);
+  }
+
+  static async createNote(noteData: NoteData): Promise<Note> {
+    return this.request<Note>('/notes', {
       method: 'POST',
       body: noteData,
     });
   }
 
-  static async updateNote<T = unknown>(
-    noteId: string | number,
-    noteData: NoteData
-  ): Promise<T> {
-    return this.request<T>(`/notes/${noteId}`, {
+  static async updateNote(noteId: string | number, noteData: NoteData): Promise<Note> {
+    return this.request<Note>(`/notes/${noteId}`, {
       method: 'PUT',
       body: noteData,
     });
   }
 
-  static async deleteNote<T = unknown>(noteId: string | number): Promise<T> {
-    return this.request<T>(`/notes/${noteId}`, {
+  static async deleteNote(noteId: string | number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/notes/${noteId}`, {
       method: 'DELETE',
     });
   }
 
-  static async getBookings<T = unknown>(skip = 0, limit = 100): Promise<T> {
-    return this.request<T>(`/bookings?skip=${skip}&limit=${limit}`);
+  static async getBookings(skip = 0, limit = 100): Promise<Booking[]> {
+    return this.request<Booking[]>(`/bookings?skip=${skip}&limit=${limit}`);
   }
 
-  static async createBooking<T = unknown>(bookingData: BookingData): Promise<T> {
-    return this.request<T>('/bookings', {
+  static async getMentorBookings(skip = 0, limit = 100): Promise<Booking[]> {
+    return this.request<Booking[]>(`/mentor/bookings?skip=${skip}&limit=${limit}`);
+  }
+
+  static async createBooking(bookingData: BookingData): Promise<Booking> {
+    return this.request<Booking>('/bookings', {
       method: 'POST',
       body: bookingData,
     });
   }
 
-  static async cancelBooking<T = unknown>(bookingId: string | number): Promise<T> {
-    return this.request<T>(`/bookings/${bookingId}/cancel`, {
+  static async cancelBooking(
+    bookingId: string | number
+  ): Promise<Booking> {
+    return this.request<Booking>(`/bookings/${bookingId}/cancel`, {
       method: 'PUT',
     });
+  }
+
+  static async getAdminUsers(skip = 0, limit = 100): Promise<User[]> {
+    return this.request<User[]>(`/admin/users?skip=${skip}&limit=${limit}`);
   }
 
   static isAuthenticated(): boolean {

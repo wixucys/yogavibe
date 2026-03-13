@@ -11,8 +11,7 @@ export interface AuthResponse extends Partial<AuthTokens> {
 }
 
 export interface LoginCredentials {
-  login?: string;
-  email?: string;
+  login: string;
   password: string;
 }
 

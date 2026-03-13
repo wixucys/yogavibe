@@ -1,14 +1,18 @@
 export type UserId = string | number;
 
+export type UserRole = 'user' | 'mentor' | 'admin';
+
 export interface User {
-  id?: UserId;
-  username?: string;
-  email?: string;
+  id: number;
+  username: string;
+  email: string;
+  role: UserRole;
   city?: string | null;
   yoga_style?: string | null;
   experience?: string | null;
   goals?: string | null;
-  [key: string]: unknown;
+  created_at: string;
+  is_active: boolean;
 }
 
 export interface LocalProfileData {

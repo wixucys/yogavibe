@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { JSX, useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
@@ -17,7 +17,7 @@ import type {
 import type { User } from './types/user'
 import './App.css';
 
-function App() {
+function App(): JSX.Element {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
@@ -167,7 +167,7 @@ function App() {
           <Route
             path="/main"
             element={
-              isAuthenticated ? (
+              isAuthenticated && user ? (
                 <MainScreen user={user} onLogout={handleLogout} />
               ) : (
                 <Navigate to="/login" />

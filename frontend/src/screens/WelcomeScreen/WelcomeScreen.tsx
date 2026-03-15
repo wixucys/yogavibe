@@ -8,14 +8,12 @@ import commIcon from './comm.svg';
 const WelcomeScreen = (): JSX.Element => {
   const navigate = useNavigate();
 
-  // Обработчик перехода на страницу входа
   const handleFindMentor = (): void => {
     navigate('/login');
   };
 
   return (
     <div className="welcome-screen">
-      {/* Основной контент с мотивационным текстом */}
       <div className="content">
         <div className="main-text">
           <h1>
@@ -38,13 +36,11 @@ const WelcomeScreen = (): JSX.Element => {
         </div>
       </div>
 
-      {/* Футер с инструкцией "Как это работает" */}
       <footer className="footer">
         <div className="how-it-works">
           <h2>КАК ЭТО РАБОТАЕТ</h2>
 
           <div className="steps">
-            {/* Шаг 1 */}
             <div className="step">
               <div className="step-header">
                 <img
@@ -63,7 +59,6 @@ const WelcomeScreen = (): JSX.Element => {
               </p>
             </div>
 
-            {/* Шаг 2 */}
             <div className="step">
               <div className="step-header">
                 <img
@@ -80,7 +75,6 @@ const WelcomeScreen = (): JSX.Element => {
               </p>
             </div>
 
-            {/* Шаг 3 */}
             <div className="step">
               <div className="step-header">
                 <img

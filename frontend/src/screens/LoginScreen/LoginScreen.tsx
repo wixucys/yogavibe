@@ -4,7 +4,7 @@ import './LoginScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
-import type { AuthActionResult, LoginCredentials } from '../../services/AuthService';
+import type { AuthActionResult, LoginCredentials } from '../../types/auth';
 
 interface LoginScreenProps {
   onLogin: (credentials: LoginCredentials) => Promise<AuthActionResult>;
@@ -52,6 +52,11 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
       return false;
     }
 
+    if (formData.password.trim().length < 6) {
+      setError('Пароль должен содержать минимум 6 символов');
+      return false;
+    }
+
     return true;
   };
 
@@ -81,8 +86,8 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
         setError(result.message || 'Неверный логин или пароль');
       }
     } catch (err: unknown) {
-      setError('Ошибка при входе. Попробуйте еще раз.');
       console.error('Login error:', err);
+      setError('Ошибка при входе. Попробуйте еще раз.');
     } finally {
       setLoading(false);
     }
@@ -109,7 +114,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
           </div>
 
           {error && (
-            <div className="error-message">
+            <div className="error-message" role="alert" aria-live="polite">
               <span className="error-icon">⚠</span>
               {error}
             </div>
@@ -126,7 +131,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
               disabled={loading}
               required
               aria-label="Логин или email"
-              aria-invalid={!!error}
+              aria-invalid={Boolean(error)}
             />
           </div>
 
@@ -142,7 +147,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
               required
               minLength={6}
               aria-label="Пароль"
-              aria-invalid={!!error}
+              aria-invalid={Boolean(error)}
             />
             <button
               type="button"
@@ -150,7 +155,6 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
               onClick={togglePasswordVisibility}
               disabled={loading}
               aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-              tabIndex={0}
             >
               <img
                 src={showPassword ? eyeHide : eyeShow}
@@ -166,7 +170,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
             disabled={loading}
             aria-busy={loading}
           >
-            {loading ? 'ВХОД...' : 'Войти'}
+            {loading ? 'Вход...' : 'Войти'}
           </button>
 
           <div className="login-options">

@@ -16,6 +16,8 @@ interface LoginFormData {
 }
 
 const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
+  const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [formData, setFormData] = useState<LoginFormData>({
     login: '',
@@ -23,7 +25,6 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
   });
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
-  const navigate = useNavigate();
 
   const togglePasswordVisibility = (): void => {
     setShowPassword((prev) => !prev);
@@ -31,28 +32,32 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    const fieldName = name as keyof LoginFormData;
 
     setFormData((prev) => ({
       ...prev,
-      [fieldName]: value,
+      [name]: value,
     }));
 
-    setError('');
+    if (error) {
+      setError('');
+    }
   };
 
   const validateForm = (): boolean => {
-    if (!formData.login.trim()) {
+    const login = formData.login.trim();
+    const password = formData.password.trim();
+
+    if (!login) {
       setError('Введите логин или email');
       return false;
     }
 
-    if (!formData.password.trim()) {
+    if (!password) {
       setError('Введите пароль');
       return false;
     }
 
-    if (formData.password.trim().length < 6) {
+    if (password.length < 6) {
       setError('Пароль должен содержать минимум 6 символов');
       return false;
     }
@@ -65,6 +70,8 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
   ): Promise<void> => {
     event.preventDefault();
 
+    if (loading) return;
+
     if (!validateForm()) {
       return;
     }
@@ -74,7 +81,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
 
     try {
       const credentials: LoginCredentials = {
-        login: formData.login.trim(),
+        login: formData.login.trim().toLowerCase(),
         password: formData.password,
       };
 
@@ -82,12 +89,13 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
 
       if (result.success) {
         navigate('/main');
-      } else {
-        setError(result.message || 'Неверный логин или пароль');
+        return;
       }
-    } catch (err: unknown) {
+
+      setError(result.message || 'Неверный логин или пароль');
+    } catch (err) {
       console.error('Login error:', err);
-      setError('Ошибка при входе. Попробуйте еще раз.');
+      setError('Ошибка соединения с сервером');
     } finally {
       setLoading(false);
     }
@@ -114,7 +122,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
           </div>
 
           {error && (
-            <div className="error-message" role="alert" aria-live="polite">
+            <div className="error-message" role="alert">
               <span className="error-icon">⚠</span>
               {error}
             </div>
@@ -149,16 +157,18 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
               aria-label="Пароль"
               aria-invalid={Boolean(error)}
             />
+
             <button
               type="button"
               className="password-toggle"
               onClick={togglePasswordVisibility}
               disabled={loading}
               aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+              aria-pressed={showPassword}
             >
               <img
                 src={showPassword ? eyeHide : eyeShow}
-                alt={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                alt=""
                 className="password-icon"
               />
             </button>
@@ -188,7 +198,6 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
           type="button"
           className="welcome-back-btn"
           onClick={goToWelcome}
-          aria-label="Вернуться на главную страницу"
         >
           ← Вернуться на главную
         </button>

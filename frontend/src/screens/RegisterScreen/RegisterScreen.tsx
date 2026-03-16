@@ -4,7 +4,7 @@ import './RegisterScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
-import type { AuthActionResult, RegisterData } from '../../services/AuthService';
+import type { AuthActionResult, RegisterData } from '../../types/auth';
 
 interface RegisterScreenProps {
   onRegister: (userData: RegisterData) => Promise<AuthActionResult>;
@@ -26,17 +26,20 @@ interface RegisterFormErrors {
 }
 
 const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
+  const navigate = useNavigate();
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+
   const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
+
   const [errors, setErrors] = useState<RegisterFormErrors>({});
   const [loading, setLoading] = useState<boolean>(false);
-  const navigate = useNavigate();
 
   const togglePasswordVisibility = (): void => {
     setShowPassword((prev) => !prev);
@@ -48,59 +51,58 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    const fieldName = name as keyof RegisterFormData;
 
     setFormData((prev) => ({
       ...prev,
-      [fieldName]: value,
+      [name]: value,
     }));
 
-    if (errors[fieldName]) {
-      setErrors((prev) => ({
-        ...prev,
-        [fieldName]: '',
-      }));
-    }
+    setErrors((prev) => ({
+      ...prev,
+      [name]: undefined,
+      general: undefined,
+    }));
   };
 
   const validateForm = (): boolean => {
     const newErrors: RegisterFormErrors = {};
+
+    const username = formData.username.trim();
+    const email = formData.email.trim();
+    const password = formData.password;
+    const confirmPassword = formData.confirmPassword;
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const usernameRegex = /^[a-zA-Z0-9_]+$/;
 
-    if (!formData.username.trim()) {
+    if (!username) {
       newErrors.username = 'Введите имя пользователя';
-    } else if (formData.username.length < 3) {
+    } else if (username.length < 3) {
       newErrors.username = 'Имя должно быть не менее 3 символов';
-    } else if (formData.username.length > 50) {
-      newErrors.username = 'Имя должно быть не более 50 символов';
-    } else if (!usernameRegex.test(formData.username)) {
+    } else if (!usernameRegex.test(username)) {
       newErrors.username = 'Имя может содержать только буквы, цифры и подчеркивания';
     }
 
-    if (!formData.email.trim()) {
+    if (!email) {
       newErrors.email = 'Введите email';
-    } else if (!emailRegex.test(formData.email)) {
+    } else if (!emailRegex.test(email)) {
       newErrors.email = 'Введите корректный email';
-    } else if (formData.email.length > 100) {
-      newErrors.email = 'Email должен быть не более 100 символов';
     }
 
-    if (!formData.password.trim()) {
+    if (!password.trim()) {
       newErrors.password = 'Введите пароль';
-    } else if (formData.password.length < 6) {
+    } else if (password.length < 6) {
       newErrors.password = 'Пароль должен быть не менее 6 символов';
-    } else if (formData.password.length > 100) {
-      newErrors.password = 'Пароль должен быть не более 100 символов';
     }
 
-    if (!formData.confirmPassword.trim()) {
+    if (!confirmPassword.trim()) {
       newErrors.confirmPassword = 'Подтвердите пароль';
-    } else if (formData.password !== formData.confirmPassword) {
+    } else if (password !== confirmPassword) {
       newErrors.confirmPassword = 'Пароли не совпадают';
     }
 
     setErrors(newErrors);
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -108,6 +110,8 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
     e: React.FormEvent<HTMLFormElement>
   ): Promise<void> => {
     e.preventDefault();
+
+    if (loading) return;
 
     if (!validateForm()) {
       return;
@@ -127,21 +131,17 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
 
       if (result.success) {
         navigate('/main');
-      } else {
-        setErrors({
-          general: result.message || 'Ошибка регистрации. Попробуйте еще раз.',
-        });
+        return;
       }
-    } catch (error: unknown) {
-      console.error('RegisterScreen: Registration error:', error);
-
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Ошибка при регистрации. Попробуйте еще раз.';
 
       setErrors({
-        general: message,
+        general: result.message || 'Ошибка регистрации. Попробуйте еще раз.',
+      });
+    } catch (err) {
+      console.error('Register error:', err);
+
+      setErrors({
+        general: 'Ошибка соединения с сервером',
       });
     } finally {
       setLoading(false);
@@ -165,11 +165,11 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
           <h3 className="entry">РЕГИСТРАЦИЯ</h3>
 
           <div className="flower-icon">
-            <img src={logo} alt="Цветок" loading="lazy" />
+            <img src={logo} alt="Цветок" />
           </div>
 
           {errors.general && (
-            <div className="error-message">
+            <div className="error-message" role="alert">
               <span className="error-icon">⚠</span>
               {errors.general}
             </div>
@@ -185,18 +185,10 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
               onChange={handleChange}
               disabled={loading}
               required
-              minLength={3}
-              maxLength={50}
-              pattern="[a-zA-Z0-9_]+"
-              title="Только буквы, цифры и подчеркивания"
-              aria-label="Имя пользователя (логин)"
-              aria-invalid={!!errors.username}
-              aria-describedby={errors.username ? 'username-error' : undefined}
             />
+
             {errors.username && (
-              <span className="field-error" id="username-error" role="alert">
-                {errors.username}
-              </span>
+              <span className="field-error">{errors.username}</span>
             )}
           </div>
 
@@ -210,15 +202,10 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
               onChange={handleChange}
               disabled={loading}
               required
-              maxLength={100}
-              aria-label="Email"
-              aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? 'email-error' : undefined}
             />
+
             {errors.email && (
-              <span className="field-error" id="email-error" role="alert">
-                {errors.email}
-              </span>
+              <span className="field-error">{errors.email}</span>
             )}
           </div>
 
@@ -232,30 +219,23 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
               onChange={handleChange}
               disabled={loading}
               required
-              minLength={6}
-              maxLength={100}
-              aria-label="Пароль"
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? 'password-error' : undefined}
             />
+
             <button
               type="button"
               className="password-toggle"
               onClick={togglePasswordVisibility}
               disabled={loading}
-              aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
-              aria-pressed={showPassword}
             >
               <img
                 src={showPassword ? eyeHide : eyeShow}
-                alt={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                alt=""
                 className="password-icon"
               />
             </button>
+
             {errors.password && (
-              <span className="field-error" id="password-error" role="alert">
-                {errors.password}
-              </span>
+              <span className="field-error">{errors.password}</span>
             )}
           </div>
 
@@ -269,30 +249,23 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
               onChange={handleChange}
               disabled={loading}
               required
-              minLength={6}
-              maxLength={100}
-              aria-label="Подтверждение пароля"
-              aria-invalid={!!errors.confirmPassword}
-              aria-describedby={errors.confirmPassword ? 'confirm-password-error' : undefined}
             />
+
             <button
               type="button"
               className="password-toggle"
               onClick={toggleConfirmPasswordVisibility}
               disabled={loading}
-              aria-label={showConfirmPassword ? 'Скрыть пароль' : 'Показать пароль'}
-              aria-pressed={showConfirmPassword}
             >
               <img
                 src={showConfirmPassword ? eyeHide : eyeShow}
-                alt={showConfirmPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                alt=""
                 className="password-icon"
               />
             </button>
+
             {errors.confirmPassword && (
-              <span className="field-error" id="confirm-password-error" role="alert">
-                {errors.confirmPassword}
-              </span>
+              <span className="field-error">{errors.confirmPassword}</span>
             )}
           </div>
 
@@ -300,7 +273,6 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
             className="register-button"
             type="submit"
             disabled={loading}
-            aria-busy={loading}
           >
             {loading ? 'Регистрация...' : 'Зарегистрироваться'}
           </button>
@@ -318,7 +290,6 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
           type="button"
           className="welcome-back-btn"
           onClick={goToWelcome}
-          aria-label="Вернуться на главную страницу"
         >
           ← Вернуться на главную
         </button>

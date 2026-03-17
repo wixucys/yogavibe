@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import BookingService from '../../services/BookingService';
 import ApiService from '../../services/ApiService';
 import './BookingScreen.css';
-import type { MentorApiResponse, BookingMentor } from '../../types/mentor';
+import type { MentorApi, BookingMentor } from '../../types/mentor';
 
 type SessionType = 'individual' | 'group';
 
@@ -72,7 +72,7 @@ const BookingScreen = (): JSX.Element => {
           return;
         }
 
-        const response = await ApiService.request<MentorApiResponse>(
+        const response = await ApiService.request<MentorApi>(
           `/mentors/${mentorId}`,
           { method: 'GET' }
         );

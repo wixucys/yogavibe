@@ -10,7 +10,6 @@ interface BookingConfirmationMentor {
   name?: string;
   city?: string;
   yogaStyle?: string;
-  [key: string]: unknown;
 }
 
 interface BookingConfirmationData {
@@ -23,7 +22,6 @@ interface BookingConfirmationData {
   totalPrice?: number;
   status?: BookingStatus;
   notes?: string;
-  [key: string]: unknown;
 }
 
 interface BookingConfirmationLocationState {
@@ -34,101 +32,75 @@ interface BookingConfirmationLocationState {
 const BookingConfirmationScreen = (): JSX.Element => {
   const navigate = useNavigate();
   const location = useLocation();
+
   const locationState = location.state as BookingConfirmationLocationState | null;
 
   const [bookingData, setBookingData] = useState<BookingConfirmationData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
   const [mentor, setMentor] = useState<BookingConfirmationMentor | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadBookingData = (): void => {
-      try {
-        if (locationState?.bookingData && locationState?.mentor) {
-          const data = locationState.bookingData;
-          const mentorInfo = locationState.mentor;
+    try {
+      if (locationState?.bookingData) {
+        const data = locationState.bookingData;
 
-          if (!data.id || !data.sessionDate) {
-            throw new Error('Неполные данные бронирования');
-          }
-
-          setBookingData(data);
-          setMentor(mentorInfo);
-          setError(null);
-        } else {
-          setError('Данные бронирования не найдены');
+        if (!data.id || !data.sessionDate) {
+          throw new Error('Неполные данные бронирования');
         }
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Неизвестная ошибка';
-        setError(`Ошибка загрузки: ${message}`);
-        console.error('Error loading booking data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    loadBookingData();
+        setBookingData(data);
+        setMentor(locationState.mentor || null);
+      } else {
+        setError('Данные бронирования не найдены');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Ошибка загрузки');
+    } finally {
+      setLoading(false);
+    }
   }, [locationState]);
 
-  const handleGoToMain = (): void => {
+  const handleGoToMain = () => {
     navigate('/main');
   };
 
-  const handleGoToMyBookings = (): void => {
+  const handleGoToMyBookings = () => {
     navigate('/main', { state: { activeNav: 'МОИ ЗАПИСИ' } });
   };
 
-  const extractTimeFromDate = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-
-      return date.toLocaleTimeString('ru-RU', {
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch (error) {
-      console.error('Error parsing date:', error);
-      return '--:--';
-    }
+  const extractTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
-  const formatDate = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-
-      return date.toLocaleDateString('ru-RU', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return dateString || 'Дата не указана';
-    }
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ru-RU', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
-  const formatPrice = (price: number): string => {
+  const formatPrice = (price: number) => {
     return `${new Intl.NumberFormat('ru-RU').format(price)} ₽`;
   };
 
   if (loading) {
-    return (
-      <div className="confirmation-loading">
-        <div className="loading-spinner"></div>
-        <p>Загрузка информации о записи...</p>
-      </div>
-    );
+    return <div className="loading-screen">Загрузка...</div>;
   }
 
   if (error || !bookingData) {
     return (
       <div className="confirmation-not-found">
         <h2>Информация о записи не найдена</h2>
-        <p>{error || 'Не удалось загрузить данные о бронировании'}</p>
-        <Link to="/main" className="action-btn primary">
-          На главную
-        </Link>
+        <p>{error}</p>
+        <Link to="/main">На главную</Link>
       </div>
     );
   }
@@ -136,113 +108,57 @@ const BookingConfirmationScreen = (): JSX.Element => {
   return (
     <div className="confirmation-page">
       <div className="confirmation-container">
-        <div className="confirmation-header">
-          <h1>Запись подтверждена!</h1>
-          <p className="confirmation-subtitle">Ваша сессия успешно забронирована</p>
-        </div>
 
-        <div className="success-icon-large">✓</div>
+        <h1>Запись подтверждена!</h1>
 
         <div className="booking-summary">
-          <h2>Детали вашей записи</h2>
 
-          <div className="summary-grid">
-            <div className="summary-item">
-              <span className="summary-label">Ментор:</span>
-              <span className="summary-value">
-                {mentor?.name || bookingData.mentorName || 'Не указан'}
-              </span>
-            </div>
-
-            <div className="summary-item">
-              <span className="summary-label">Дата:</span>
-              <span className="summary-value">{formatDate(bookingData.sessionDate)}</span>
-            </div>
-
-            <div className="summary-item">
-              <span className="summary-label">Время:</span>
-              <span className="summary-value">
-                {extractTimeFromDate(bookingData.sessionDate)}
-              </span>
-            </div>
-
-            <div className="summary-item">
-              <span className="summary-label">Длительность:</span>
-              <span className="summary-value">
-                {bookingData.durationMinutes || 60} минут
-              </span>
-            </div>
-
-            <div className="summary-item">
-              <span className="summary-label">Тип сессии:</span>
-              <span className="summary-value">
-                {bookingData.sessionType === 'group' ? 'Групповая' : 'Индивидуальная'}
-              </span>
-            </div>
-
-            <div className="summary-item">
-              <span className="summary-label">Стоимость:</span>
-              <span className="summary-value price">
-                {formatPrice(bookingData.price || bookingData.totalPrice || 0)}
-              </span>
-            </div>
-
-            <div className="summary-item full-width">
-              <span className="summary-label">Номер записи:</span>
-              <span className="summary-value booking-id">
-                #{String(bookingData.id).padStart(6, '0')}
-              </span>
-            </div>
-
-            <div className="summary-item full-width">
-              <span className="summary-label">Статус:</span>
-              <span className="summary-value status-confirmed">
-                {bookingData.status === 'confirmed'
-                  ? '✅ Активная'
-                  : '⏳ Ожидает подтверждения'}
-              </span>
-            </div>
-
-            {bookingData.notes && (
-              <div className="summary-item full-width">
-                <span className="summary-label">Ваши пожелания:</span>
-                <span className="summary-value">{bookingData.notes}</span>
-              </div>
-            )}
+          <div>
+            Ментор: {mentor?.name || bookingData.mentorName || 'Не указан'}
           </div>
-        </div>
 
-        <div className="contact-info">
-          <h3>Контактная информация</h3>
-          <p>
-            Если у вас возникли вопросы, напишите нам на support@yogavibe.ru или
-            позвоните по номеру 8-800-XXX-XX-XX
-          </p>
-          {mentor && (
-            <p style={{ marginTop: '1rem', fontStyle: 'italic' }}>
-              Ментор: {mentor.city}, {mentor.yogaStyle || 'Инструктор по йоге'}
-            </p>
+          <div>Дата: {formatDate(bookingData.sessionDate)}</div>
+          <div>Время: {extractTime(bookingData.sessionDate)}</div>
+
+          <div>
+            Длительность: {bookingData.durationMinutes || 60} мин
+          </div>
+
+          <div>
+            Тип:
+            {bookingData.sessionType === 'group'
+              ? ' Групповая'
+              : ' Индивидуальная'}
+          </div>
+
+          <div>
+            Стоимость:
+            {formatPrice(bookingData.price || bookingData.totalPrice || 0)}
+          </div>
+
+          <div>
+            Номер: #{String(bookingData.id).padStart(6, '0')}
+          </div>
+
+          {bookingData.notes && (
+            <div>Комментарий: {bookingData.notes}</div>
           )}
         </div>
 
-        <div className="confirmation-actions">
-          <button
-            onClick={handleGoToMain}
-            className="action-btn primary"
-            aria-label="Перейти на главную страницу"
-            type="button"
-          >
-            На главную
-          </button>
-          <button
-            onClick={handleGoToMyBookings}
-            className="action-btn secondary"
-            aria-label="Посмотреть все мои записи"
-            type="button"
-          >
-            Мои записи
-          </button>
-        </div>
+        {mentor && (
+          <div>
+            {mentor.city}, {mentor.yogaStyle}
+          </div>
+        )}
+
+        <button onClick={handleGoToMain}>
+          На главную
+        </button>
+
+        <button onClick={handleGoToMyBookings}>
+          Мои записи
+        </button>
+
       </div>
     </div>
   );

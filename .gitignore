@@ -2,4 +2,4 @@
 venv/
 frontend/node_modules
 .vscode
-.Ds_Store
+.DS_Store

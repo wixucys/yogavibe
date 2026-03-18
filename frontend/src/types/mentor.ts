@@ -1,11 +1,14 @@
+export type MentorId = number | string;
+export type MentorGender = 'male' | 'female' | string;
+
 // ===== API (как приходит с бэка) =====
 export interface MentorApi {
-  id: number | string;
+  id: MentorId;
   user_id?: number;
 
   name: string;
   description?: string;
-  gender: string;
+  gender: MentorGender;
   city: string;
   price: number;
   yoga_style: string;
@@ -20,11 +23,11 @@ export interface MentorApi {
 
 // ===== Нормализованный тип (используется в приложении) =====
 export interface Mentor {
-  id: number | string;
+  id: MentorId;
 
   name: string;
   description?: string;
-  gender: string;
+  gender: MentorGender;
   city: string;
   price: number;
   yogaStyle: string;
@@ -37,21 +40,14 @@ export interface Mentor {
   createdAt?: string;
 }
 
-// ===== Для Booking =====
-export interface BookingMentor {
-  id: number | string;
-  name: string;
-  gender: string;
-  city: string;
-  price: number;
-  yogaStyle: string;
-
-  description?: string;
-  rating?: number;
-  experienceYears?: number;
-  photoUrl?: string | null;
-  isAvailable?: boolean;
+// ===== Тип для детального экрана =====
+export interface MentorProfile extends Mentor {
+  experience: string;
+  registrationDate: string;
 }
+
+// ===== Для Booking используем тот же нормализованный тип =====
+export type BookingMentor = Mentor;
 
 // ===== Фильтры =====
 export interface MentorFilters {
@@ -61,33 +57,41 @@ export interface MentorFilters {
   limit?: number;
 }
 
-// ===== Маппер API → UI =====
-export const mapMentorFromApi = (m: MentorApi): Mentor => ({
-  id: m.id,
-  name: m.name,
-  description: m.description,
-  gender: m.gender,
-  city: m.city,
-  price: m.price,
-  yogaStyle: m.yoga_style,
-  rating: m.rating,
-  experienceYears: m.experience_years,
-  photoUrl: m.photo_url,
-  isAvailable: m.is_available,
-  createdAt: m.created_at,
+// ===== Мапперы =====
+export const mapMentorFromApi = (mentor: MentorApi): Mentor => ({
+  id: mentor.id,
+  name: mentor.name,
+  description: mentor.description,
+  gender: mentor.gender,
+  city: mentor.city,
+  price: mentor.price,
+  yogaStyle: mentor.yoga_style,
+  rating: mentor.rating,
+  experienceYears: mentor.experience_years,
+  photoUrl: mentor.photo_url,
+  isAvailable: mentor.is_available,
+  createdAt: mentor.created_at,
 });
 
-// ===== Маппер в Booking =====
-export const mapMentorToBooking = (m: MentorApi): BookingMentor => ({
-  id: m.id,
-  name: m.name,
-  gender: m.gender,
-  city: m.city,
-  price: m.price,
-  yogaStyle: m.yoga_style,
-  description: m.description,
-  rating: m.rating,
-  experienceYears: m.experience_years,
-  photoUrl: m.photo_url,
-  isAvailable: m.is_available,
-});
+export const mapMentorToBooking = (mentor: MentorApi | Mentor): BookingMentor => {
+  if ('yogaStyle' in mentor) {
+    return mentor;
+  }
+
+  return mapMentorFromApi(mentor);
+};
+
+export const mapMentorToProfile = (mentor: MentorApi | Mentor): MentorProfile => {
+  const normalized = 'yogaStyle' in mentor ? mentor : mapMentorFromApi(mentor);
+
+  return {
+    ...normalized,
+    experience:
+      normalized.experienceYears !== undefined
+        ? `${normalized.experienceYears} лет`
+        : 'Не указано',
+    registrationDate: normalized.createdAt
+      ? new Date(normalized.createdAt).toLocaleDateString('ru-RU')
+      : 'Не указано',
+  };
+};

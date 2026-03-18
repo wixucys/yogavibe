@@ -1,32 +1,14 @@
 import React, { JSX, useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import './BookingConfirmationScreen.css';
+import type { Booking, SessionType, BookingStatus } from '../../types/booking';
+import type { BookingMentor } from '../../types/mentor';
 
-type SessionType = 'individual' | 'group';
-type BookingStatus = 'active' | 'completed' | 'cancelled' | 'confirmed' | string;
-
-interface BookingConfirmationMentor {
-  id?: string | number;
-  name?: string;
-  city?: string;
-  yogaStyle?: string;
-}
-
-interface BookingConfirmationData {
-  id: string | number;
-  mentorName?: string;
-  sessionDate: string;
-  durationMinutes?: number;
-  sessionType?: SessionType;
-  price?: number;
-  totalPrice?: number;
-  status?: BookingStatus;
-  notes?: string;
-}
+type BookingConfirmationData = Omit<Booking, 'mentorId'>;
 
 interface BookingConfirmationLocationState {
   bookingData?: BookingConfirmationData;
-  mentor?: BookingConfirmationMentor;
+  mentor?: BookingMentor;
 }
 
 const BookingConfirmationScreen = (): JSX.Element => {
@@ -36,7 +18,7 @@ const BookingConfirmationScreen = (): JSX.Element => {
   const locationState = location.state as BookingConfirmationLocationState | null;
 
   const [bookingData, setBookingData] = useState<BookingConfirmationData | null>(null);
-  const [mentor, setMentor] = useState<BookingConfirmationMentor | null>(null);
+  const [mentor, setMentor] = useState<BookingMentor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -54,8 +36,9 @@ const BookingConfirmationScreen = (): JSX.Element => {
       } else {
         setError('Данные бронирования не найдены');
       }
-    } catch (err: any) {
-      setError(err.message || 'Ошибка загрузки');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Ошибка загрузки';
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -69,7 +52,7 @@ const BookingConfirmationScreen = (): JSX.Element => {
     navigate('/main', { state: { activeNav: 'МОИ ЗАПИСИ' } });
   };
 
-  const extractTime = (dateString: string) => {
+  const extractTime = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('ru-RU', {
       hour: '2-digit',
@@ -77,7 +60,7 @@ const BookingConfirmationScreen = (): JSX.Element => {
     });
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ru-RU', {
       weekday: 'long',
@@ -87,7 +70,7 @@ const BookingConfirmationScreen = (): JSX.Element => {
     });
   };
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number): string => {
     return `${new Intl.NumberFormat('ru-RU').format(price)} ₽`;
   };
 
@@ -108,11 +91,9 @@ const BookingConfirmationScreen = (): JSX.Element => {
   return (
     <div className="confirmation-page">
       <div className="confirmation-container">
-
         <h1>Запись подтверждена!</h1>
 
         <div className="booking-summary">
-
           <div>
             Ментор: {mentor?.name || bookingData.mentorName || 'Не указан'}
           </div>
@@ -133,7 +114,7 @@ const BookingConfirmationScreen = (): JSX.Element => {
 
           <div>
             Стоимость:
-            {formatPrice(bookingData.price || bookingData.totalPrice || 0)}
+            {formatPrice(bookingData.price || 0)}
           </div>
 
           <div>
@@ -158,7 +139,6 @@ const BookingConfirmationScreen = (): JSX.Element => {
         <button onClick={handleGoToMyBookings}>
           Мои записи
         </button>
-
       </div>
     </div>
   );

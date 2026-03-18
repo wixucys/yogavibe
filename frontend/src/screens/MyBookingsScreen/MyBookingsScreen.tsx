@@ -2,110 +2,77 @@ import React, { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BookingService from '../../services/BookingService';
 import './MyBookingScreen.css';
+import type { Booking as BookingDto, BookingStatus, SessionType } from '../../types/booking';
 
-type BookingStatus = 'active' | 'completed' | 'cancelled';
-type SessionType = 'individual' | 'group';
 type ActiveTab = 'active' | 'completed' | 'cancelled';
 
-interface Booking {
-  id: string | number;
-  mentorId: string | number;
-  mentorName: string;
-  mentorCity?: string;
-  mentorYogaStyle?: string;
+interface BookingView extends Omit<BookingDto, 'sessionDate' | 'createdAt'> {
   sessionDate: Date;
-  durationMinutes: number;
-  price: number;
-  status: BookingStatus;
-  notes?: string;
   createdAt: Date;
-  sessionType: SessionType;
 }
 
-interface BookingRaw {
-  id: string | number;
-  mentor_id?: string | number;
-  mentor?: {
-    name?: string;
-    city?: string;
-    yoga_style?: string;
-  };
-  session_date?: string;
-  duration_minutes?: number;
-  price?: number;
-  status?: BookingStatus;
-  notes?: string;
-  created_at?: string;
-  session_type?: SessionType;
-}
-
-const normalizeBooking = (b: BookingRaw): Booking => ({
-  id: b.id,
-  mentorId: b.mentor_id ?? 0,
-  mentorName: b.mentor?.name || 'Неизвестный ментор',
-  mentorCity: b.mentor?.city,
-  mentorYogaStyle: b.mentor?.yoga_style,
-  sessionDate: new Date(b.session_date || new Date()),
-  durationMinutes: b.duration_minutes || 60,
-  price: b.price || 0,
-  status: b.status || 'active',
-  notes: b.notes,
-  createdAt: new Date(b.created_at || new Date()),
-  sessionType: b.session_type || 'individual',
+const normalizeBooking = (booking: BookingDto): BookingView => ({
+  ...booking,
+  sessionDate: new Date(booking.sessionDate),
+  createdAt: new Date(booking.createdAt || new Date().toISOString()),
+  status: booking.status || 'active',
+  sessionType: booking.sessionType || 'individual',
 });
 
 const MyBookingsScreen = (): JSX.Element => {
   const navigate = useNavigate();
 
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<BookingView[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ActiveTab>('active');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadBookings();
+    const loadBookings = async (): Promise<void> => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const data = await BookingService.getBookings();
+        setBookings(data.map(normalizeBooking));
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки записей');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadBookings();
   }, []);
 
-  const loadBookings = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const data = (await BookingService.getBookings()) as BookingRaw[];
-      setBookings(data.map(normalizeBooking));
-    } catch (err: any) {
-      setError(err?.message || 'Ошибка загрузки записей');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const { filteredBookings, counts, now } = useMemo(() => {
+  const { filteredBookings, counts } = useMemo(() => {
     const now = new Date();
 
     const active = bookings.filter(
-      (b) => b.status === 'active' && b.sessionDate > now
+      (booking) => booking.status === 'active' && booking.sessionDate > now
     );
 
     const completed = bookings.filter(
-      (b) =>
-        b.status === 'completed' ||
-        (b.status === 'active' && b.sessionDate <= now)
+      (booking) =>
+        booking.status === 'completed' ||
+        (booking.status === 'active' && booking.sessionDate <= now)
     );
 
-    const cancelled = bookings.filter((b) => b.status === 'cancelled');
+    const cancelled = bookings.filter((booking) => booking.status === 'cancelled');
 
-    const map = { active, completed, cancelled };
+    const tabsMap: Record<ActiveTab, BookingView[]> = {
+      active,
+      completed,
+      cancelled,
+    };
 
     return {
-      filteredBookings: map[activeTab],
+      filteredBookings: tabsMap[activeTab],
       counts: {
         active: active.length,
         completed: completed.length,
         cancelled: cancelled.length,
-        total: bookings.length,
       },
-      now,
     };
   }, [bookings, activeTab]);
 
@@ -116,12 +83,12 @@ const MyBookingsScreen = (): JSX.Element => {
       await BookingService.cancelBooking(id);
 
       setBookings((prev) =>
-        prev.map((b) =>
-          b.id === id ? { ...b, status: 'cancelled' } : b
+        prev.map((booking) =>
+          booking.id === id ? { ...booking, status: 'cancelled' as BookingStatus } : booking
         )
       );
-    } catch (err: any) {
-      setError(err?.message || 'Ошибка отмены');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ошибка отмены');
     }
   }, []);
 
@@ -133,13 +100,16 @@ const MyBookingsScreen = (): JSX.Element => {
     [navigate]
   );
 
+  const getSessionTypeLabel = (sessionType?: SessionType): string => {
+    return sessionType === 'group' ? 'Групповая' : 'Индивидуальная';
+  };
+
   if (loading) {
     return <div className="loading-screen">Загрузка...</div>;
   }
 
   return (
     <div className="bookings-page">
-
       <h1>Мои записи</h1>
 
       {error && <div className="error-message">⚠ {error}</div>}
@@ -159,20 +129,19 @@ const MyBookingsScreen = (): JSX.Element => {
       {filteredBookings.length === 0 ? (
         <div>Нет записей</div>
       ) : (
-        filteredBookings.map((b) => (
-          <div key={b.id} className="booking-card">
-            <h3>{b.mentorName}</h3>
-            <div>{b.sessionDate.toLocaleString()}</div>
-            <div>{b.price} ₽</div>
+        filteredBookings.map((booking) => (
+          <div key={booking.id} className="booking-card">
+            <h3>{booking.mentorName}</h3>
+            <div>{booking.sessionDate.toLocaleString('ru-RU')}</div>
+            {booking.mentorCity && <div>{booking.mentorCity}</div>}
+            {booking.mentorYogaStyle && <div>{booking.mentorYogaStyle}</div>}
+            <div>{getSessionTypeLabel(booking.sessionType)}</div>
+            <div>{booking.price} ₽</div>
 
-            <button onClick={() => handleViewMentor(b.mentorId)}>
-              Ментор
-            </button>
+            <button onClick={() => handleViewMentor(booking.mentorId)}>Ментор</button>
 
-            {b.status === 'active' && (
-              <button onClick={() => handleCancelBooking(b.id)}>
-                Отменить
-              </button>
+            {booking.status === 'active' && booking.sessionDate > new Date() && (
+              <button onClick={() => handleCancelBooking(booking.id)}>Отменить</button>
             )}
           </div>
         ))

@@ -4,6 +4,7 @@ import BookingService from '../../services/BookingService';
 import ApiService from '../../services/ApiService';
 import './BookingScreen.css';
 import type { MentorApi, BookingMentor } from '../../types/mentor';
+import { mapMentorToBooking } from '../../types/mentor';
 
 type SessionType = 'individual' | 'group';
 
@@ -39,22 +40,22 @@ const BookingScreen = (): JSX.Element => {
     sessionType: 'individual',
   });
 
-  // time slots
   const timeSlots = useMemo(() => {
     const slots: string[] = [];
 
-    for (let h = 9; h <= 20; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        slots.push(`${h.toString().padStart(2, '0')}:${m
-          .toString()
-          .padStart(2, '0')}`);
+    for (let hour = 9; hour <= 20; hour += 1) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        slots.push(
+          `${hour.toString().padStart(2, '0')}:${minute
+            .toString()
+            .padStart(2, '0')}`
+        );
       }
     }
 
     return slots;
   }, []);
 
-  // load mentor
   useEffect(() => {
     if (!mentorId) {
       setError('Некорректный ID ментора');
@@ -62,7 +63,7 @@ const BookingScreen = (): JSX.Element => {
       return;
     }
 
-    const load = async () => {
+    const loadMentor = async (): Promise<void> => {
       try {
         setLoading(true);
         setError(null);
@@ -72,29 +73,16 @@ const BookingScreen = (): JSX.Element => {
           return;
         }
 
-        const response = await ApiService.request<MentorApi>(
-          `/mentors/${mentorId}`,
-          { method: 'GET' }
-        );
+        const response = await ApiService.request<MentorApi>(`/mentors/${mentorId}`, {
+          method: 'GET',
+        });
 
         if (!response) {
           setError('Ментор не найден');
           return;
         }
 
-        setMentor({
-          id: response.id,
-          name: response.name,
-          description: response.description,
-          gender: response.gender,
-          city: response.city,
-          price: response.price,
-          yogaStyle: response.yoga_style,
-          rating: response.rating,
-          experienceYears: response.experience_years,
-          photoUrl: response.photo_url,
-          isAvailable: response.is_available,
-        });
+        setMentor(mapMentorToBooking(response));
       } catch (err) {
         console.error(err);
         setError('Ошибка загрузки ментора');
@@ -103,11 +91,15 @@ const BookingScreen = (): JSX.Element => {
       }
     };
 
-    load();
+    void loadMentor();
   }, [mentorId, locationState]);
 
   const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >
+    ) => {
       const { name, value } = e.target;
 
       setBookingData((prev) => ({
@@ -118,17 +110,17 @@ const BookingScreen = (): JSX.Element => {
     []
   );
 
-  const calculateTotalPrice = useCallback(() => {
+  const calculateTotalPrice = useCallback((): number => {
     if (!mentor) return 0;
 
-    const base = mentor.price;
-    const duration = parseInt(bookingData.durationMinutes, 10) / 60;
-    const type = bookingData.sessionType === 'group' ? 0.7 : 1;
+    const basePrice = mentor.price;
+    const durationMultiplier = parseInt(bookingData.durationMinutes, 10) / 60;
+    const sessionTypeMultiplier = bookingData.sessionType === 'group' ? 0.7 : 1;
 
-    return Math.round(base * duration * type);
+    return Math.round(basePrice * durationMultiplier * sessionTypeMultiplier);
   }, [mentor, bookingData]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     if (!mentor || mentor.isAvailable === false) {
@@ -145,41 +137,40 @@ const BookingScreen = (): JSX.Element => {
       setIsBooking(true);
       setError(null);
 
-      const [h, m] = bookingData.time.split(':').map(Number);
-      const date = new Date(bookingData.sessionDate);
-      date.setHours(h, m, 0, 0);
+      const [hours, minutes] = bookingData.time.split(':').map(Number);
+      const sessionDate = new Date(bookingData.sessionDate);
+      sessionDate.setHours(hours, minutes, 0, 0);
 
-      if (date <= new Date()) {
+      if (sessionDate <= new Date()) {
         setError('Нельзя выбрать прошедшее время');
         return;
       }
 
       const booking = await BookingService.createBooking({
         mentor_id: Number(mentor.id),
-        session_date: date.toISOString(),
+        session_date: sessionDate.toISOString(),
         duration_minutes: parseInt(bookingData.durationMinutes, 10),
         notes: bookingData.notes,
         session_type: bookingData.sessionType,
+        mentorName: mentor.name,
       });
 
       navigate('/booking-confirmation', {
         state: { bookingData: booking, mentor },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || 'Ошибка создания записи');
+      setError(err instanceof Error ? err.message : 'Ошибка создания записи');
     } finally {
       setIsBooking(false);
     }
   };
 
-  const handleBack = () => {
+  const handleBack = (): void => {
     navigate(`/mentor/${mentorId}`);
   };
 
-  const minDate = useMemo(() => {
-    return new Date().toISOString().split('T')[0];
-  }, []);
+  const minDate = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   if (loading) {
     return <div className="loading-screen">Загрузка...</div>;
@@ -195,13 +186,12 @@ const BookingScreen = (): JSX.Element => {
   }
 
   if (!mentor) {
-  return <div className="booking-page">Ментор не найден</div>;
-}
+    return <div className="booking-page">Ментор не найден</div>;
+  }
 
   return (
     <div className="booking-page">
       <div className="booking-container">
-
         <button onClick={handleBack}>← Назад</button>
 
         <h1>Запись к {mentor.name}</h1>
@@ -209,7 +199,6 @@ const BookingScreen = (): JSX.Element => {
         {error && <div className="error-message">⚠ {error}</div>}
 
         <form onSubmit={handleSubmit}>
-
           <input
             type="date"
             name="sessionDate"
@@ -221,8 +210,10 @@ const BookingScreen = (): JSX.Element => {
 
           <select name="time" value={bookingData.time} onChange={handleInputChange} required>
             <option value="">Время</option>
-            {timeSlots.map((t) => (
-              <option key={t}>{t}</option>
+            {timeSlots.map((time) => (
+              <option key={time} value={time}>
+                {time}
+              </option>
             ))}
           </select>
 
@@ -248,7 +239,6 @@ const BookingScreen = (): JSX.Element => {
           <button type="submit" disabled={isBooking}>
             {isBooking ? 'Создание...' : 'Записаться'}
           </button>
-
         </form>
       </div>
     </div>

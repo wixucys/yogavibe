@@ -3,3 +3,4 @@ venv/
 frontend/node_modules
 .vscode
 .DS_Store
+backend/app/data/

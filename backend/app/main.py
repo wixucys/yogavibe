@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from api import router as api_router
+from database import initialize_database
 
 
 app = FastAPI(
@@ -35,3 +36,7 @@ def read_root():
 def health_check():
     # Проверка здоровья приложения
     return {"status": "ok"}
+
+@app.on_event("startup")
+def on_startup():
+    initialize_database()

@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import Generator
-from fastapi import logger
+import logging
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 import os
 from config import settings
 
+logger = logging.getLogger(__name__)
 
 os.makedirs("data", exist_ok=True)
 

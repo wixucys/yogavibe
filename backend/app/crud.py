@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List
+from typing import List, Optional
 import math
 
-from sqlalchemy import select, delete, and_
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 import models_db as models
 import schemas
-from utils import verify_password, get_password_hash
+from utils import get_password_hash, verify_password
 
 
 class UserCRUD:
@@ -53,15 +53,35 @@ class UserCRUD:
         return user
 
     @staticmethod
-    def create_user(db: Session, user_data: schemas.UserCreate) -> models.User:
+    def count_users_by_role(db: Session, role: str) -> int:
+        stmt = select(func.count(models.User.id)).where(models.User.role == role)
+        return int(db.scalar(stmt) or 0)
+
+    @staticmethod
+    def count_all_users(db: Session) -> int:
+        stmt = select(func.count(models.User.id))
+        return int(db.scalar(stmt) or 0)
+
+    @staticmethod
+    def count_active_users(db: Session) -> int:
+        stmt = select(func.count(models.User.id)).where(models.User.is_active.is_(True))
+        return int(db.scalar(stmt) or 0)
+
+    @staticmethod
+    def create_user(
+        db: Session,
+        user_data: schemas.UserCreate,
+        role: str = "user",
+        is_active: bool = True,
+    ) -> models.User:
         hashed_password = get_password_hash(user_data.password)
 
         user = models.User(
-            username=user_data.username,
+            username=user_data.username.strip(),
             email=user_data.email.lower(),
             hashed_password=hashed_password,
-            role="user",
-            is_active=True,
+            role=role,
+            is_active=is_active,
         )
 
         db.add(user)
@@ -78,7 +98,7 @@ class UserCRUD:
         allowed_fields = {"city", "yoga_style", "experience", "goals"}
 
         for key, value in updates.items():
-            if key in allowed_fields and value is not None:
+            if key in allowed_fields:
                 setattr(user, key, value)
 
         db.commit()
@@ -86,15 +106,37 @@ class UserCRUD:
         return user
 
     @staticmethod
-    def admin_update_user(db: Session, user_id: int, updates: dict) -> Optional[models.User]:
+    def admin_update_user(
+        db: Session,
+        user_id: int,
+        updates: dict,
+    ) -> Optional[models.User]:
         user = UserCRUD.get_user(db, user_id)
         if not user:
             return None
 
         allowed_fields = {"role", "is_active", "city", "yoga_style", "experience", "goals"}
 
+        new_role = updates.get("role")
+        if new_role and user.role == "mentor" and new_role != "mentor":
+            mentor_profile = MentorCRUD.get_mentor_by_user_id(db, user.id)
+            if mentor_profile:
+                raise ValueError(
+                    "Нельзя снять роль mentor, пока у пользователя существует профиль ментора"
+                )
+
+        if "is_active" in updates and user.role == "admin" and updates["is_active"] is False:
+            admins_count = UserCRUD.count_users_by_role(db, "admin")
+            if admins_count <= 1:
+                raise ValueError("Нельзя деактивировать последнего администратора")
+
+        if new_role and user.role == "admin" and new_role != "admin":
+            admins_count = UserCRUD.count_users_by_role(db, "admin")
+            if admins_count <= 1:
+                raise ValueError("Нельзя изменить роль последнего администратора")
+
         for key, value in updates.items():
-            if key in allowed_fields and value is not None:
+            if key in allowed_fields:
                 setattr(user, key, value)
 
         db.commit()
@@ -118,7 +160,7 @@ class MentorCRUD:
         skip: int = 0,
         limit: int = 100,
         city: Optional[str] = None,
-        yoga_style: Optional[str] = None
+        yoga_style: Optional[str] = None,
     ) -> List[models.Mentor]:
         stmt = select(models.Mentor).where(models.Mentor.is_available.is_(True))
 
@@ -129,6 +171,21 @@ class MentorCRUD:
 
         stmt = stmt.order_by(models.Mentor.created_at.desc()).offset(skip).limit(limit)
         return list(db.scalars(stmt))
+
+    @staticmethod
+    def get_all_mentors(db: Session, skip: int = 0, limit: int = 100) -> List[models.Mentor]:
+        stmt = (
+            select(models.Mentor)
+            .order_by(models.Mentor.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return list(db.scalars(stmt))
+
+    @staticmethod
+    def count_mentor_profiles(db: Session) -> int:
+        stmt = select(func.count(models.Mentor.id))
+        return int(db.scalar(stmt) or 0)
 
     @staticmethod
     def create_mentor(db: Session, mentor_data: schemas.MentorCreate) -> models.Mentor:
@@ -155,8 +212,46 @@ class MentorCRUD:
         if not mentor:
             return None
 
+        allowed_fields = {
+            "name",
+            "description",
+            "gender",
+            "city",
+            "price",
+            "yoga_style",
+            "rating",
+            "experience_years",
+            "photo_url",
+            "is_available",
+        }
+
         for key, value in updates.items():
-            if hasattr(mentor, key) and value is not None:
+            if key in allowed_fields:
+                setattr(mentor, key, value)
+
+        db.commit()
+        db.refresh(mentor)
+        return mentor
+
+    @staticmethod
+    def update_mentor_self(db: Session, mentor_id: int, updates: dict) -> Optional[models.Mentor]:
+        mentor = MentorCRUD.get_mentor(db, mentor_id)
+        if not mentor:
+            return None
+
+        allowed_fields = {
+            "name",
+            "description",
+            "gender",
+            "city",
+            "yoga_style",
+            "experience_years",
+            "photo_url",
+            "is_available",
+        }
+
+        for key, value in updates.items():
+            if key in allowed_fields:
                 setattr(mentor, key, value)
 
         db.commit()
@@ -189,6 +284,11 @@ class NoteCRUD:
             .limit(limit)
         )
         return list(db.scalars(stmt))
+
+    @staticmethod
+    def count_notes(db: Session) -> int:
+        stmt = select(func.count(models.Note.id))
+        return int(db.scalar(stmt) or 0)
 
     @staticmethod
     def create_note(db: Session, note_data: schemas.NoteCreate, user_id: int) -> models.Note:
@@ -257,6 +357,16 @@ class BookingCRUD:
         return list(db.scalars(stmt))
 
     @staticmethod
+    def count_bookings(db: Session) -> int:
+        stmt = select(func.count(models.Booking.id))
+        return int(db.scalar(stmt) or 0)
+
+    @staticmethod
+    def count_bookings_by_status(db: Session, status: str) -> int:
+        stmt = select(func.count(models.Booking.id)).where(models.Booking.status == status)
+        return int(db.scalar(stmt) or 0)
+
+    @staticmethod
     def create_booking(db: Session, booking_data: schemas.BookingCreate, user_id: int) -> models.Booking:
         mentor = MentorCRUD.get_mentor(db, booking_data.mentor_id)
         if not mentor:
@@ -267,6 +377,7 @@ class BookingCRUD:
 
         now = datetime.now(timezone.utc)
         session_date = booking_data.session_date
+
         if session_date.tzinfo is None:
             session_date = session_date.replace(tzinfo=timezone.utc)
 
@@ -320,29 +431,17 @@ class BookingCRUD:
 
         return BookingCRUD.get_booking(db, booking.id)
 
-    @staticmethod
-    def complete_booking(db: Session, booking_id: int) -> Optional[models.Booking]:
-        booking = BookingCRUD.get_booking(db, booking_id)
-        if not booking:
-            return None
-
-        booking.status = "completed"
-        booking.updated_at = datetime.now(timezone.utc)
-
-        db.commit()
-        db.refresh(booking)
-
-        return BookingCRUD.get_booking(db, booking.id)
-
 
 class RefreshTokenCRUD:
     @staticmethod
     def create_token(db: Session, token: str, user_id: int, expires_delta: timedelta) -> models.RefreshToken:
         expires_at = datetime.now(timezone.utc) + expires_delta
 
-        existing_token = db.query(models.RefreshToken).filter(
-            models.RefreshToken.token == token
-        ).first()
+        existing_token = (
+            db.query(models.RefreshToken)
+            .filter(models.RefreshToken.token == token)
+            .first()
+        )
 
         if existing_token:
             existing_token.expires_at = expires_at
@@ -354,7 +453,7 @@ class RefreshTokenCRUD:
         refresh_token = models.RefreshToken(
             token=token,
             user_id=user_id,
-            expires_at=expires_at
+            expires_at=expires_at,
         )
 
         db.add(refresh_token)
@@ -367,7 +466,7 @@ class RefreshTokenCRUD:
         stmt = select(models.RefreshToken).where(
             models.RefreshToken.token == token,
             models.RefreshToken.is_active.is_(True),
-            models.RefreshToken.expires_at > datetime.now(timezone.utc)
+            models.RefreshToken.expires_at > datetime.now(timezone.utc),
         )
         return db.scalar(stmt)
 
@@ -385,7 +484,7 @@ class RefreshTokenCRUD:
     def clear_expired_tokens(db: Session, user_id: int) -> None:
         stmt = delete(models.RefreshToken).where(
             models.RefreshToken.user_id == user_id,
-            models.RefreshToken.expires_at <= datetime.now(timezone.utc)
+            models.RefreshToken.expires_at <= datetime.now(timezone.utc),
         )
         db.execute(stmt)
         db.commit()

@@ -1,6 +1,7 @@
-from typing import Optional, Literal
 from datetime import datetime, timedelta, timezone
-from pydantic import BaseModel, EmailStr, field_serializer, field_validator, ConfigDict
+from typing import Literal, Optional
+
+from pydantic import BaseModel, ConfigDict, EmailStr, field_serializer, field_validator
 
 
 UserRole = Literal["user", "mentor", "admin"]
@@ -8,44 +9,32 @@ BookingStatus = Literal["active", "completed", "cancelled"]
 SessionType = Literal["individual", "group"]
 
 
-from typing import Optional, Literal, Any
-from datetime import datetime, timedelta, timezone
-from pydantic import BaseModel, EmailStr, field_validator, model_serializer, ConfigDict
-
-
 class DateTimeSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    @field_serializer("*", when_used="json", check_fields=False)
+    def serialize_datetimes(self, value, _info):
+        if not isinstance(value, datetime):
+            return value
 
-    @model_serializer(mode="wrap")
-    def serialize_datetimes(self, handler):
-        data = handler(self)
-
-        if not isinstance(data, dict):
-            return data
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
 
         moscow_tz = timezone(timedelta(hours=3))
+        return value.astimezone(moscow_tz).isoformat()
 
-        for key, value in data.items():
-            if isinstance(value, datetime):
-                dt = value
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-                data[key] = dt.astimezone(moscow_tz).isoformat()
-
-        return data
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserBase(BaseModel):
     username: str
     email: EmailStr
 
-    model_config = ConfigDict(from_attributes=True)
-
-
-class UserCreate(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 3:
+            raise ValueError("Имя пользователя должно быть не короче 3 символов")
+        return value
 
     @field_validator("email")
     @classmethod
@@ -53,6 +42,21 @@ class UserCreate(BaseModel):
         return value.lower()
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class UserCreate(UserBase):
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if len(value) < 6:
+            raise ValueError("Пароль должен быть не короче 6 символов")
+        return value
+
+
+class BootstrapAdminCreate(UserCreate):
+    pass
 
 
 class UserUpdate(BaseModel):
@@ -67,6 +71,16 @@ class UserUpdate(BaseModel):
 class UserAdminUpdate(BaseModel):
     role: Optional[UserRole] = None
     is_active: Optional[bool] = None
+    city: Optional[str] = None
+    yoga_style: Optional[str] = None
+    experience: Optional[str] = None
+    goals: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserRoleUpdate(BaseModel):
+    role: UserRole
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -132,6 +146,21 @@ class MentorBase(BaseModel):
     price: int
     yoga_style: str
 
+    @field_validator("name", "description", "gender", "city", "yoga_style")
+    @classmethod
+    def strip_text_fields(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Поле не может быть пустым")
+        return stripped
+
+    @field_validator("price")
+    @classmethod
+    def validate_price(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("Цена не может быть отрицательной")
+        return value
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -141,6 +170,24 @@ class MentorCreate(MentorBase):
     experience_years: Optional[int] = 0
     photo_url: Optional[str] = None
     is_available: Optional[bool] = True
+
+    @field_validator("rating")
+    @classmethod
+    def validate_rating(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value < 0 or value > 5:
+            raise ValueError("Рейтинг должен быть в диапазоне от 0 до 5")
+        return value
+
+    @field_validator("experience_years")
+    @classmethod
+    def validate_experience_years(cls, value: Optional[int]) -> Optional[int]:
+        if value is None:
+            return value
+        if value < 0:
+            raise ValueError("Опыт не может быть отрицательным")
+        return value
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -211,12 +258,10 @@ class NoteCreate(NoteBase):
     @classmethod
     def validate_text_length(cls, value: str) -> str:
         stripped = value.strip()
-
         if len(stripped) < 1:
             raise ValueError("Текст заметки не может быть пустым")
-        if len(value) > 1000:
+        if len(stripped) > 1000:
             raise ValueError("Текст заметки слишком длинный")
-
         return stripped
 
     model_config = ConfigDict(from_attributes=True)
@@ -282,9 +327,15 @@ class BookingResponse(DateTimeSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
-class BookingUpdate(BaseModel):
-    status: Optional[BookingStatus] = None
-    notes: Optional[str] = None
-    session_type: Optional[SessionType] = None
+class AdminDashboardResponse(BaseModel):
+    total_users: int
+    active_users: int
+    admins_count: int
+    mentors_count: int
+    mentor_profiles_count: int
+    regular_users_count: int
+    bookings_count: int
+    active_bookings_count: int
+    notes_count: int
 
     model_config = ConfigDict(from_attributes=True)

@@ -74,28 +74,6 @@ def require_roles(*allowed_roles: str):
     return dependency
 
 
-def require_admin(
-    current_user: schemas.UserResponse = Depends(get_current_user),
-) -> schemas.UserResponse:
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Требуются права администратора",
-        )
-    return current_user
-
-
-def require_mentor(
-    current_user: schemas.UserResponse = Depends(get_current_user),
-) -> schemas.UserResponse:
-    if current_user.role != "mentor":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Требуются права ментора",
-        )
-    return current_user
-
-
 def build_booking_response(booking) -> schemas.BookingResponse:
     mentor_data = None
 
@@ -124,6 +102,54 @@ def build_booking_response(booking) -> schemas.BookingResponse:
 
 
 # =========================
+# SETUP
+# =========================
+@router.post("/setup/bootstrap-admin", response_model=schemas.AuthResponse)
+async def bootstrap_admin(
+    request: schemas.BootstrapAdminCreate,
+    db: Session = Depends(get_db),
+):
+    admins_count = crud.user_crud.count_users_by_role(db, "admin")
+    if admins_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Администратор уже существует. Bootstrap отключен",
+        )
+
+    existing_email = crud.user_crud.get_user_by_email(db, request.email)
+    if existing_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким email уже существует",
+        )
+
+    existing_username = crud.user_crud.get_user_by_username(db, request.username)
+    if existing_username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким username уже существует",
+        )
+
+    user = crud.user_crud.create_user(db, request, role="admin", is_active=True)
+
+    access_token = create_access_token(data={"sub": str(user.id)})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
+
+    crud.refresh_token_crud.create_token(
+        db,
+        refresh_token,
+        user.id,
+        timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS),
+    )
+
+    return schemas.AuthResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user=schemas.UserResponse.model_validate(user),
+    )
+
+
+# =========================
 # AUTH
 # =========================
 @router.post("/auth/register", response_model=schemas.AuthResponse)
@@ -145,7 +171,7 @@ async def register(
             detail="Пользователь с таким username уже существует",
         )
 
-    user = crud.user_crud.create_user(db, request)
+    user = crud.user_crud.create_user(db, request, role="user", is_active=True)
 
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
@@ -285,7 +311,7 @@ async def logout(
 # =========================
 @router.get("/users/me", response_model=schemas.UserResponse)
 async def get_me(
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user", "mentor", "admin")),
 ):
     return current_user
 
@@ -293,7 +319,7 @@ async def get_me(
 @router.put("/users/me", response_model=schemas.UserResponse)
 async def update_me(
     user_update: schemas.UserUpdate,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user", "mentor", "admin")),
     db: Session = Depends(get_db),
 ):
     updated_user = crud.user_crud.update_user(
@@ -320,7 +346,7 @@ async def get_mentors(
     yoga_style: Optional[str] = None,
     skip: int = 0,
     limit: int = 100,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user", "admin")),
     db: Session = Depends(get_db),
 ):
     mentors = crud.mentor_crud.get_mentors(
@@ -336,11 +362,11 @@ async def get_mentors(
 @router.get("/mentors/{mentor_id}", response_model=schemas.MentorResponse)
 async def get_mentor(
     mentor_id: int,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user", "admin")),
     db: Session = Depends(get_db),
 ):
     mentor = crud.mentor_crud.get_mentor(db, mentor_id)
-    if not mentor:
+    if not mentor or not mentor.is_available:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Ментор не найден",
@@ -380,7 +406,7 @@ async def update_my_mentor_profile(
             detail="Профиль ментора не найден",
         )
 
-    updated_mentor = crud.mentor_crud.update_mentor(
+    updated_mentor = crud.mentor_crud.update_mentor_self(
         db,
         mentor.id,
         mentor_update.model_dump(exclude_unset=True),
@@ -426,7 +452,7 @@ async def get_my_mentor_bookings(
 async def get_notes(
     skip: int = 0,
     limit: int = 100,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
     notes = crud.note_crud.get_user_notes(
@@ -441,7 +467,7 @@ async def get_notes(
 @router.post("/notes", response_model=schemas.NoteResponse)
 async def create_note(
     note_data: schemas.NoteCreate,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
     note = crud.note_crud.create_note(db, note_data, current_user.id)
@@ -452,7 +478,7 @@ async def create_note(
 async def update_note(
     note_id: int,
     note_data: schemas.NoteCreate,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
     note = crud.note_crud.get_note(db, note_id)
@@ -481,7 +507,7 @@ async def update_note(
 @router.delete("/notes/{note_id}")
 async def delete_note(
     note_id: int,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
     note = crud.note_crud.get_note(db, note_id)
@@ -513,7 +539,7 @@ async def delete_note(
 async def get_bookings(
     skip: int = 0,
     limit: int = 100,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
     bookings = crud.booking_crud.get_user_bookings(
@@ -528,7 +554,7 @@ async def get_bookings(
 @router.post("/bookings", response_model=schemas.BookingResponse)
 async def create_booking(
     booking_data: schemas.BookingCreate,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
     try:
@@ -544,7 +570,7 @@ async def create_booking(
 @router.put("/bookings/{booking_id}/cancel", response_model=schemas.BookingResponse)
 async def cancel_booking(
     booking_id: int,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
     booking = crud.booking_crud.get_booking(db, booking_id)
@@ -591,59 +617,27 @@ async def cancel_booking(
     return build_booking_response(cancelled_booking)
 
 
-@router.put("/bookings/{booking_id}/complete", response_model=schemas.BookingResponse)
-async def complete_booking(
-    booking_id: int,
-    current_user: schemas.UserResponse = Depends(get_current_user),
+# =========================
+# ADMIN
+# =========================
+@router.get("/admin/dashboard", response_model=schemas.AdminDashboardResponse)
+async def get_admin_dashboard(
+    current_user: schemas.UserResponse = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):
-    booking = crud.booking_crud.get_booking(db, booking_id)
-    if not booking:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Бронирование не найдено",
-        )
-
-    is_owner = booking.user_id == current_user.id
-    is_admin = current_user.role == "admin"
-    is_mentor_owner = False
-
-    if current_user.role == "mentor":
-        mentor_profile = crud.mentor_crud.get_mentor_by_user_id(db, current_user.id)
-        if mentor_profile and mentor_profile.id == booking.mentor_id:
-            is_mentor_owner = True
-
-    if not is_owner and not is_admin and not is_mentor_owner:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Нет доступа к этому бронированию",
-        )
-
-    if booking.status == "cancelled":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Нельзя завершить отмененное бронирование",
-        )
-
-    if booking.status == "completed":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Бронирование уже завершено",
-        )
-
-    completed_booking = crud.booking_crud.complete_booking(db, booking_id)
-    if not completed_booking:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Бронирование не найдено",
-        )
-
-    return build_booking_response(completed_booking)
+    return schemas.AdminDashboardResponse(
+        total_users=crud.user_crud.count_all_users(db),
+        active_users=crud.user_crud.count_active_users(db),
+        admins_count=crud.user_crud.count_users_by_role(db, "admin"),
+        mentors_count=crud.user_crud.count_users_by_role(db, "mentor"),
+        mentor_profiles_count=crud.mentor_crud.count_mentor_profiles(db),
+        regular_users_count=crud.user_crud.count_users_by_role(db, "user"),
+        bookings_count=crud.booking_crud.count_bookings(db),
+        active_bookings_count=crud.booking_crud.count_bookings_by_status(db, "active"),
+        notes_count=crud.note_crud.count_notes(db),
+    )
 
 
-# =========================
-# ADMIN / RBAC MANAGEMENT
-# =========================
 @router.get("/admin/users", response_model=List[schemas.UserListResponse])
 async def get_all_users(
     skip: int = 0,
@@ -662,11 +656,17 @@ async def admin_update_user(
     current_user: schemas.UserResponse = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):
-    updated_user = crud.user_crud.admin_update_user(
-        db,
-        user_id,
-        user_update.model_dump(exclude_unset=True),
-    )
+    try:
+        updated_user = crud.user_crud.admin_update_user(
+            db,
+            user_id,
+            user_update.model_dump(exclude_unset=True),
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
 
     if not updated_user:
         raise HTTPException(
@@ -677,25 +677,24 @@ async def admin_update_user(
     return schemas.UserResponse.model_validate(updated_user)
 
 
-# Отдельный endpoint именно для управления ролью пользователя
 @router.put("/admin/users/{user_id}/role", response_model=schemas.UserResponse)
 async def admin_change_user_role(
     user_id: int,
-    role_data: schemas.UserAdminUpdate,
+    role_data: schemas.UserRoleUpdate,
     current_user: schemas.UserResponse = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):
-    if role_data.role is None:
+    try:
+        updated_user = crud.user_crud.admin_update_user(
+            db,
+            user_id,
+            {"role": role_data.role},
+        )
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Новая роль не передана",
+            detail=str(exc),
         )
-
-    updated_user = crud.user_crud.admin_update_user(
-        db,
-        user_id,
-        {"role": role_data.role},
-    )
 
     if not updated_user:
         raise HTTPException(
@@ -704,6 +703,17 @@ async def admin_change_user_role(
         )
 
     return schemas.UserResponse.model_validate(updated_user)
+
+
+@router.get("/admin/mentors", response_model=List[schemas.MentorResponse])
+async def get_all_mentors_for_admin(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: schemas.UserResponse = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+):
+    mentors = crud.mentor_crud.get_all_mentors(db, skip=skip, limit=limit)
+    return [schemas.MentorResponse.model_validate(mentor) for mentor in mentors]
 
 
 @router.post("/admin/mentors", response_model=schemas.MentorResponse)

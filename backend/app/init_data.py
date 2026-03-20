@@ -1,258 +1,161 @@
-import os
-from pathlib import Path
-from sqlalchemy import inspect
-from sqlalchemy.orm import Session
-from database import Base, SessionLocal, engine 
-import models_db as models
 import logging
 
-logging.basicConfig(level=logging.INFO)
+import models_db as models
+import schemas
+from database import Base, SessionLocal, engine
+
+
 logger = logging.getLogger(__name__)
-
-os.makedirs("data", exist_ok=True)
-logger.info(f"Текущая директория: {os.getcwd()}")
-logger.info(f"Путь к БД: ./data/yogavibe.db")
-
-# Проверяем, существуют ли основные таблицы
-def check_tables_exist() -> bool:
-    inspector = inspect(engine)
-    existing_tables = inspector.get_table_names()
-    
-    # Ключевые таблицы, которые должны быть
-    required_tables = ["users", "mentors", "notes", "bookings", "refresh_tokens"]
-    
-    # Проверяем наличие всех ключевых таблиц
-    return all(table in existing_tables for table in required_tables)
+logging.basicConfig(level=logging.INFO)
 
 
-# Создать таблицы только если их нет
-def create_tables_if_not_exist():
-    if not check_tables_exist():
-        logger.info("Создание таблиц базы данных...")
-        Base.metadata.create_all(bind=engine)
-        
-        inspector = inspect(engine)
-        created_tables = inspector.get_table_names()
-        logger.info(f"Создано таблиц: {len(created_tables)}")
-        logger.info(f"Таблицы: {', '.join(created_tables)}")
-        return True
-    else:
-        logger.info("Таблицы уже существуют")
-        return False
+def create_tables_if_not_exist() -> bool:
+    logger.info("Проверка и создание таблиц...")
+    Base.metadata.create_all(bind=engine)
+    return True
 
 
-# Получить статистику базы данных
-def get_database_stats():
-    db = SessionLocal()
-    try:
-        inspector = inspect(engine)
-        tables = inspector.get_table_names()
-        
-        stats = {"tables": len(tables)}
-        
-        # Подсчитываем записи в каждой таблице
-        for table in tables:
-            try:
-                count = db.execute(f"SELECT COUNT(*) FROM {table}").scalar()
-                stats[table] = count
-            except:
-                stats[table] = "error"
-        
-        return stats
-    finally:
-        db.close()
+def create_default_admin(db):
+    existing_admin = db.query(models.User).filter(models.User.role == "admin").first()
+    if existing_admin:
+        logger.info("Администратор уже существует, пропускаем создание")
+        return existing_admin
+
+    admin_data = schemas.UserCreate(
+        username="admin",
+        email="admin@yogavibe.com",
+        password="admin123456",
+    )
+
+    from crud import user_crud
+
+    admin = user_crud.create_user(db, admin_data, role="admin", is_active=True)
+    logger.info("Создан администратор: admin@yogavibe.com / admin123456")
+    return admin
 
 
-# Создание моковых данных менторов
-def create_mock_mentors(db: Session):
-    mock_mentors = [
+def create_demo_mentor_profiles(db):
+    demo_mentors = [
         {
-            "name": "Анна Иванова",
-            "description": "Опытный инструктор по хатха йоге с 5-летним стажем",
-            "gender": "female",
-            "city": "Москва",
-            "price": 2500,
-            "yoga_style": "Хатха",
-            "rating": 4.8,
-            "experience_years": 5,
-            "photo_url": None,
-            "is_available": True
+            "user": {
+                "username": "mentor_ivanova",
+                "email": "mentor1@yogavibe.com",
+                "password": "mentor123456",
+            },
+            "mentor": {
+                "name": "Анна Иванова",
+                "description": "Хатха-йога для начинающих и мягкая практика",
+                "gender": "female",
+                "city": "Москва",
+                "price": 2500,
+                "yoga_style": "Хатха",
+                "rating": 4.9,
+                "experience_years": 6,
+                "photo_url": None,
+                "is_available": True,
+            },
         },
         {
-            "name": "Дмитрий Петров",
-            "description": "Специалист по аштанга йоге и медитации",
-            "gender": "male",
-            "city": "Санкт-Петербург",
-            "price": 3000,
-            "yoga_style": "Аштанга",
-            "rating": 4.9,
-            "experience_years": 7,
-            "photo_url": None,
-            "is_available": True
+            "user": {
+                "username": "mentor_petrov",
+                "email": "mentor2@yogavibe.com",
+                "password": "mentor123456",
+            },
+            "mentor": {
+                "name": "Игорь Петров",
+                "description": "Аштанга и силовые практики",
+                "gender": "male",
+                "city": "Санкт-Петербург",
+                "price": 3200,
+                "yoga_style": "Аштанга",
+                "rating": 4.7,
+                "experience_years": 8,
+                "photo_url": None,
+                "is_available": True,
+            },
         },
         {
-            "name": "Мария Сидорова",
-            "description": "Йога для беременных и восстановительная йога",
-            "gender": "female",
-            "city": "Новосибирск",
-            "price": 2000,
-            "yoga_style": "Восстановительная",
-            "rating": 4.7,
-            "experience_years": 6,
-            "photo_url": None,
-            "is_available": True
+            "user": {
+                "username": "mentor_sidorova",
+                "email": "mentor3@yogavibe.com",
+                "password": "mentor123456",
+            },
+            "mentor": {
+                "name": "Мария Сидорова",
+                "description": "Восстановительная йога и дыхательные практики",
+                "gender": "female",
+                "city": "Казань",
+                "price": 2800,
+                "yoga_style": "Восстановительная",
+                "rating": 4.8,
+                "experience_years": 7,
+                "photo_url": None,
+                "is_available": True,
+            },
         },
-        {
-            "name": "Алексей Козлов",
-            "description": "Инструктор по силовой йоге и йоге для мужчин",
-            "gender": "male",
-            "city": "Екатеринбург",
-            "price": 2800,
-            "yoga_style": "Силовая",
-            "rating": 4.6,
-            "experience_years": 4,
-            "photo_url": None,
-            "is_available": True
-        },
-        {
-            "name": "Елена Смирнова",
-            "description": "Кундалини йога и работа с чакрами",
-            "gender": "female",
-            "city": "Москва",
-            "price": 3200,
-            "yoga_style": "Кундалини",
-            "rating": 4.8,
-            "experience_years": 8,
-            "photo_url": None,
-            "is_available": True
-        },
-        {
-            "name": "Сергей Николаев",
-            "description": "Йогатерапия и работа с травмами",
-            "gender": "male",
-            "city": "Казань",
-            "price": 2700,
-            "yoga_style": "Йогатерапия",
-            "rating": 4.5,
-            "experience_years": 6,
-            "photo_url": None,
-            "is_available": True
-        },
-        {
-            "name": "Ольга Кузнецова",
-            "description": "Йога для начинающих и стретчинг",
-            "gender": "female",
-            "city": "Нижний Новгород",
-            "price": 1800,
-            "yoga_style": "Для начинающих",
-            "rating": 4.4,
-            "experience_years": 3,
-            "photo_url": None,
-            "is_available": True
-        },
-        {
-            "name": "Иван Морозов",
-            "description": "Бикрам йога и горячая йога",
-            "gender": "male",
-            "city": "Челябинск",
-            "price": 2900,
-            "yoga_style": "Бикрам",
-            "rating": 4.7,
-            "experience_years": 5,
-            "photo_url": None,
-            "is_available": True
-        },
-        {
-            "name": "Татьяна Павлова",
-            "description": "Интегральная йога и философия",
-            "gender": "female",
-            "city": "Самара",
-            "price": 2200,
-            "yoga_style": "Интегральная",
-            "rating": 4.6,
-            "experience_years": 4,
-            "photo_url": None,
-            "is_available": True
-        },
-        {
-            "name": "Михаил Орлов",
-            "description": "Виньяса флоу йога",
-            "gender": "male",
-            "city": "Омск",
-            "price": 2600,
-            "yoga_style": "Виньяса",
-            "rating": 4.5,
-            "experience_years": 5,
-            "photo_url": None,
-            "is_available": True
-        },
-        {
-            "name": "Светлана Федорова",
-            "description": "Инь йога и глубокий стретчинг",
-            "gender": "female",
-            "city": "Ростов-на-Дону",
-            "price": 2300,
-            "yoga_style": "Инь-йога",
-            "rating": 4.8,
-            "experience_years": 7,
-            "photo_url": None,
-            "is_available": True
-        },
-        {
-            "name": "Андрей Соколов",
-            "description": "Айенгара йога и работа с пропсами",
-            "gender": "male",
-            "city": "Уфа",
-            "price": 2700,
-            "yoga_style": "Айенгара",
-            "rating": 4.7,
-            "experience_years": 6,
-            "photo_url": None,
-            "is_available": True
-        }
     ]
-    
-    existing_count = db.query(models.Mentor).count()
-    
-    if existing_count == 0:
-        logger.info("Создание моковых данных менторов...")
-        
-        for mentor_data in mock_mentors:
-            mentor = models.Mentor(**mentor_data)
-            db.add(mentor)
-        
-        db.commit()
-        logger.info(f"Создано {len(mock_mentors)} моковых менторов")
-        return len(mock_mentors)
-    else:
-        logger.info(f"В базе уже есть {existing_count} менторов, пропускаем создание моковых данных")
-        return 0
+
+    from crud import mentor_crud, user_crud
+
+    created_count = 0
+
+    for item in demo_mentors:
+        user_data = schemas.UserCreate(**item["user"])
+        user = user_crud.get_user_by_email(db, user_data.email)
+
+        if not user:
+            user = user_crud.create_user(db, user_data, role="mentor", is_active=True)
+            logger.info(f"Создан пользователь-ментор: {user.email}")
+        elif user.role != "mentor":
+            user.role = "mentor"
+            db.commit()
+            db.refresh(user)
+            logger.info(f"Пользователю назначена роль mentor: {user.email}")
+
+        existing_mentor = mentor_crud.get_mentor_by_user_id(db, user.id)
+        if existing_mentor:
+            continue
+
+        mentor_data = schemas.MentorCreate(user_id=user.id, **item["mentor"])
+        mentor_crud.create_mentor(db, mentor_data)
+        created_count += 1
+
+    logger.info(f"Создано профилей менторов: {created_count}")
+    return created_count
+
+
+def create_demo_regular_user(db):
+    from crud import user_crud
+
+    existing_user = user_crud.get_user_by_email(db, "user@yogavibe.com")
+    if existing_user:
+        logger.info("Демо-пользователь уже существует")
+        return existing_user
+
+    user_data = schemas.UserCreate(
+        username="demo_user",
+        email="user@yogavibe.com",
+        password="user123456",
+    )
+    user = user_crud.create_user(db, user_data, role="user", is_active=True)
+    logger.info("Создан демо-пользователь: user@yogavibe.com / user123456")
+    return user
 
 
 def init_db():
-    logger.info("Проверка базы данных...")
-    
-    # Создаем таблицы если их нет
-    created = create_tables_if_not_exist()
-    
-    if created:
-        logger.info("База данных инициализирована")
-        # Создаем моковых менторов
-        db = SessionLocal()
-        try:
-            create_mock_mentors(db)
-        finally:
-            db.close()
-    else:
-        # Показываем статистику существующей БД
-        stats = get_database_stats()
-        logger.info("Статистика базы данных:")
-        logger.info(f"  - Таблиц: {stats['tables']}")
-        for table, count in stats.items():
-            if table != "tables":
-                logger.info(f"  - {table}: {count} записей")
-    
-    return created
+    logger.info("Инициализация базы данных...")
+    create_tables_if_not_exist()
+
+    db = SessionLocal()
+    try:
+        create_default_admin(db)
+        create_demo_regular_user(db)
+        create_demo_mentor_profiles(db)
+    finally:
+        db.close()
+
+    logger.info("Инициализация завершена")
+    return True
 
 
 if __name__ == "__main__":

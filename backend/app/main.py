@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from api import router as api_router
-from database import initialize_database
+from init_data import init_db
 
 
 app = FastAPI(
@@ -12,7 +13,6 @@ app = FastAPI(
 )
 
 
-# CORS для React приложения
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -22,21 +22,19 @@ app.add_middleware(
 )
 
 
-# Подключение API роутера
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+
 app.include_router(api_router)
 
 
 @app.get("/")
 def read_root():
-    # Корневой эндпоинт
     return {"message": "YogaVibe API is running"}
 
 
 @app.get("/api/health")
 def health_check():
-    # Проверка здоровья приложения
     return {"status": "ok"}
-
-@app.on_event("startup")
-def on_startup():
-    initialize_database()

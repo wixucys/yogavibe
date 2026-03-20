@@ -155,7 +155,7 @@ const MainScreen = ({ user, onLogout }: MainScreenProps): JSX.Element => {
 
       if (max !== null && mentor.price > max) return false;
 
-      return mentor.is_available;
+      return mentor.isAvailable;
     });
   }, [mentors, filters]);
 

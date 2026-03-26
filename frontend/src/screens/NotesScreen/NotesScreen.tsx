@@ -1,82 +1,37 @@
 import React, { JSX, useEffect, useRef, useState } from 'react';
 import './NotesScreen.css';
 import NotesService from '../../services/NotesService';
-
-type NoteId = string | number;
-
-interface Note {
-  id: NoteId;
-  text: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface NoteApiItem {
-  id: NoteId;
-  text?: string;
-  content?: string;
-  createdAt?: string;
-  created_at?: string;
-  updatedAt?: string;
-  updated_at?: string;
-  modified?: string;
-  date?: string;
-  [key: string]: unknown;
-}
-
-interface NotesServiceResult {
-  success: boolean;
-  data?: NoteApiItem[] | NoteApiItem;
-  message?: string;
-}
+import type { Note, NoteId } from '../../types/note';
 
 const NotesScreen = (): JSX.Element => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
   const [newNote, setNewNote] = useState<string>('');
-
   const [editingNoteId, setEditingNoteId] = useState<NoteId | null>(null);
   const [editingText, setEditingText] = useState<string>('');
 
   const editModeRef = useRef<HTMLDivElement | null>(null);
 
-  const normalizeNote = (note: NoteApiItem, fallbackText = ''): Note => ({
-    id: note.id,
-    text: note.text || note.content || fallbackText,
-    createdAt:
-      note.createdAt ||
-      note.created_at ||
-      note.date ||
-      new Date().toISOString(),
-    updatedAt:
-      note.updatedAt ||
-      note.updated_at ||
-      note.modified ||
-      note.createdAt ||
-      note.created_at ||
-      note.date ||
-      new Date().toISOString(),
-  });
-
   const loadNotes = async (): Promise<void> => {
     setLoading(true);
+    setError('');
 
     try {
-      const result = (await NotesService.getNotes()) as NotesServiceResult;
-      console.log('Notes loaded:', result);
+      const result = await NotesService.getNotes();
 
-      if (result.success) {
-        const normalizedNotes = ((result.data as NoteApiItem[] | undefined) || []).map((note) =>
-          normalizeNote(note)
-        );
-        setNotes(normalizedNotes);
-      } else {
+      if (!result.success) {
         setNotes([]);
+        setError(result.message);
+        return;
       }
-    } catch (error) {
-      console.error('Error loading notes:', error);
+
+      setNotes(result.data);
+    } catch (loadError) {
+      console.error('Error loading notes:', loadError);
       setNotes([]);
+      setError('Ошибка при загрузке заметок');
     } finally {
       setLoading(false);
     }
@@ -86,96 +41,108 @@ const NotesScreen = (): JSX.Element => {
     void loadNotes();
   }, []);
 
-  const addNote = async (text: string): Promise<void> => {
-    if (!text.trim()) return;
+  const addNote = async (text: string): Promise<boolean> => {
+    if (!text.trim()) return false;
+
+    setError('');
 
     try {
-      const result = (await NotesService.createNote(text)) as NotesServiceResult;
-      console.log('Note created:', result);
+      const result = await NotesService.createNote(text);
 
-      if (result.success && result.data && !Array.isArray(result.data)) {
-        const createdNote = normalizeNote(result.data, text);
-        setNotes((prevNotes) => [createdNote, ...prevNotes]);
+      if (!result.success) {
+        setError(result.message);
+        return false;
       }
-    } catch (error) {
-      console.error('Error creating note:', error);
+
+      setNotes((prevNotes) => [result.data, ...prevNotes]);
+      return true;
+    } catch (createError) {
+      console.error('Error creating note:', createError);
+      setError('Ошибка при создании заметки');
+      return false;
     }
   };
 
-  const updateNote = async (id: NoteId, text: string): Promise<void> => {
-    if (!text.trim()) return;
+  const updateNote = async (id: NoteId, text: string): Promise<boolean> => {
+    if (!text.trim()) return false;
+
+    setError('');
 
     try {
-      const result = (await NotesService.updateNote(id, text)) as NotesServiceResult;
-      console.log('Note updated:', result);
+      const result = await NotesService.updateNote(id, text);
 
-      if (result.success && result.data && !Array.isArray(result.data)) {
-        const existingNote = notes.find((n) => n.id === id);
-
-        const updatedNote: Note = {
-          id: result.data.id,
-          text: result.data.text || result.data.content || text,
-          createdAt:
-            result.data.createdAt ||
-            result.data.created_at ||
-            existingNote?.createdAt ||
-            new Date().toISOString(),
-          updatedAt:
-            result.data.updatedAt ||
-            result.data.updated_at ||
-            new Date().toISOString(),
-        };
-
-        setNotes((prevNotes) =>
-          prevNotes.map((note) => (note.id === id ? updatedNote : note))
-        );
+      if (!result.success) {
+        setError(result.message);
+        return false;
       }
-    } catch (error) {
-      console.error('Error updating note:', error);
+
+      setNotes((prevNotes) =>
+        prevNotes.map((note) => (note.id === id ? result.data : note))
+      );
+
+      return true;
+    } catch (updateError) {
+      console.error('Error updating note:', updateError);
+      setError('Ошибка при сохранении заметки');
+      return false;
     }
   };
 
   const deleteNote = async (id: NoteId): Promise<void> => {
     if (!window.confirm('Вы уверены, что хотите удалить эту заметку?')) return;
 
+    setError('');
+
     try {
-      const result = (await NotesService.deleteNote(id)) as NotesServiceResult;
+      const result = await NotesService.deleteNote(id);
 
-      if (result.success) {
-        setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
-
-        if (editingNoteId === id) {
-          setEditingNoteId(null);
-          setEditingText('');
-        }
+      if (!result.success) {
+        setError(result.message);
+        return;
       }
-    } catch (error) {
-      console.error('Error deleting note:', error);
+
+      setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
+
+      if (editingNoteId === id) {
+        setEditingNoteId(null);
+        setEditingText('');
+      }
+    } catch (deleteError) {
+      console.error('Error deleting note:', deleteError);
+      setError('Ошибка при удалении заметки');
     }
   };
 
   const startEditing = (note: Note): void => {
+    setError('');
     setEditingNoteId(note.id);
     setEditingText(note.text);
   };
 
   const saveEditing = async (id: NoteId): Promise<void> => {
-    await updateNote(id, editingText);
-    setEditingNoteId(null);
-    setEditingText('');
+    const success = await updateNote(id, editingText);
+
+    if (success) {
+      setEditingNoteId(null);
+      setEditingText('');
+    }
   };
 
   const cancelEditing = (): void => {
     setEditingNoteId(null);
     setEditingText('');
+    setError('');
   };
 
-  const handleAddNote = (): void => {
+  const handleAddNote = async (): Promise<void> => {
     const trimmedText = newNote.trim();
     if (trimmedText === '') return;
 
-    void addNote(trimmedText);
-    setNewNote('');
+    const success = await addNote(trimmedText);
+
+    if (success) {
+      setNewNote('');
+    }
   };
 
   const handleKeyPress = (
@@ -183,37 +150,34 @@ const NotesScreen = (): JSX.Element => {
   ): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleAddNote();
-    }
-  };
-
-  const handleClickOutside = (e: MouseEvent): void => {
-    const targetNode = e.target as Node | null;
-
-    if (
-      editingNoteId !== null &&
-      editModeRef.current &&
-      targetNode &&
-      !editModeRef.current.contains(targetNode)
-    ) {
-      if (editingText.trim() !== '') {
-        void saveEditing(editingNoteId);
-      } else {
-        cancelEditing();
-      }
+      void handleAddNote();
     }
   };
 
   useEffect(() => {
-    if (editingNoteId !== null) {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (editingNoteId === null) return;
 
-      return () => {
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
-    }
+    const handleClickOutside = (e: MouseEvent): void => {
+      const targetNode = e.target as Node | null;
 
-    return;
+      if (
+        editModeRef.current &&
+        targetNode &&
+        !editModeRef.current.contains(targetNode)
+      ) {
+        if (editingText.trim() !== '') {
+          void saveEditing(editingNoteId);
+        } else {
+          cancelEditing();
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, [editingNoteId, editingText]);
 
   useEffect(() => {
@@ -229,28 +193,11 @@ const NotesScreen = (): JSX.Element => {
     }
   }, [editingNoteId]);
 
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return 'Дата не указана';
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return '—';
 
     try {
-      let date: Date;
-
-      if (dateString.includes('T')) {
-        date = new Date(dateString);
-      } else if (dateString.includes(',')) {
-        const [datePart, timePart] = dateString.split(', ');
-        const [day, month, year] = datePart.split('.');
-        const [hours, minutes] = timePart.split(':');
-        date = new Date(
-          Number(year),
-          Number(month) - 1,
-          Number(day),
-          Number(hours),
-          Number(minutes)
-        );
-      } else {
-        date = new Date(dateString);
-      }
+      const date = new Date(dateString);
 
       if (Number.isNaN(date.getTime())) {
         return dateString;
@@ -263,18 +210,22 @@ const NotesScreen = (): JSX.Element => {
         hour: '2-digit',
         minute: '2-digit',
       }).format(date);
-    } catch (error) {
-      console.warn('Error formatting date:', dateString, error);
+    } catch (formatError) {
+      console.warn('Error formatting date:', dateString, formatError);
       return dateString;
     }
   };
 
-  const isDateDifferent = (createdAt: string, updatedAt: string): boolean => {
-    if (!createdAt || !updatedAt) return false;
+  const isDateDifferent = (
+    createdAt: string,
+    updatedAt: string | null
+  ): boolean => {
+    if (!updatedAt) return false;
 
     try {
       const createdDate = new Date(createdAt);
       const updatedDate = new Date(updatedAt);
+
       return createdDate.getTime() !== updatedDate.getTime();
     } catch {
       return createdAt !== updatedAt;
@@ -305,6 +256,12 @@ const NotesScreen = (): JSX.Element => {
           <p>Записывайте свои мысли, идеи и наблюдения о практике йоги</p>
         </div>
 
+        {error !== '' && (
+          <div className="notes-error" role="alert">
+            {error}
+          </div>
+        )}
+
         <div className="add-note-section">
           <div className="note-input-container">
             <textarea
@@ -319,7 +276,9 @@ const NotesScreen = (): JSX.Element => {
             />
             <div className="note-input-actions">
               <button
-                onClick={handleAddNote}
+                onClick={() => {
+                  void handleAddNote();
+                }}
                 disabled={newNote.trim() === ''}
                 className="add-note-btn"
                 aria-label="Добавить заметку"
@@ -354,7 +313,9 @@ const NotesScreen = (): JSX.Element => {
                           aria-label="Редактирование заметки"
                         />
                         <div className="note-edit-info">
-                          <span className="edit-char-count">{editingText.length}/1000</span>
+                          <span className="edit-char-count">
+                            {editingText.length}/1000
+                          </span>
                         </div>
                         <div className="note-edit-actions">
                           <button

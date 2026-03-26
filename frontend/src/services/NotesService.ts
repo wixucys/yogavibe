@@ -1,149 +1,126 @@
-import ApiService, { ApiError } from './ApiService';
+import ApiService from './ApiService';
 import type {
   Note,
   NoteApiResponse,
   NoteId,
   NotePayload,
+  NoteResult,
   NotesErrorResult,
   NotesListResult,
-  NoteResult,
-  DeleteNoteResult,
 } from '../types/note';
 
+type NotesSuccessResult<T> = {
+  success: true;
+  data: T;
+};
+
+type NotesResult<T> = NotesSuccessResult<T> | NotesErrorResult;
+
+interface DeleteApiResponse {
+  message?: string;
+  [key: string]: unknown;
+}
+
 class NotesService {
-  static async getNotes(
-    skip = 0,
-    limit = 100
-  ): Promise<NotesListResult | NotesErrorResult> {
-    try {
-      const notes = await ApiService.getNotes<NoteApiResponse[]>(skip, limit);
-
-      return {
-        success: true,
-        data: notes.map((note) => this.formatNote(note)),
-      };
-    } catch (error: unknown) {
-      console.error('Get notes error:', error);
-
-      return {
-        success: false,
-        message: this.getErrorMessage(error, 'Ошибка при получении заметок'),
-      };
-    }
-  }
-
-  static async createNote(text: string): Promise<NoteResult | NotesErrorResult> {
-    try {
-      const noteData: NotePayload = { text };
-      const note = await ApiService.createNote<NoteApiResponse>(noteData);
-
-      return {
-        success: true,
-        data: this.formatNote(note),
-      };
-    } catch (error: unknown) {
-      console.error('Create note error:', error);
-
-      return {
-        success: false,
-        message: this.getErrorMessage(error, 'Ошибка при создании заметки'),
-      };
-    }
-  }
-
-  static async updateNote(
-    noteId: NoteId,
-    text: string
-  ): Promise<NoteResult | NotesErrorResult> {
-    try {
-      const noteData: NotePayload = { text };
-      const note = await ApiService.updateNote<NoteApiResponse>(noteId, noteData);
-
-      return {
-        success: true,
-        data: this.formatNote(note),
-      };
-    } catch (error: unknown) {
-      console.error('Update note error:', error);
-
-      return {
-        success: false,
-        message: this.getErrorMessage(error, 'Ошибка при обновлении заметки'),
-      };
-    }
-  }
-
-  static async deleteNote(
-    noteId: NoteId
-  ): Promise<DeleteNoteResult | NotesErrorResult> {
-    try {
-      await ApiService.deleteNote(noteId);
-
-      return {
-        success: true,
-        data: { id: noteId },
-      };
-    } catch (error: unknown) {
-      console.error('Delete note error:', error);
-
-      return {
-        success: false,
-        message: this.getErrorMessage(error, 'Ошибка при удалении заметки'),
-      };
-    }
-  }
-
-  static formatDate(dateString: string): string {
-    const date = new Date(dateString);
-
-    return date.toLocaleDateString('ru-RU', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
-  static formatNote(note: NoteApiResponse): Note {
+  private normalizeNote(note: NoteApiResponse): Note {
     return {
       id: note.id,
-      text: note.text || note.content || '',
+      text: note.text ?? note.content ?? '',
       userId: note.user_id,
-      createdAt:
-        note.createdAt ||
-        note.created_at ||
-        note.date ||
-        new Date().toISOString(),
-      updatedAt: note.updatedAt ?? note.updated_at ?? null,
+      createdAt: note.created_at ?? note.createdAt ?? new Date().toISOString(),
+      updatedAt: note.updated_at ?? note.updatedAt ?? null,
     };
   }
 
-  private static getErrorMessage(
-    error: unknown,
-    fallbackMessage: string
-  ): string {
-    if (error instanceof ApiError) {
-      if (
-        error.body &&
-        typeof error.body === 'object' &&
-        'detail' in error.body &&
-        typeof (error.body as { detail?: unknown }).detail === 'string'
-      ) {
-        return (error.body as { detail: string }).detail;
-      }
+  async getNotes(): Promise<NotesListResult> {
+    try {
+      const response = (await ApiService.request('/notes')) as NoteApiResponse[];
 
-      if (error.message) {
-        return error.message;
-      }
+      const notes: Note[] = Array.isArray(response)
+        ? response.map((note) => this.normalizeNote(note))
+        : [];
+
+      return {
+        success: true,
+        data: notes,
+      };
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+
+      return {
+        success: false,
+        message: 'Не удалось загрузить заметки',
+      };
     }
+  }
 
-    if (error instanceof Error && error.message) {
-      return error.message;
+  async createNote(text: string): Promise<NoteResult> {
+    try {
+      const payload: NotePayload = { text };
+
+      const response = (await ApiService.request('/notes', {
+        method: 'POST',
+        body: payload,
+      })) as NoteApiResponse;
+
+      return {
+        success: true,
+        data: this.normalizeNote(response),
+      };
+    } catch (error) {
+      console.error('Error creating note:', error);
+
+      return {
+        success: false,
+        message: 'Не удалось создать заметку',
+      };
     }
+  }
 
-    return fallbackMessage;
+  async updateNote(id: NoteId, text: string): Promise<NoteResult> {
+    try {
+      const payload: NotePayload = { text };
+
+      const response = (await ApiService.request(`/notes/${id}`, {
+        method: 'PUT',
+        body: payload,
+      })) as NoteApiResponse;
+
+      return {
+        success: true,
+        data: this.normalizeNote(response),
+      };
+    } catch (error) {
+      console.error('Error updating note:', error);
+
+      return {
+        success: false,
+        message: 'Не удалось обновить заметку',
+      };
+    }
+  }
+
+  async deleteNote(
+    id: NoteId
+  ): Promise<{ success: true; message: string } | NotesErrorResult> {
+    try {
+      const response = (await ApiService.request(`/notes/${id}`, {
+        method: 'DELETE',
+      })) as DeleteApiResponse | undefined;
+
+      return {
+        success: true,
+        message: response?.message ?? 'Заметка удалена',
+      };
+    } catch (error) {
+      console.error('Error deleting note:', error);
+
+      return {
+        success: false,
+        message: 'Не удалось удалить заметку',
+      };
+    }
   }
 }
 
-export default NotesService;
+export default new NotesService();

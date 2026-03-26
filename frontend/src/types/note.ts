@@ -1,36 +1,27 @@
-export type NoteId = string | number;
+export type NoteId = number;
+
+export interface Note {
+  id: NoteId;
+  text: string;
+  userId?: number;
+  createdAt: string;
+  updatedAt: string | null;
+}
 
 export interface NoteApiResponse {
   id: NoteId;
   text?: string;
   content?: string;
-  user_id?: NoteId;
-  created_at?: string;
+  user_id?: number;
+  created_at?: string | null;
   updated_at?: string | null;
   createdAt?: string;
   updatedAt?: string | null;
   date?: string;
-  [key: string]: unknown;
-}
-
-export interface Note {
-  id: NoteId;
-  text: string;
-  userId?: NoteId;
-  createdAt: string;
-  updatedAt: string | null;
 }
 
 export interface NotePayload {
   text: string;
-  [key: string]: unknown;
-}
-
-export type NoteData = NotePayload;
-
-export interface NotesSuccessResult<T> {
-  success: true;
-  data: T;
 }
 
 export interface NotesErrorResult {
@@ -38,6 +29,15 @@ export interface NotesErrorResult {
   message: string;
 }
 
-export type NotesListResult = NotesSuccessResult<Note[]>;
-export type NoteResult = NotesSuccessResult<Note>;
-export type DeleteNoteResult = NotesSuccessResult<{ id: NoteId }>;
+export interface NotesListSuccessResult {
+  success: true;
+  data: Note[];
+}
+
+export interface NoteSuccessResult {
+  success: true;
+  data: Note;
+}
+
+export type NotesListResult = NotesListSuccessResult | NotesErrorResult;
+export type NoteResult = NoteSuccessResult | NotesErrorResult;

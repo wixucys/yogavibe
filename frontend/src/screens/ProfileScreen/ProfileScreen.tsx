@@ -82,10 +82,7 @@ interface GroupedField {
 
 type GroupedFields = Record<string, GroupedField[]>;
 
-type ServerProfile = Partial<Pick<ProfileState, 'city' | 'yoga_style' | 'experience' | 'goals' | 'username'>> & {
-  id?: string | number;
-  [key: string]: unknown;
-};
+type ServerProfile = Partial<User>;
 
 type LocalProfile = Partial<ProfileState>;
 

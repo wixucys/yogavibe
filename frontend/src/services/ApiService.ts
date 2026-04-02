@@ -1,11 +1,17 @@
-import type { User } from '../types/user';
+import type { AdminDashboard, User } from '../types/user';
 import type {
   AuthTokens,
   AuthResponse,
   LoginCredentials,
   RegisterData,
 } from '../types/auth';
-import type { MentorFilters, Mentor } from '../types/mentor';
+import type {
+  MentorFilters,
+  Mentor,
+  MentorApi,
+  MentorCreatePayload,
+  MentorAdminUpdatePayload,
+} from '../types/mentor';
 import type { NoteData, Note } from '../types/note';
 import type { BookingData, Booking } from '../types/booking';
 
@@ -273,14 +279,50 @@ class ApiService {
     return this.request<Mentor>(`/mentors/${mentorId}`);
   }
 
-  static async getMyMentorProfile(): Promise<Mentor> {
-    return this.request<Mentor>('/mentor/me');
+  static async getMyMentorProfile(): Promise<MentorApi> {
+    return this.request<MentorApi>('/mentor/me');
   }
 
-  static async updateMyMentorProfile(profileData: Partial<Mentor>): Promise<Mentor> {
-    return this.request<Mentor>('/mentor/me', {
+  static async updateMyMentorProfile(
+    profileData: Partial<MentorAdminUpdatePayload>
+  ): Promise<MentorApi> {
+    return this.request<MentorApi>('/mentor/me', {
       method: 'PUT',
       body: profileData,
+    });
+  }
+
+  static async getAdminMentors(
+    skip = 0,
+    limit = 100
+  ): Promise<MentorApi[]> {
+    return this.request<MentorApi[]>(`/admin/mentors?skip=${skip}&limit=${limit}`);
+  }
+
+  static async createAdminMentor(
+    mentorData: MentorCreatePayload
+  ): Promise<MentorApi> {
+    return this.request<MentorApi>('/admin/mentors', {
+      method: 'POST',
+      body: mentorData,
+    });
+  }
+
+  static async updateAdminMentor(
+    mentorId: string | number,
+    mentorData: MentorAdminUpdatePayload
+  ): Promise<MentorApi> {
+    return this.request<MentorApi>(`/admin/mentors/${mentorId}`, {
+      method: 'PUT',
+      body: mentorData,
+    });
+  }
+
+  static async deleteAdminMentor(
+    mentorId: string | number
+  ): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/mentors/${mentorId}`, {
+      method: 'DELETE',
     });
   }
 
@@ -333,6 +375,20 @@ class ApiService {
 
   static async getAdminUsers(skip = 0, limit = 100): Promise<User[]> {
     return this.request<User[]>(`/admin/users?skip=${skip}&limit=${limit}`);
+  }
+
+  static async getAdminDashboard(): Promise<AdminDashboard> {
+    return this.request<AdminDashboard>('/admin/dashboard');
+  }
+
+  static async updateAdminUser(
+    userId: number | string,
+    userData: Partial<User>
+  ): Promise<User> {
+    return this.request<User>(`/admin/users/${userId}`, {
+      method: 'PUT',
+      body: userData,
+    });
   }
 
   static isAuthenticated(): boolean {

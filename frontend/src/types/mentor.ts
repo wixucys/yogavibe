@@ -57,6 +57,45 @@ export interface MentorFilters {
   limit?: number;
 }
 
+export interface MentorCreatePayload {
+  user_id: number;
+  name: string;
+  description: string;
+  gender: string;
+  city: string;
+  price: number;
+  yoga_style: string;
+  rating?: number;
+  experience_years?: number;
+  photo_url?: string | null;
+  is_available?: boolean;
+}
+
+export interface MentorAdminUpdatePayload {
+  name?: string;
+  description?: string;
+  gender?: string;
+  city?: string;
+  price?: number;
+  yoga_style?: string;
+  rating?: number;
+  experience_years?: number;
+  photo_url?: string | null;
+  is_available?: boolean;
+}
+
+export interface MentorSelfUpdatePayload {
+  name?: string;
+  description?: string;
+  gender?: string;
+  city?: string;
+  price?: number;
+  yoga_style?: string;
+  experience_years?: number;
+  photo_url?: string | null;
+  is_available?: boolean;
+}
+
 // ===== Мапперы =====
 export const mapMentorFromApi = (mentor: MentorApi): Mentor => ({
   id: mentor.id,

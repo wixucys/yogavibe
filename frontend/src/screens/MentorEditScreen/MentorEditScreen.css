@@ -1,0 +1,118 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+
+.mentor-edit-page {
+  min-height: 100vh;
+  padding: 2rem 1.5rem 3rem;
+  background-image: url('../../../public/assets/images/background_2.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-family: 'Montserrat', sans-serif;
+  color: #3f2f36;
+}
+
+.mentor-edit-page .page-inner {
+  width: min(900px, 100%);
+  margin: 0 auto;
+}
+
+.mentor-edit-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  justify-content: space-between;
+}
+
+.back-button {
+  border: none;
+  background: #69505c;
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+.mentor-edit-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.mentor-edit-error,
+.mentor-edit-success {
+  padding: 1rem;
+  border-radius: 1rem;
+  margin-bottom: 1rem;
+}
+
+.mentor-edit-error {
+  background: #fdecea;
+  color: #8c2e2e;
+}
+
+.mentor-edit-success {
+  background: #e9f8ed;
+  color: #276738;
+}
+
+.mentor-edit-form {
+  display: grid;
+  gap: 1rem;
+  max-width: 44rem;
+  background: rgba(228, 216, 210, 0.95);
+  padding: 1.75rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 0.75rem 1.5rem rgba(105, 80, 92, 0.12);
+}
+
+.mentor-edit-form label {
+  display: grid;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.mentor-edit-form input,
+.mentor-edit-form textarea,
+.mentor-edit-form select {
+  width: 100%;
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #d8cdc6;
+  font-size: 1rem;
+  font-family: 'Montserrat', sans-serif;
+  background: white;
+}
+
+.mentor-edit-form textarea {
+  min-height: 8rem;
+}
+
+.checkbox-field {
+  align-items: center;
+  grid-template-columns: auto 1fr;
+  display: inline-flex;
+  gap: 0.75rem;
+}
+
+.mentor-edit-form button {
+  width: fit-content;
+  background: #69505c;
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.95rem 1.5rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.mentor-edit-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.mentor-edit-loading {
+  min-height: calc(100vh - 5.625rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -24,6 +24,8 @@ export interface NotePayload {
   text: string;
 }
 
+export type NoteData = NotePayload;
+
 export interface NotesErrorResult {
   success: false;
   message: string;

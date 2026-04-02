@@ -5,6 +5,10 @@ import LoginScreen from './screens/LoginScreen/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen/RegisterScreen';
 import MainScreen from './screens/MainScreen/MainScreen';
 import MentorProfileScreen from './screens/MentorsProfile/MentorProfileScreen';
+import MentorDashboardScreen from './screens/MentorDashboardScreen/MentorDashboardScreen';
+import MentorEditScreen from './screens/MentorEditScreen/MentorEditScreen';
+import AdminDashboardScreen from './screens/AdminDashboardScreen/AdminDashboardScreen';
+import AdminMentorsScreen from './screens/AdminMentorsScreen/AdminMentorsScreen';
 import BookingScreen from './screens/BookingScreen/BookingScreen';
 import BookingConfirmationScreen from './screens/BookingConfirm/BookingConfirmationScreen';
 import AuthService from './services/AuthService';
@@ -175,8 +179,48 @@ function App(): JSX.Element {
             }
           />
           <Route
+            path="/mentor/dashboard"
+            element={
+              isAuthenticated && user?.role === 'mentor' ? (
+                <MentorDashboardScreen />
+              ) : (
+                <Navigate to="/main" />
+              )
+            }
+          />
+          <Route
+            path="/mentor/profile/edit"
+            element={
+              isAuthenticated && user?.role === 'mentor' ? (
+                <MentorEditScreen />
+              ) : (
+                <Navigate to="/main" />
+              )
+            }
+          />
+          <Route
             path="/mentor/:mentorId"
             element={isAuthenticated ? <MentorProfileScreen /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/admin/dashboard"
+            element={
+              isAuthenticated && user?.role === 'admin' ? (
+                <AdminDashboardScreen />
+              ) : (
+                <Navigate to="/main" />
+              )
+            }
+          />
+          <Route
+            path="/admin/mentors"
+            element={
+              isAuthenticated && user?.role === 'admin' ? (
+                <AdminMentorsScreen />
+              ) : (
+                <Navigate to="/main" />
+              )
+            }
           />
           <Route
             path="/booking/:mentorId"

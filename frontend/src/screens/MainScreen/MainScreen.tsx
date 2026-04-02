@@ -233,6 +233,16 @@ const MainScreen = ({ user, onLogout }: MainScreenProps): JSX.Element => {
               </a>
             )
           )}
+          {userInfo.role === 'mentor' && (
+            <Link className="main-nav-link" to="/mentor/dashboard">
+              Панель ментора
+            </Link>
+          )}
+          {userInfo.role === 'admin' && (
+            <Link className="main-nav-link" to="/admin/dashboard">
+              Панель администратора
+            </Link>
+          )}
         </nav>
 
         <button className="mail-btn" onClick={toggleNotifications} />

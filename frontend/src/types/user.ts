@@ -15,6 +15,18 @@ export interface User {
   is_active: boolean;
 }
 
+export interface AdminDashboard {
+  total_users: number;
+  active_users: number;
+  admins_count: number;
+  mentors_count: number;
+  mentor_profiles_count: number;
+  regular_users_count: number;
+  bookings_count: number;
+  active_bookings_count: number;
+  notes_count: number;
+}
+
 export interface LocalProfileData {
   age?: string;
   contactInfo?: string;

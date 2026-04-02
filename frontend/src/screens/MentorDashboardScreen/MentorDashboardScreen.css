@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+
+.mentor-dashboard-page {
+  min-height: 100vh;
+  padding: 2rem 1.5rem 3rem;
+  background-image: url('../../../public/assets/images/background_2.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  font-family: 'Montserrat', sans-serif;
+  color: #3f2f36;
+}
+
+.mentor-dashboard-page .page-inner {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+}
+
+.mentor-dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.mentor-dashboard-page h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.dashboard-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.2rem;
+  border-radius: 0.85rem;
+  background: #69505c;
+  color: white;
+  text-decoration: none;
+  font-weight: 700;
+  transition: background 0.2s ease;
+}
+
+.dashboard-back-button:hover {
+  background: #4d3943;
+}
+
+.mentor-dashboard-card,
+.mentor-bookings-section {
+  background: rgba(228, 216, 210, 0.95);
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+  box-shadow: 0 0.5rem 1rem rgba(105, 80, 92, 0.12);
+  margin-bottom: 1.75rem;
+}
+
+.mentor-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.mentor-edit-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+  color: #69505c;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.mentor-edit-link:hover {
+  text-decoration: underline;
+}
+
+.mentor-info-header h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.status-available,
+.status-unavailable {
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.status-available {
+  background: #b8e6c3;
+  color: #2f5e31;
+}
+
+.status-unavailable {
+  background: #f7c6c2;
+  color: #8c2e2e;
+}
+
+.mentor-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.mentor-info-grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.mentor-info-fullwidth {
+  grid-column: span 2;
+}
+
+.mentor-info-grid strong {
+  font-weight: 700;
+}
+
+.mentor-bookings-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.mentor-bookings-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.mentor-booking-card {
+  background: white;
+  border-radius: 1rem;
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid #e7d9d3;
+}
+
+.mentor-booking-card strong {
+  display: inline-block;
+  margin-bottom: 0.25rem;
+}
+
+.booking-notes {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background: #fff4e8;
+  border-radius: 0.75rem;
+}
+
+.mentor-dashboard-loading,
+.mentor-dashboard-error,
+.mentor-dashboard-empty {
+  min-height: calc(100vh - 5.625rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: #5f3e47;
+}

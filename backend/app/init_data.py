@@ -149,8 +149,6 @@ def init_db():
     db = SessionLocal()
     try:
         create_default_admin(db)
-        create_demo_regular_user(db)
-        create_demo_mentor_profiles(db)
     finally:
         db.close()
 

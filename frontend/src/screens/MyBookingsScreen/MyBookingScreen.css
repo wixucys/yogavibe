@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
 .bookings-page {
   min-height: calc(100vh - 5.625rem);
@@ -27,7 +27,7 @@
 }
 
 .bookings-header h1 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 2rem;
@@ -134,7 +134,7 @@
 }
 
 .booking-mentor-info h3 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 1.2rem;
@@ -285,7 +285,7 @@
 }
 
 .stat-value {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 1.5rem;
@@ -315,7 +315,7 @@
 }
 
 .no-bookings h3 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 1.3rem;

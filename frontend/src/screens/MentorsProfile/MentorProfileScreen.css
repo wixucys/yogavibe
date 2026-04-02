@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
 /* Основной контейнер */
 .mentor-profile-page {
@@ -36,7 +36,7 @@
 }
 
 .mentor-profile-header h1 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 1.8rem;
@@ -134,7 +134,7 @@
 }
 
 .mentor-name {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 1.6rem;
@@ -243,7 +243,7 @@
 }
 
 .mentor-section h3 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 1.1rem;
@@ -354,7 +354,7 @@
 }
 
 .mentor-profile-not-found h2 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 2rem;

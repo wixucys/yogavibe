@@ -127,7 +127,7 @@ const AdminDashboardScreen = (): JSX.Element => {
     <div className="admin-dashboard-page">
       <div className="admin-dashboard-header">
         <h1>Административная панель</h1>
-        <button type="button" className="dashboard-back-button" onClick={handleLogout}>
+        <button type="button" className="dashboard-logout-button" onClick={handleLogout}>
           Выйти
         </button>
       </div>

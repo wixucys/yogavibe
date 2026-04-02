@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
 /* Фон для всей страницы */
 .main-bg {
@@ -6,7 +6,7 @@
   background-image: url('../../../public/assets/images/background_2.png');
   background-size: cover;
   background-position: center;
-  font-family: 'Montserrat', serif;
+  font-family: 'Montserrat', sans-serif;
   transition: filter 0.3s ease;
 }
 
@@ -29,7 +29,7 @@
 
 .logo {
   font-size: 1.3rem;
-  font-family: 'Montserrat', serif;
+  font-family: 'Montserrat', sans-serif;
   color: #69505c;
   font-weight: 500;
   text-align: left;
@@ -44,7 +44,7 @@
 
 .main-nav-link {
   font-size: 1.1rem;
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   text-decoration: none;
@@ -65,18 +65,24 @@
 .mail-btn {
   width: 2rem;
   height: 2rem;
-  background: url('../MainScreen/mail-icon.svg') no-repeat center center;
+  border: none;
+  padding: 0;
+  background: transparent url('../MainScreen/mail-icon.svg') no-repeat center center;
   background-size: contain;
   margin-right: 0.5rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: filter 0.3s ease, transform 0.3s ease;
   position: relative;
   z-index: 1001;
 }
 
 .mail-btn:hover {
-  filter: drop-shadow(0 0.25rem 0.5rem rgba(105, 80, 92, 0.3));
+  filter: drop-shadow(0 0.25rem 0.5rem rgba(105, 80, 92, 0.2));
   transform: translateY(-0.125rem);
+}
+
+.mail-btn:focus {
+  outline: none;
 }
 
 /* Страница менторов с фильтрами слева */
@@ -102,7 +108,7 @@
 }
 
 .filters-header h3 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 1.4rem;
@@ -268,7 +274,7 @@
 }
 
 .mentor-name {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 1.3rem;
@@ -420,7 +426,7 @@
 }
 
 .page-content h2 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 2.5rem;
@@ -469,7 +475,7 @@
 }
 
 .notifications-header h3 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   margin: 0;
@@ -677,7 +683,7 @@
 .loading-screen h2,
 .mentor-profile-not-found h2,
 .confirmation-not-found h2 {
-  font-family: 'Source Serif Pro', serif;
+  font-family: 'Montserrat', sans-serif;
   font-weight: 900;
   color: #69505c;
   font-size: 2rem;

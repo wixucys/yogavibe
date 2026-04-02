@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
 .mentor-edit-page {
   min-height: 100vh;
@@ -58,7 +58,9 @@
 .mentor-edit-form {
   display: grid;
   gap: 1rem;
+  width: 100%;
   max-width: 44rem;
+  margin: 0 auto;
   background: rgba(228, 216, 210, 0.95);
   padding: 1.75rem;
   border-radius: 1.25rem;

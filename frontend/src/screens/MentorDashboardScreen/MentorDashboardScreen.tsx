@@ -80,7 +80,7 @@ const MentorDashboardScreen = (): JSX.Element => {
     <div className="mentor-dashboard-page">
       <div className="mentor-dashboard-header">
         <h1>Панель ментора</h1>
-        <button type="button" className="dashboard-back-button" onClick={handleLogout}>
+        <button type="button" className="dashboard-logout-button" onClick={handleLogout}>
           Выйти
         </button>
       </div>

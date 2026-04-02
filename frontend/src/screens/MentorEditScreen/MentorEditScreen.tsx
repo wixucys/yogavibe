@@ -85,17 +85,18 @@ const MentorEditScreen = (): JSX.Element => {
 
   return (
     <div className="mentor-edit-page">
-      <div className="mentor-edit-header">
-        <button className="back-button" onClick={() => navigate(-1)}>
-          Назад
-        </button>
-        <h1>Редактирование профиля ментора</h1>
-      </div>
+      <div className="page-inner">
+        <div className="mentor-edit-header">
+          <button className="back-button" onClick={() => navigate(-1)}>
+            Назад
+          </button>
+          <h1>Редактирование профиля ментора</h1>
+        </div>
 
-      {error && <div className="mentor-edit-error">⚠ {error}</div>}
-      {success && <div className="mentor-edit-success">✅ {success}</div>}
+        {error && <div className="mentor-edit-error">⚠ {error}</div>}
+        {success && <div className="mentor-edit-success">✅ {success}</div>}
 
-      <form className="mentor-edit-form" onSubmit={handleSubmit}>
+        <form className="mentor-edit-form" onSubmit={handleSubmit}>
         <label>
           Имя
           <input
@@ -187,6 +188,7 @@ const MentorEditScreen = (): JSX.Element => {
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
       </form>
+      </div>
     </div>
   );
 };

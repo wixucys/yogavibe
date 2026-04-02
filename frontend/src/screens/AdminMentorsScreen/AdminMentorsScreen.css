@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Source+Serif+Pro:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
 .admin-mentors-page {
   min-height: 100vh;
@@ -74,6 +74,7 @@
 .admin-mentor-create h2,
 .admin-mentors-list h2 {
   margin-top: 0;
+  margin-bottom:1rem;
   font-size: 1.25rem;
 }
 
@@ -101,7 +102,8 @@
 .admin-mentor-create textarea,
 .mentor-row input,
 .mentor-row select {
-  width: 100%;
+  width: 220px;
+  height: 50px;
   padding: 0.85rem 1rem;
   border-radius: 0.75rem;
   border: 1px solid #d8cdc6;
@@ -118,6 +120,7 @@
   border-radius: 0.75rem;
   padding: 0.85rem 1rem;
   background: #69505c;
+  font-size: 15px;
   color: white;
   cursor: pointer;
   font-weight: 700;

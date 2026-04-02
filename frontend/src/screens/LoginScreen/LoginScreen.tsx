@@ -65,6 +65,13 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
     return true;
   };
 
+  const getRedirectPath = (user: { role?: string } | undefined): string => {
+    if (!user) return '/main';
+    if (user.role === 'admin') return '/admin/dashboard';
+    if (user.role === 'mentor') return '/mentor/dashboard';
+    return '/main';
+  };
+
   const handleLogin = async (
     event: React.FormEvent<HTMLFormElement>
   ): Promise<void> => {
@@ -88,7 +95,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
       const result = await onLogin(credentials);
 
       if (result.success) {
-        navigate('/main');
+        navigate(getRedirectPath(result.user));
         return;
       }
 

@@ -235,12 +235,12 @@ const MainScreen = ({ user, onLogout }: MainScreenProps): JSX.Element => {
           )}
           {userInfo.role === 'mentor' && (
             <Link className="main-nav-link" to="/mentor/dashboard">
-              Панель ментора
+              ПАНЕЛЬ МЕНТОРА
             </Link>
           )}
           {userInfo.role === 'admin' && (
             <Link className="main-nav-link" to="/admin/dashboard">
-              Панель администратора
+              ПАНЕЛЬ АДМИНИСТРАТОРА
             </Link>
           )}
         </nav>

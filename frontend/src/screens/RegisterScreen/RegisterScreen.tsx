@@ -106,6 +106,13 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const getRedirectPath = (user: { role?: string } | undefined): string => {
+    if (!user) return '/main';
+    if (user.role === 'admin') return '/admin/dashboard';
+    if (user.role === 'mentor') return '/mentor/dashboard';
+    return '/main';
+  };
+
   const handleRegister = async (
     e: React.FormEvent<HTMLFormElement>
   ): Promise<void> => {
@@ -130,7 +137,7 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
       const result = await onRegister(userData);
 
       if (result.success) {
-        navigate('/main');
+        navigate(getRedirectPath(result.user));
         return;
       }
 

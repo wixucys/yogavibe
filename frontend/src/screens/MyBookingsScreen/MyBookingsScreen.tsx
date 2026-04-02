@@ -110,42 +110,80 @@ const MyBookingsScreen = (): JSX.Element => {
 
   return (
     <div className="bookings-page">
-      <h1>Мои записи</h1>
+      <div className="bookings-container">
+        <div className="bookings-header">
+          <h1>Мои записи</h1>
+          {error && <div className="error-message">⚠ {error}</div>}
+        </div>
 
-      {error && <div className="error-message">⚠ {error}</div>}
+        <div className="bookings-tabs">
+          {(['active', 'completed', 'cancelled'] as ActiveTab[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setActiveTab(tab)}
+              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
+            >
+              {tab} ({counts[tab]})
+            </button>
+          ))}
+        </div>
 
-      <div className="bookings-tabs">
-        {(['active', 'completed', 'cancelled'] as ActiveTab[]).map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={activeTab === tab ? 'active' : ''}
-          >
-            {tab} ({counts[tab]})
-          </button>
-        ))}
-      </div>
+        {filteredBookings.length === 0 ? (
+          <div>Нет записей</div>
+        ) : (
+          <div className="bookings-list">
+            {filteredBookings.map((booking) => (
+              <div key={booking.id} className="booking-card">
+                <div className="booking-header">
+                  <div className="booking-mentor-info">
+                    <h3>{booking.mentorName}</h3>
+                  </div>
+                  <span className={`status-badge status-${booking.status}`}>{booking.status}</span>
+                </div>
 
-      {filteredBookings.length === 0 ? (
-        <div>Нет записей</div>
-      ) : (
-        filteredBookings.map((booking) => (
-          <div key={booking.id} className="booking-card">
-            <h3>{booking.mentorName}</h3>
-            <div>{booking.sessionDate.toLocaleString('ru-RU')}</div>
-            {booking.mentorCity && <div>{booking.mentorCity}</div>}
-            {booking.mentorYogaStyle && <div>{booking.mentorYogaStyle}</div>}
-            <div>{getSessionTypeLabel(booking.sessionType)}</div>
-            <div>{booking.price} ₽</div>
+                <div className="booking-details">
+                  <div className="detail-row">
+                    <div className="detail-label">Дата:</div>
+                    <div className="detail-value">{booking.sessionDate.toLocaleString('ru-RU')}</div>
+                  </div>
+                  {booking.mentorCity && (
+                    <div className="detail-row">
+                      <div className="detail-label">Город:</div>
+                      <div className="detail-value">{booking.mentorCity}</div>
+                    </div>
+                  )}
+                  {booking.mentorYogaStyle && (
+                    <div className="detail-row">
+                      <div className="detail-label">Стиль:</div>
+                      <div className="detail-value">{booking.mentorYogaStyle}</div>
+                    </div>
+                  )}
+                  <div className="detail-row">
+                    <div className="detail-label">Тип:</div>
+                    <div className="detail-value">{getSessionTypeLabel(booking.sessionType)}</div>
+                  </div>
+                  <div className="detail-row">
+                    <div className="detail-label">Цена:</div>
+                    <div className="detail-value price">{booking.price} ₽</div>
+                  </div>
+                </div>
 
-            <button onClick={() => handleViewMentor(booking.mentorId)}>Ментор</button>
-
-            {booking.status === 'active' && booking.sessionDate > new Date() && (
-              <button onClick={() => handleCancelBooking(booking.id)}>Отменить</button>
-            )}
+                <div className="booking-actions">
+                  <button className="action-btn view-mentor-btn" onClick={() => handleViewMentor(booking.mentorId)}>
+                    Ментор
+                  </button>
+                  {booking.status === 'active' && booking.sessionDate > new Date() && (
+                    <button className="action-btn cancel-btn" onClick={() => handleCancelBooking(booking.id)}>
+                      Отменить
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))
-      )}
+        )}
+      </div>
     </div>
   );
 };

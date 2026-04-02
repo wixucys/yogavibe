@@ -60,6 +60,14 @@ const MentorDashboardScreen = (): JSX.Element => {
     return date.toLocaleString('ru-RU');
   };
 
+  const handleLogout = async (): Promise<void> => {
+    try {
+      await ApiService.logout();
+    } finally {
+      window.location.href = '/login';
+    }
+  };
+
   if (loading) {
     return <div className="mentor-dashboard-loading">Загрузка...</div>;
   }
@@ -72,9 +80,9 @@ const MentorDashboardScreen = (): JSX.Element => {
     <div className="mentor-dashboard-page">
       <div className="mentor-dashboard-header">
         <h1>Панель ментора</h1>
-        <Link to="/main" className="dashboard-back-button">
-          На главную
-        </Link>
+        <button type="button" className="dashboard-back-button" onClick={handleLogout}>
+          Выйти
+        </button>
       </div>
 
       {mentor ? (

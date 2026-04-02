@@ -37,6 +37,18 @@ const AdminDashboardScreen = (): JSX.Element => {
     void loadAdminData();
   }, []);
 
+  const refreshDashboard = async (): Promise<void> => {
+    try {
+      const dashboardData = await ApiService.getAdminDashboard();
+      setDashboard(dashboardData);
+    } catch (err: unknown) {
+      console.warn(
+        'Не удалось обновить статистику администратора',
+        err
+      );
+    }
+  };
+
   const updateUser = async (
     userId: number,
     changes: Partial<User>
@@ -48,6 +60,7 @@ const AdminDashboardScreen = (): JSX.Element => {
           user.id === updatedUser.id ? updatedUser : user
         )
       );
+      await refreshDashboard();
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -69,12 +82,37 @@ const AdminDashboardScreen = (): JSX.Element => {
     await updateUser(user.id, { role: nextRole });
   };
 
+  const handleDeleteUser = async (user: User): Promise<void> => {
+    if (user.role === 'admin') return;
+    if (!window.confirm('Удалить пользователя без возможности восстановления?')) return;
+
+    try {
+      await ApiService.deleteAdminUser(user.id);
+      setUsers((prevUsers) => prevUsers.filter((item) => item.id !== user.id));
+      await refreshDashboard();
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Не удалось удалить пользователя'
+      );
+    }
+  };
+
   const formatDate = (value: string | undefined): string => {
     if (!value) return 'Не указано';
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? 'Не указано'
       : date.toLocaleDateString('ru-RU');
+  };
+
+  const handleLogout = async (): Promise<void> => {
+    try {
+      await ApiService.logout();
+    } finally {
+      window.location.href = '/login';
+    }
   };
 
   if (loading) {
@@ -89,9 +127,9 @@ const AdminDashboardScreen = (): JSX.Element => {
     <div className="admin-dashboard-page">
       <div className="admin-dashboard-header">
         <h1>Административная панель</h1>
-        <Link to="/main" className="dashboard-back-button">
-          На главную
-        </Link>
+        <button type="button" className="dashboard-back-button" onClick={handleLogout}>
+          Выйти
+        </button>
       </div>
 
       {dashboard ? (
@@ -168,6 +206,12 @@ const AdminDashboardScreen = (): JSX.Element => {
                     onClick={() => void handleToggleActive(user)}
                   >
                     {user.is_active ? 'Деактивировать' : 'Активировать'}
+                  </button>
+                  <button
+                    disabled={user.role === 'admin'}
+                    onClick={() => void handleDeleteUser(user)}
+                  >
+                    Удалить
                   </button>
                 </div>
               </div>

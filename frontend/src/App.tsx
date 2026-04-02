@@ -26,6 +26,13 @@ function App(): JSX.Element {
   const [loading, setLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
 
+  const getDefaultRoute = (currentUser: User | null): string => {
+    if (!currentUser) return '/login';
+    if (currentUser.role === 'admin') return '/admin/dashboard';
+    if (currentUser.role === 'mentor') return '/mentor/dashboard';
+    return '/main';
+  };
+
   useEffect(() => {
     const checkAuth = async (): Promise<void> => {
       try {
@@ -151,18 +158,27 @@ function App(): JSX.Element {
     <Router>
       <div className="App">
         <Routes>
-          <Route path="/" element={<WelcomeScreen />} />
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? <Navigate to={getDefaultRoute(user)} /> : <WelcomeScreen />
+            }
+          />
           <Route
             path="/login"
             element={
-              isAuthenticated ? <Navigate to="/main" /> : <LoginScreen onLogin={handleLogin} />
+              isAuthenticated ? (
+                <Navigate to={getDefaultRoute(user)} />
+              ) : (
+                <LoginScreen onLogin={handleLogin} />
+              )
             }
           />
           <Route
             path="/register"
             element={
               isAuthenticated ? (
-                <Navigate to="/main" />
+                <Navigate to={getDefaultRoute(user)} />
               ) : (
                 <RegisterScreen onRegister={handleRegister} />
               )
@@ -172,7 +188,11 @@ function App(): JSX.Element {
             path="/main"
             element={
               isAuthenticated && user ? (
-                <MainScreen user={user} onLogout={handleLogout} />
+                user.role === 'user' ? (
+                  <MainScreen user={user} onLogout={handleLogout} />
+                ) : (
+                  <Navigate to={getDefaultRoute(user)} />
+                )
               ) : (
                 <Navigate to="/login" />
               )
@@ -181,20 +201,28 @@ function App(): JSX.Element {
           <Route
             path="/mentor/dashboard"
             element={
-              isAuthenticated && user?.role === 'mentor' ? (
-                <MentorDashboardScreen />
+              isAuthenticated ? (
+                user?.role === 'mentor' ? (
+                  <MentorDashboardScreen />
+                ) : (
+                  <Navigate to={getDefaultRoute(user)} />
+                )
               ) : (
-                <Navigate to="/main" />
+                <Navigate to="/login" />
               )
             }
           />
           <Route
             path="/mentor/profile/edit"
             element={
-              isAuthenticated && user?.role === 'mentor' ? (
-                <MentorEditScreen />
+              isAuthenticated ? (
+                user?.role === 'mentor' ? (
+                  <MentorEditScreen />
+                ) : (
+                  <Navigate to={getDefaultRoute(user)} />
+                )
               ) : (
-                <Navigate to="/main" />
+                <Navigate to="/login" />
               )
             }
           />
@@ -205,30 +233,50 @@ function App(): JSX.Element {
           <Route
             path="/admin/dashboard"
             element={
-              isAuthenticated && user?.role === 'admin' ? (
-                <AdminDashboardScreen />
+              isAuthenticated ? (
+                user?.role === 'admin' ? (
+                  <AdminDashboardScreen />
+                ) : (
+                  <Navigate to={getDefaultRoute(user)} />
+                )
               ) : (
-                <Navigate to="/main" />
+                <Navigate to="/login" />
               )
             }
           />
           <Route
             path="/admin/mentors"
             element={
-              isAuthenticated && user?.role === 'admin' ? (
-                <AdminMentorsScreen />
+              isAuthenticated ? (
+                user?.role === 'admin' ? (
+                  <AdminMentorsScreen />
+                ) : (
+                  <Navigate to={getDefaultRoute(user)} />
+                )
               ) : (
-                <Navigate to="/main" />
+                <Navigate to="/login" />
               )
             }
           />
           <Route
             path="/booking/:mentorId"
-            element={isAuthenticated ? <BookingScreen /> : <Navigate to="/login" />}
+            element={
+              isAuthenticated && user?.role === 'user' ? (
+                <BookingScreen />
+              ) : (
+                <Navigate to={getDefaultRoute(user)} />
+              )
+            }
           />
           <Route
             path="/booking-confirmation"
-            element={isAuthenticated ? <BookingConfirmationScreen /> : <Navigate to="/login" />}
+            element={
+              isAuthenticated && user?.role === 'user' ? (
+                <BookingConfirmationScreen />
+              ) : (
+                <Navigate to={getDefaultRoute(user)} />
+              )
+            }
           />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

@@ -143,6 +143,25 @@ class UserCRUD:
         db.refresh(user)
         return user
 
+    @staticmethod
+    def delete_user(db: Session, user_id: int) -> bool:
+        user = UserCRUD.get_user(db, user_id)
+        if not user:
+            return False
+
+        if user.role == 'admin':
+            admins_count = UserCRUD.count_users_by_role(db, 'admin')
+            if admins_count <= 1:
+                raise ValueError('Нельзя удалить последнего администратора')
+
+        mentor_profile = MentorCRUD.get_mentor_by_user_id(db, user.id)
+        if mentor_profile:
+            db.delete(mentor_profile)
+
+        db.delete(user)
+        db.commit()
+        return True
+
 
 class MentorCRUD:
     @staticmethod

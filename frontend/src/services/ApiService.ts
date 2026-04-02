@@ -391,6 +391,14 @@ class ApiService {
     });
   }
 
+  static async deleteAdminUser(
+    userId: number | string
+  ): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
   static isAuthenticated(): boolean {
     return Boolean(localStorage.getItem('yogavibe_token'));
   }

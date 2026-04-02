@@ -677,6 +677,29 @@ async def admin_update_user(
     return schemas.UserResponse.model_validate(updated_user)
 
 
+@router.delete("/admin/users/{user_id}")
+async def admin_delete_user(
+    user_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+):
+    try:
+        deleted = crud.user_crud.delete_user(db, user_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        )
+
+    if deleted:
+        return {"message": "Пользователь удалён"}
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Пользователь не найден",
+    )
+
+
 @router.put("/admin/users/{user_id}/role", response_model=schemas.UserResponse)
 async def admin_change_user_role(
     user_id: int,

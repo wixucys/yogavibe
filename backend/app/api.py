@@ -210,7 +210,7 @@ async def login(
             detail="Пользователь деактивирован",
         )
 
-    crud.refresh_token_crud.clear_expired_tokens(db, user.id)
+    crud.refresh_token_crud.clear_all_user_tokens(db, user.id)
 
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})

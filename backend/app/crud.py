@@ -139,6 +139,19 @@ class UserCRUD:
             if key in allowed_fields:
                 setattr(user, key, value)
 
+        # Если пользователь деактивируется, отзываем все его токены
+        if "is_active" in updates and updates["is_active"] is False:
+            stmt = (
+                select(models.RefreshToken)
+                .where(
+                    models.RefreshToken.user_id == user_id,
+                    models.RefreshToken.is_active.is_(True)
+                )
+            )
+            tokens = db.scalars(stmt).all()
+            for token in tokens:
+                token.is_active = False
+
         db.commit()
         db.refresh(user)
         return user
@@ -498,6 +511,51 @@ class RefreshTokenCRUD:
         refresh_token.is_active = False
         db.commit()
         return True
+
+    @staticmethod
+    def clear_all_user_tokens(db: Session, user_id: int) -> int:
+        """Деактивирует все активные refresh токены пользователя"""
+        stmt = (
+            select(models.RefreshToken)
+            .where(
+                models.RefreshToken.user_id == user_id,
+                models.RefreshToken.is_active.is_(True)
+            )
+        )
+        tokens = db.scalars(stmt).all()
+        
+        deactivated_count = 0
+        for token in tokens:
+            token.is_active = False
+            deactivated_count += 1
+        
+        if deactivated_count > 0:
+            db.commit()
+        
+        return deactivated_count
+
+    @staticmethod
+    def clear_expired_tokens(db: Session, user_id: int) -> int:
+        """Удаляет просроченные токены пользователя"""
+        now = datetime.now(timezone.utc)
+        stmt = (
+            select(models.RefreshToken)
+            .where(
+                models.RefreshToken.user_id == user_id,
+                models.RefreshToken.expires_at <= now
+            )
+        )
+        expired_tokens = db.scalars(stmt).all()
+        
+        deleted_count = 0
+        for token in expired_tokens:
+            db.delete(token)
+            deleted_count += 1
+        
+        if deleted_count > 0:
+            db.commit()
+        
+        return deleted_count
 
     @staticmethod
     def clear_expired_tokens(db: Session, user_id: int) -> None:

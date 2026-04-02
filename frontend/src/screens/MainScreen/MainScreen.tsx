@@ -10,7 +10,8 @@ import ApiService from '../../services/ApiService';
 import AuthService from '../../services/AuthService';
 
 import type { User } from '../../types/user';
-import type { Mentor } from '../../types/mentor';
+import type { Mentor, MentorApi } from '../../types/mentor';
+import { mapMentorFromApi } from '../../types/mentor';
 
 import { CITIES, YOGA_STYLES } from '../../constants/filters';
 
@@ -94,10 +95,11 @@ const MainScreen = ({ user, onLogout }: MainScreenProps): JSX.Element => {
           ? `/mentors?${queryParams}`
           : '/mentors';
 
-        const data = await ApiService.request<Mentor[]>(url, { method: 'GET' });
+        const data = await ApiService.request<MentorApi[]>(url, { method: 'GET' });
+        const normalizedMentors = data.map(mapMentorFromApi);
 
         if (!cancelled) {
-          setMentors(data);
+          setMentors(normalizedMentors);
         }
       } catch (error) {
         console.error(error);
@@ -155,7 +157,7 @@ const MainScreen = ({ user, onLogout }: MainScreenProps): JSX.Element => {
 
       if (max !== null && mentor.price > max) return false;
 
-      return mentor.isAvailable;
+      return mentor.isAvailable !== false;
     });
   }, [mentors, filters]);
 
@@ -352,15 +354,34 @@ const MainScreen = ({ user, onLogout }: MainScreenProps): JSX.Element => {
               <div className="mentors-area">
                 {currentMentors.map((mentor) => (
                   <div className="mentor-card" key={mentor.id}>
-                    <div className="mentor-name">{mentor.name}</div>
-
-                    <div className="mentor-details">
-                      <span>{mentor.city}</span>
-                      <span>{mentor.price} ₽</span>
+                    <div className="mentor-img">
+                      {mentor.photoUrl ? (
+                        <img
+                          src={mentor.photoUrl}
+                          alt={`Фото ${mentor.name}`}
+                        />
+                      ) : (
+                        <div className="mentor-img-placeholder">
+                          Нет фото
+                        </div>
+                      )}
                     </div>
 
-                    <Link to={`/mentor/${mentor.id}`}>
-                      <button className="more-btn">
+                    <div className="mentor-info">
+                      <div className="mentor-name">{mentor.name}</div>
+
+                      <div className="mentor-details">
+                        <span className="mentor-city">{mentor.city}</span>
+                        <span className="mentor-price">{mentor.price} ₽</span>
+                      </div>
+
+                      {mentor.description && (
+                        <div className="mentor-text">{mentor.description}</div>
+                      )}
+                    </div>
+
+                    <Link className="more-btn-link" to={`/mentor/${mentor.id}`}>
+                      <button type="button" className="more-btn">
                         ПОДРОБНЕЕ
                       </button>
                     </Link>

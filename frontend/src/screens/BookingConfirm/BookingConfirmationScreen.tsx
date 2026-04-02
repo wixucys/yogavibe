@@ -80,10 +80,14 @@ const BookingConfirmationScreen = (): JSX.Element => {
 
   if (error || !bookingData) {
     return (
-      <div className="confirmation-not-found">
-        <h2>Информация о записи не найдена</h2>
-        <p>{error}</p>
-        <Link to="/main">На главную</Link>
+      <div className="confirmation-page">
+        <div className="confirmation-container confirmation-not-found">
+          <h2>Информация о записи не найдена</h2>
+          <p>{error || 'Неполные данные бронирования'}</p>
+          <Link className="action-btn secondary" to="/main">
+            На главную
+          </Link>
+        </div>
       </div>
     );
   }
@@ -91,54 +95,79 @@ const BookingConfirmationScreen = (): JSX.Element => {
   return (
     <div className="confirmation-page">
       <div className="confirmation-container">
-        <h1>Запись подтверждена!</h1>
-
-        <div className="booking-summary">
-          <div>
-            Ментор: {mentor?.name || bookingData.mentorName || 'Не указан'}
-          </div>
-
-          <div>Дата: {formatDate(bookingData.sessionDate)}</div>
-          <div>Время: {extractTime(bookingData.sessionDate)}</div>
-
-          <div>
-            Длительность: {bookingData.durationMinutes || 60} мин
-          </div>
-
-          <div>
-            Тип:
-            {bookingData.sessionType === 'group'
-              ? ' Групповая'
-              : ' Индивидуальная'}
-          </div>
-
-          <div>
-            Стоимость:
-            {formatPrice(bookingData.price || 0)}
-          </div>
-
-          <div>
-            Номер: #{String(bookingData.id).padStart(6, '0')}
-          </div>
-
-          {bookingData.notes && (
-            <div>Комментарий: {bookingData.notes}</div>
-          )}
+        <div className="confirmation-header">
+          <div className="success-icon-large">✓</div>
+          <h1>Запись подтверждена!</h1>
+          <p className="confirmation-subtitle">
+            Ваш урок успешно добавлен в расписание.
+          </p>
         </div>
 
-        {mentor && (
-          <div>
-            {mentor.city}, {mentor.yogaStyle}
+        <div className="booking-summary">
+          <div className="summary-grid">
+            <div className="summary-item">
+              <span className="summary-label">Ментор</span>
+              <span className="summary-value">
+                {mentor?.name || bookingData.mentorName || 'Не указан'}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Дата</span>
+              <span className="summary-value">
+                {formatDate(bookingData.sessionDate)}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Время</span>
+              <span className="summary-value">
+                {extractTime(bookingData.sessionDate)}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Длительность</span>
+              <span className="summary-value">
+                {bookingData.durationMinutes || 60} мин
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Тип</span>
+              <span className="summary-value">
+                {bookingData.sessionType === 'group'
+                  ? 'Групповая'
+                  : 'Индивидуальная'}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-label">Стоимость</span>
+              <span className="summary-value price">
+                {formatPrice(bookingData.price || 0)}
+              </span>
+            </div>
+            <div className="summary-item full-width">
+              <span className="summary-label">Номер</span>
+              <span className="summary-value booking-id">
+                #{String(bookingData.id).padStart(6, '0')}
+              </span>
+            </div>
+            {bookingData.notes && (
+              <div className="summary-item full-width">
+                <span className="summary-label">Комментарий</span>
+                <span className="summary-value">
+                  {bookingData.notes}
+                </span>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
-        <button onClick={handleGoToMain}>
-          На главную
-        </button>
-
-        <button onClick={handleGoToMyBookings}>
-          Мои записи
-        </button>
+        <div className="confirmation-actions">
+          <button className="action-btn primary" onClick={handleGoToMain}>
+            На главную
+          </button>
+          <button className="action-btn secondary" onClick={handleGoToMyBookings}>
+            Мои записи
+          </button>
+        </div>
       </div>
     </div>
   );

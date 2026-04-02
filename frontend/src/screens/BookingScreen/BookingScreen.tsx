@@ -186,59 +186,142 @@ const BookingScreen = (): JSX.Element => {
   }
 
   if (!mentor) {
-    return <div className="booking-page">Ментор не найден</div>;
+    return (
+      <div className="booking-page">
+        <div className="booking-container booking-not-found">
+          <h2>Ментор не найден</h2>
+          <button className="back-btn" onClick={handleBack}>
+            ← Назад
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="booking-page">
       <div className="booking-container">
-        <button onClick={handleBack}>← Назад</button>
-
-        <h1>Запись к {mentor.name}</h1>
+        <div className="booking-header">
+          <button className="back-btn" onClick={handleBack}>
+            ← Назад
+          </button>
+          <h1>Запись к {mentor.name}</h1>
+        </div>
 
         {error && <div className="error-message">⚠ {error}</div>}
 
-        <form onSubmit={handleSubmit}>
-          <input
-            type="date"
-            name="sessionDate"
-            value={bookingData.sessionDate}
-            onChange={handleInputChange}
-            min={minDate}
-            required
-          />
+        <div className="mentor-summary">
+          <h2>Профиль ментора</h2>
+          <div className="mentor-details">
+            <div className="detail-item">
+              <span className="detail-label">Город</span>
+              <span className="detail-value">{mentor.city}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Стиль йоги</span>
+              <span className="detail-value">{mentor.yogaStyle}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Цена</span>
+              <span className="detail-value price">{mentor.price} ₽</span>
+            </div>
+          </div>
+        </div>
 
-          <select name="time" value={bookingData.time} onChange={handleInputChange} required>
-            <option value="">Время</option>
-            {timeSlots.map((time) => (
-              <option key={time} value={time}>
-                {time}
-              </option>
-            ))}
-          </select>
+        <form className="booking-form" onSubmit={handleSubmit}>
+          <div className="form-section">
+            <h3>Детали сеанса</h3>
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="sessionDate">Дата</label>
+                <input
+                  id="sessionDate"
+                  type="date"
+                  name="sessionDate"
+                  value={bookingData.sessionDate}
+                  onChange={handleInputChange}
+                  min={minDate}
+                  required
+                />
+              </div>
 
-          <select
-            name="durationMinutes"
-            value={bookingData.durationMinutes}
-            onChange={handleInputChange}
-          >
-            <option value="30">30 мин</option>
-            <option value="60">60 мин</option>
-            <option value="90">90 мин</option>
-          </select>
+              <div className="form-group">
+                <label htmlFor="time">Время</label>
+                <select
+                  id="time"
+                  name="time"
+                  value={bookingData.time}
+                  onChange={handleInputChange}
+                  required
+                >
+                  <option value="">Время</option>
+                  {timeSlots.map((time) => (
+                    <option key={time} value={time}>
+                      {time}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
 
-          <textarea
-            name="notes"
-            value={bookingData.notes}
-            onChange={handleInputChange}
-            placeholder="Пожелания"
-          />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="durationMinutes">Длительность</label>
+                <select
+                  id="durationMinutes"
+                  name="durationMinutes"
+                  value={bookingData.durationMinutes}
+                  onChange={handleInputChange}
+                >
+                  <option value="30">30 мин</option>
+                  <option value="60">60 мин</option>
+                  <option value="90">90 мин</option>
+                </select>
+              </div>
 
-          <div>Итого: {calculateTotalPrice()} ₽</div>
+              <div className="form-group">
+                <label htmlFor="sessionType">Формат</label>
+                <select
+                  id="sessionType"
+                  name="sessionType"
+                  value={bookingData.sessionType}
+                  onChange={handleInputChange}
+                >
+                  <option value="individual">Индивидуально</option>
+                  <option value="group">Групповое</option>
+                </select>
+              </div>
+            </div>
 
-          <button type="submit" disabled={isBooking}>
-            {isBooking ? 'Создание...' : 'Записаться'}
-          </button>
+            <div className="form-group">
+              <label htmlFor="notes">Пожелания</label>
+              <textarea
+                id="notes"
+                name="notes"
+                value={bookingData.notes}
+                onChange={handleInputChange}
+                placeholder="Например, хочу работу с растяжкой"
+              />
+            </div>
+          </div>
+
+          <div className="price-summary">
+            <div className="price-details">
+              <div className="price-row">
+                <span>Итого</span>
+                <span className="total-amount">{calculateTotalPrice()} ₽</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" className="cancel-btn" onClick={handleBack}>
+              Отмена
+            </button>
+            <button type="submit" className="submit-btn" disabled={isBooking}>
+              {isBooking ? 'Создание...' : 'Записаться'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

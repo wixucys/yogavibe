@@ -1,14 +1,10 @@
 import React, { JSX, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import './RegisterScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
-import type { AuthActionResult, RegisterData } from '../../types/auth';
-
-interface RegisterScreenProps {
-  onRegister: (userData: RegisterData) => Promise<AuthActionResult>;
-}
 
 interface RegisterFormData {
   username: string;
@@ -25,8 +21,9 @@ interface RegisterFormErrors {
   general?: string;
 }
 
-const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
+const RegisterScreen = (): JSX.Element => {
   const navigate = useNavigate();
+  const { register } = useAuth();
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
@@ -106,16 +103,13 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const getRedirectPath = (user: { role?: string } | undefined): string => {
-    if (!user) return '/main';
-    if (user.role === 'admin') return '/admin/dashboard';
-    if (user.role === 'mentor') return '/mentor/dashboard';
+  const getRedirectPath = (userRole?: string): string => {
+    if (userRole === 'admin') return '/admin/dashboard';
+    if (userRole === 'mentor') return '/mentor/dashboard';
     return '/main';
   };
 
-  const handleRegister = async (
-    e: React.FormEvent<HTMLFormElement>
-  ): Promise<void> => {
+  const handleRegister = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
 
     if (loading) return;
@@ -128,29 +122,19 @@ const RegisterScreen = ({ onRegister }: RegisterScreenProps): JSX.Element => {
     setErrors({});
 
     try {
-      const userData: RegisterData = {
+      await register({
         username: formData.username.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
-      };
-
-      const result = await onRegister(userData);
-
-      if (result.success) {
-        navigate(getRedirectPath(result.user));
-        return;
-      }
-
-      setErrors({
-        general: result.message || 'Ошибка регистрации. Попробуйте еще раз.',
       });
-    } catch (err) {
-      console.error('Register error:', err);
 
+      navigate(getRedirectPath());
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Ошибка регистрации. Попробуйте еще раз.';
       setErrors({
-        general: 'Ошибка соединения с сервером',
+        general: errorMessage,
       });
-    } finally {
       setLoading(false);
     }
   };

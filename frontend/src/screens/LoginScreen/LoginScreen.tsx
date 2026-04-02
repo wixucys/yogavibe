@@ -1,22 +1,19 @@
 import React, { JSX, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import './LoginScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
-import type { AuthActionResult, LoginCredentials } from '../../types/auth';
-
-interface LoginScreenProps {
-  onLogin: (credentials: LoginCredentials) => Promise<AuthActionResult>;
-}
 
 interface LoginFormData {
   login: string;
   password: string;
 }
 
-const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
+const LoginScreen = (): JSX.Element => {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [formData, setFormData] = useState<LoginFormData>({
@@ -44,10 +41,10 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
   };
 
   const validateForm = (): boolean => {
-    const login = formData.login.trim();
+    const loginValue = formData.login.trim();
     const password = formData.password.trim();
 
-    if (!login) {
+    if (!loginValue) {
       setError('Введите логин или email');
       return false;
     }
@@ -65,16 +62,13 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
     return true;
   };
 
-  const getRedirectPath = (user: { role?: string } | undefined): string => {
-    if (!user) return '/main';
-    if (user.role === 'admin') return '/admin/dashboard';
-    if (user.role === 'mentor') return '/mentor/dashboard';
+  const getRedirectPath = (userRole?: string): string => {
+    if (userRole === 'admin') return '/admin/dashboard';
+    if (userRole === 'mentor') return '/mentor/dashboard';
     return '/main';
   };
 
-  const handleLogin = async (
-    event: React.FormEvent<HTMLFormElement>
-  ): Promise<void> => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
 
     if (loading) return;
@@ -87,23 +81,17 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
     setError('');
 
     try {
-      const credentials: LoginCredentials = {
+      const credentials = {
         login: formData.login.trim().toLowerCase(),
         password: formData.password,
       };
 
-      const result = await onLogin(credentials);
-
-      if (result.success) {
-        navigate(getRedirectPath(result.user));
-        return;
-      }
-
-      setError(result.message || 'Неверный логин или пароль');
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Ошибка соединения с сервером');
-    } finally {
+      await login(credentials);
+      navigate(getRedirectPath());
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Ошибка при входе. Попробуйте позже.';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -121,7 +109,7 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
           <p>И мы будем с тобой на каждом вдохе</p>
         </div>
 
-        <form className="login-form" onSubmit={handleLogin} noValidate>
+        <form className="login-form" onSubmit={handleSubmit} noValidate>
           <h3 className="entry">ВХОД В АККАУНТ</h3>
 
           <div className="flower-icon">
@@ -192,9 +180,9 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
 
           <div className="login-options">
             <div className="options-left">
-              <Link to="/register" className="register">
+              <a href="/register" className="register">
                 Регистрация
-              </Link>
+              </a>
             </div>
           </div>
         </form>
@@ -214,3 +202,4 @@ const LoginScreen = ({ onLogin }: LoginScreenProps): JSX.Element => {
 };
 
 export default LoginScreen;
+

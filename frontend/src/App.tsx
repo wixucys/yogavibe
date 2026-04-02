@@ -1,5 +1,7 @@
-import React, { JSX, useEffect, useState } from 'react';
+import React, { JSX } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen/RegisterScreen';
@@ -11,276 +13,102 @@ import AdminDashboardScreen from './screens/AdminDashboardScreen/AdminDashboardS
 import AdminMentorsScreen from './screens/AdminMentorsScreen/AdminMentorsScreen';
 import BookingScreen from './screens/BookingScreen/BookingScreen';
 import BookingConfirmationScreen from './screens/BookingConfirm/BookingConfirmationScreen';
-import AuthService from './services/AuthService';
-import type {
-  AuthCheckResult,
-  AuthActionResult,
-  LoginCredentials,
-  RegisterData,
-} from './types/auth';
-import type { User } from './types/user'
 import './App.css';
 
+function AppRoutes(): JSX.Element {
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route path="/" element={<WelcomeScreen />} />
+      <Route path="/login" element={<LoginScreen />} />
+      <Route path="/register" element={<RegisterScreen />} />
+
+      {/* User routes - role: user */}
+      <Route
+        path="/main"
+        element={
+          <ProtectedRoute allowedRoles={['user']}>
+            <MainScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/booking/:mentorId"
+        element={
+          <ProtectedRoute allowedRoles={['user']}>
+            <BookingScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/booking-confirmation"
+        element={
+          <ProtectedRoute allowedRoles={['user']}>
+            <BookingConfirmationScreen />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Mentor routes - role: mentor */}
+      <Route
+        path="/mentor/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['mentor']}>
+            <MentorDashboardScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mentor/profile/edit"
+        element={
+          <ProtectedRoute allowedRoles={['mentor']}>
+            <MentorEditScreen />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Admin routes - role: admin */}
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboardScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/mentors"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminMentorsScreen />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Multi-role routes */}
+      <Route
+        path="/mentor/:mentorId"
+        element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <MentorProfileScreen />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Fallback */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
 function App(): JSX.Element {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [user, setUser] = useState<User | null>(null);
-
-  const getDefaultRoute = (currentUser: User | null): string => {
-    if (!currentUser) return '/login';
-    if (currentUser.role === 'admin') return '/admin/dashboard';
-    if (currentUser.role === 'mentor') return '/mentor/dashboard';
-    return '/main';
-  };
-
-  useEffect(() => {
-    const checkAuth = async (): Promise<void> => {
-      try {
-        const authResult: AuthCheckResult = await AuthService.checkAuth();
-        setIsAuthenticated(authResult.isAuthenticated);
-        setUser(authResult.user ?? null);
-      } catch (error: unknown) {
-        console.error('Auth check error:', error);
-        setUser(null);
-        setIsAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void checkAuth();
-  }, []);
-
-  const handleLogin = async (
-    credentials: LoginCredentials
-  ): Promise<AuthActionResult> => {
-    try {
-      console.log('App: Starting login with:', { ...credentials, password: '***' });
-
-      const result = await AuthService.login(credentials);
-      console.log('App: Login result:', result);
-
-      if (!result.success) {
-        console.log('App: Login failed:', result.message);
-        return result;
-      }
-
-      const currentUser = result.user ?? AuthService.getCurrentUser();
-      console.log('App: Current user after login:', currentUser);
-
-      if (!currentUser) {
-        return {
-          success: false,
-          message: 'Пользователь не найден после входа',
-        };
-      }
-
-      setUser(currentUser);
-      setIsAuthenticated(true);
-
-      return {
-        success: true,
-        user: currentUser,
-        message: 'Вход выполнен успешно',
-      };
-    } catch (error) {
-      console.error('App: Login error:', error);
-      return {
-        success: false,
-        message: 'Сервер недоступен. Проверьте подключение к интернету.',
-      };
-    }
-  };
-
-  const handleRegister = async (
-    userData: RegisterData
-  ): Promise<AuthActionResult> => {
-    try {
-      console.log('App: Starting registration with:', { ...userData, password: '***' });
-
-      const result = await AuthService.register(userData);
-      console.log('App: Registration result:', result);
-
-      if (!result.success) {
-        console.log('App: Registration failed:', result.message);
-        return result;
-      }
-
-      const currentUser = result.user ?? AuthService.getCurrentUser();
-      console.log('App: Current user after registration:', currentUser);
-
-      if (!currentUser) {
-        return {
-          success: false,
-          message: 'Пользователь не создан',
-        };
-      }
-
-      setUser(currentUser);
-      setIsAuthenticated(true);
-
-      return {
-        success: true,
-        user: currentUser,
-        message: 'Регистрация успешна',
-      };
-    } catch (error) {
-      console.error('App: Registration error:', error);
-      return {
-        success: false,
-        message: 'Сервер недоступен. Проверьте подключение к интернету.',
-      };
-    }
-  };
-
-  const handleLogout = async (): Promise<void> => {
-    try {
-      await AuthService.logout();
-      setUser(null);
-      setIsAuthenticated(false);
-    } catch (error) {
-      console.error('Logout error:', error);
-      setUser(null);
-      setIsAuthenticated(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="loading-screen">
-        <div className="loading-spinner"></div>
-        <p>Загрузка...</p>
-      </div>
-    );
-  }
-
   return (
     <Router>
-      <div className="App">
-        <Routes>
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? <Navigate to={getDefaultRoute(user)} /> : <WelcomeScreen />
-            }
-          />
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? (
-                <Navigate to={getDefaultRoute(user)} />
-              ) : (
-                <LoginScreen onLogin={handleLogin} />
-              )
-            }
-          />
-          <Route
-            path="/register"
-            element={
-              isAuthenticated ? (
-                <Navigate to={getDefaultRoute(user)} />
-              ) : (
-                <RegisterScreen onRegister={handleRegister} />
-              )
-            }
-          />
-          <Route
-            path="/main"
-            element={
-              isAuthenticated && user ? (
-                user.role === 'user' ? (
-                  <MainScreen user={user} onLogout={handleLogout} />
-                ) : (
-                  <Navigate to={getDefaultRoute(user)} />
-                )
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/mentor/dashboard"
-            element={
-              isAuthenticated ? (
-                user?.role === 'mentor' ? (
-                  <MentorDashboardScreen />
-                ) : (
-                  <Navigate to={getDefaultRoute(user)} />
-                )
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/mentor/profile/edit"
-            element={
-              isAuthenticated ? (
-                user?.role === 'mentor' ? (
-                  <MentorEditScreen />
-                ) : (
-                  <Navigate to={getDefaultRoute(user)} />
-                )
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/mentor/:mentorId"
-            element={isAuthenticated ? <MentorProfileScreen /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/admin/dashboard"
-            element={
-              isAuthenticated ? (
-                user?.role === 'admin' ? (
-                  <AdminDashboardScreen />
-                ) : (
-                  <Navigate to={getDefaultRoute(user)} />
-                )
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/admin/mentors"
-            element={
-              isAuthenticated ? (
-                user?.role === 'admin' ? (
-                  <AdminMentorsScreen />
-                ) : (
-                  <Navigate to={getDefaultRoute(user)} />
-                )
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-          <Route
-            path="/booking/:mentorId"
-            element={
-              isAuthenticated && user?.role === 'user' ? (
-                <BookingScreen />
-              ) : (
-                <Navigate to={getDefaultRoute(user)} />
-              )
-            }
-          />
-          <Route
-            path="/booking-confirmation"
-            element={
-              isAuthenticated && user?.role === 'user' ? (
-                <BookingConfirmationScreen />
-              ) : (
-                <Navigate to={getDefaultRoute(user)} />
-              )
-            }
-          />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </div>
+      <AuthProvider>
+        <div className="App">
+          <AppRoutes />
+        </div>
+      </AuthProvider>
     </Router>
   );
 }

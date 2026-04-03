@@ -1,7 +1,7 @@
 from typing import List
 
-from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 
 import crud
 import schemas
@@ -14,31 +14,32 @@ class MentorService:
     def get_all_mentors(
         db: Session, filters: schemas.MentorFilters, skip: int = 0, limit: int = 100
     ) -> List[schemas.MentorResponse]:
-        """Get all mentors with filters"""
         mentors = crud.mentor_crud.get_mentors(
-            db, skip=skip, limit=limit, city=filters.city, yoga_style=filters.yoga_style
+            db,
+            skip=skip,
+            limit=limit,
+            city=filters.city,
+            yoga_style=filters.yoga_style,
         )
         return [schemas.MentorResponse.model_validate(m) for m in mentors]
 
     @staticmethod
     def get_mentor_by_id(db: Session, mentor_id: int) -> schemas.MentorResponse:
-        """Get mentor by ID"""
         mentor = crud.mentor_crud.get_mentor(db, mentor_id)
         if not mentor:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Mentor not found",
+                detail="Ментор не найден",
             )
         return schemas.MentorResponse.model_validate(mentor)
 
     @staticmethod
     def get_current_mentor(db: Session, user_id: int) -> schemas.MentorResponse:
-        """Get current mentor profile"""
         mentor = crud.mentor_crud.get_mentor_by_user_id(db, user_id)
         if not mentor:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Mentor profile not found",
+                detail="Профиль ментора не найден",
             )
         return schemas.MentorResponse.model_validate(mentor)
 
@@ -46,29 +47,35 @@ class MentorService:
     def update_mentor(
         db: Session, user_id: int, updates: schemas.MentorSelfUpdate
     ) -> schemas.MentorResponse:
-        """Update mentor profile"""
         mentor = crud.mentor_crud.get_mentor_by_user_id(db, user_id)
         if not mentor:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Mentor profile not found",
+                detail="Профиль ментора не найден",
             )
 
-        mentor = crud.mentor_crud.update_mentor(
-            db, mentor.id, updates.model_dump(exclude_unset=True)
+        updated_mentor = crud.mentor_crud.update_mentor_self(
+            db,
+            mentor.id,
+            updates.model_dump(exclude_unset=True),
         )
-        return schemas.MentorResponse.model_validate(mentor)
+        if not updated_mentor:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Профиль ментора не найден",
+            )
+
+        return schemas.MentorResponse.model_validate(updated_mentor)
 
     @staticmethod
     def get_mentor_bookings(
         db: Session, user_id: int, skip: int = 0, limit: int = 100
     ) -> List[schemas.BookingResponse]:
-        """Get mentor's bookings"""
         mentor = crud.mentor_crud.get_mentor_by_user_id(db, user_id)
         if not mentor:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Mentor profile not found",
+                detail="Профиль ментора не найден",
             )
 
         bookings = crud.booking_crud.get_mentor_bookings(
@@ -80,52 +87,59 @@ class MentorService:
     def create_mentor(
         db: Session, mentor_data: schemas.MentorCreate
     ) -> schemas.MentorResponse:
-        """Create mentor (admin only)"""
         user = crud.user_crud.get_user(db, mentor_data.user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found",
+                detail="Пользователь не найден",
             )
 
-        # Check if mentor already exists for this user
-        existing_mentor = crud.mentor_crud.get_mentor_by_user_id(
-            db, mentor_data.user_id
-        )
+        existing_mentor = crud.mentor_crud.get_mentor_by_user_id(db, mentor_data.user_id)
         if existing_mentor:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Mentor profile already exists for this user",
+                detail="Для этого пользователя уже существует профиль ментора",
             )
 
-        mentor = crud.mentor_crud.create_mentor(db, mentor_data)
+        try:
+            mentor = crud.mentor_crud.create_mentor(db, mentor_data)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(exc),
+            ) from exc
+
         return schemas.MentorResponse.model_validate(mentor)
 
     @staticmethod
     def update_mentor_by_admin(
         db: Session, mentor_id: int, updates: schemas.MentorAdminUpdate
     ) -> schemas.MentorResponse:
-        """Update mentor (admin only)"""
         mentor = crud.mentor_crud.get_mentor(db, mentor_id)
         if not mentor:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Mentor not found",
+                detail="Ментор не найден",
             )
 
-        mentor = crud.mentor_crud.update_mentor(
+        updated_mentor = crud.mentor_crud.update_mentor(
             db, mentor_id, updates.model_dump(exclude_unset=True)
         )
-        return schemas.MentorResponse.model_validate(mentor)
+        if not updated_mentor:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Ментор не найден",
+            )
+
+        return schemas.MentorResponse.model_validate(updated_mentor)
 
     @staticmethod
     def delete_mentor(db: Session, mentor_id: int) -> None:
-        """Delete mentor (admin only)"""
         mentor = crud.mentor_crud.get_mentor(db, mentor_id)
         if not mentor:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Mentor not found",
+                detail="Ментор не найден",
             )
 
         crud.mentor_crud.delete_mentor(db, mentor_id)

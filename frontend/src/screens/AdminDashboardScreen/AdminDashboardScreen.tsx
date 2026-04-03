@@ -1,13 +1,13 @@
-import React, { JSX, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import type { AdminDashboard, User, UserRole } from '../../types/user';
 import './AdminDashboardScreen.css';
 
-const AdminDashboardScreen = (): JSX.Element => {
+const AdminDashboardScreen = () => {
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -16,13 +16,40 @@ const AdminDashboardScreen = (): JSX.Element => {
         setLoading(true);
         setError(null);
 
-        const [dashboardData, allUsers] = await Promise.all([
+        const [dashboardResult, usersResult] = await Promise.allSettled([
           ApiService.getAdminDashboard(),
           ApiService.getAdminUsers(),
         ]);
 
-        setDashboard(dashboardData);
-        setUsers(allUsers);
+        let hasAnySuccess = false;
+
+        if (dashboardResult.status === 'fulfilled') {
+          setDashboard(dashboardResult.value);
+          hasAnySuccess = true;
+        }
+
+        if (usersResult.status === 'fulfilled') {
+          setUsers(usersResult.value);
+          hasAnySuccess = true;
+        }
+
+        if (!hasAnySuccess) {
+          const dashboardMessage =
+            dashboardResult.status === 'rejected'
+              ? dashboardResult.reason instanceof Error
+                ? dashboardResult.reason.message
+                : 'Ошибка загрузки статистики'
+              : '';
+
+          const usersMessage =
+            usersResult.status === 'rejected'
+              ? usersResult.reason instanceof Error
+                ? usersResult.reason.message
+                : 'Ошибка загрузки пользователей'
+              : '';
+
+          setError([dashboardMessage, usersMessage].filter(Boolean).join('. '));
+        }
       } catch (err: unknown) {
         setError(
           err instanceof Error
@@ -42,10 +69,7 @@ const AdminDashboardScreen = (): JSX.Element => {
       const dashboardData = await ApiService.getAdminDashboard();
       setDashboard(dashboardData);
     } catch (err: unknown) {
-      console.warn(
-        'Не удалось обновить статистику администратора',
-        err
-      );
+      console.warn('Не удалось обновить статистику администратора', err);
     }
   };
 
@@ -54,12 +78,14 @@ const AdminDashboardScreen = (): JSX.Element => {
     changes: Partial<User>
   ): Promise<void> => {
     try {
+      setError(null);
+
       const updatedUser = await ApiService.updateAdminUser(userId, changes);
+
       setUsers((prevUsers) =>
-        prevUsers.map((user) =>
-          user.id === updatedUser.id ? updatedUser : user
-        )
+        prevUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
       );
+
       await refreshDashboard();
     } catch (err: unknown) {
       setError(
@@ -71,37 +97,51 @@ const AdminDashboardScreen = (): JSX.Element => {
   };
 
   const handleToggleActive = async (user: User): Promise<void> => {
-    if (user.role === 'admin') return;
+    if (user.role === 'admin') {
+      return;
+    }
+
     await updateUser(user.id, { is_active: !user.is_active });
   };
 
   const handleToggleRole = async (user: User): Promise<void> => {
-    if (user.role === 'admin') return;
+    if (user.role === 'admin') {
+      return;
+    }
 
     const nextRole: UserRole = user.role === 'mentor' ? 'user' : 'mentor';
     await updateUser(user.id, { role: nextRole });
   };
 
   const handleDeleteUser = async (user: User): Promise<void> => {
-    if (user.role === 'admin') return;
-    if (!window.confirm('Удалить пользователя без возможности восстановления?')) return;
+    if (user.role === 'admin') {
+      return;
+    }
+
+    if (!window.confirm('Удалить пользователя без возможности восстановления?')) {
+      return;
+    }
 
     try {
+      setError(null);
+
       await ApiService.deleteAdminUser(user.id);
       setUsers((prevUsers) => prevUsers.filter((item) => item.id !== user.id));
       await refreshDashboard();
     } catch (err: unknown) {
       setError(
-        err instanceof Error
-          ? err.message
-          : 'Не удалось удалить пользователя'
+        err instanceof Error ? err.message : 'Не удалось удалить пользователя'
       );
     }
   };
 
-  const formatDate = (value: string | undefined): string => {
-    if (!value) return 'Не указано';
+  const formatDate = (value?: string): string => {
+    if (!value) {
+      return 'Не указано';
+    }
+
     const date = new Date(value);
+
     return Number.isNaN(date.getTime())
       ? 'Не указано'
       : date.toLocaleDateString('ru-RU');
@@ -116,10 +156,14 @@ const AdminDashboardScreen = (): JSX.Element => {
   };
 
   if (loading) {
-    return <div className="admin-dashboard-loading">Загрузка данных администратора...</div>;
+    return (
+      <div className="admin-dashboard-loading">
+        Загрузка данных администратора...
+      </div>
+    );
   }
 
-  if (error) {
+  if (error && !dashboard && users.length === 0) {
     return <div className="admin-dashboard-error">⚠ {error}</div>;
   }
 
@@ -127,10 +171,16 @@ const AdminDashboardScreen = (): JSX.Element => {
     <div className="admin-dashboard-page">
       <div className="admin-dashboard-header">
         <h1>Административная панель</h1>
-        <button type="button" className="dashboard-logout-button" onClick={handleLogout}>
+        <button
+          type="button"
+          className="dashboard-logout-button"
+          onClick={handleLogout}
+        >
           Выйти
         </button>
       </div>
+
+      {error ? <div className="admin-dashboard-error">⚠ {error}</div> : null}
 
       {dashboard ? (
         <>
@@ -172,7 +222,10 @@ const AdminDashboardScreen = (): JSX.Element => {
       <section className="admin-users-section">
         <div className="section-header">
           <h2>Список пользователей</h2>
-          <span>{users.length} {users.length === 1 ? 'пользователь' : 'пользователей'}</span>
+          <span>
+            {users.length}{' '}
+            {users.length === 1 ? 'пользователь' : 'пользователей'}
+          </span>
         </div>
 
         {users.length === 0 ? (
@@ -187,6 +240,7 @@ const AdminDashboardScreen = (): JSX.Element => {
               <div>Дата регистрации</div>
               <div>Действия</div>
             </div>
+
             {users.map((user) => (
               <div key={user.id} className="table-row">
                 <div>{user.email}</div>
@@ -196,18 +250,23 @@ const AdminDashboardScreen = (): JSX.Element => {
                 <div>{formatDate(user.created_at)}</div>
                 <div className="table-actions">
                   <button
+                    type="button"
                     disabled={user.role === 'admin'}
                     onClick={() => void handleToggleRole(user)}
                   >
                     {user.role === 'mentor' ? 'Сделать user' : 'Сделать mentor'}
                   </button>
+
                   <button
+                    type="button"
                     disabled={user.role === 'admin'}
                     onClick={() => void handleToggleActive(user)}
                   >
                     {user.is_active ? 'Деактивировать' : 'Активировать'}
                   </button>
+
                   <button
+                    type="button"
                     disabled={user.role === 'admin'}
                     onClick={() => void handleDeleteUser(user)}
                   >

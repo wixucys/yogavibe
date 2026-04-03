@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import type {
@@ -36,13 +36,13 @@ const defaultEditForm: MentorAdminUpdatePayload = {
   is_available: undefined,
 };
 
-const AdminMentorsScreen = (): JSX.Element => {
+const AdminMentorsScreen = () => {
   const [mentors, setMentors] = useState<MentorApi[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [createForm, setCreateForm] = useState<MentorCreatePayload>(defaultCreateForm);
   const [editForm, setEditForm] = useState<MentorAdminUpdatePayload>(defaultEditForm);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -52,13 +52,40 @@ const AdminMentorsScreen = (): JSX.Element => {
         setLoading(true);
         setError(null);
 
-        const [mentorData, userData] = await Promise.all([
+        const [mentorsResult, usersResult] = await Promise.allSettled([
           ApiService.getAdminMentors(),
           ApiService.getAdminUsers(),
         ]);
 
-        setMentors(mentorData);
-        setUsers(userData);
+        let hasAnySuccess = false;
+
+        if (mentorsResult.status === 'fulfilled') {
+          setMentors(mentorsResult.value);
+          hasAnySuccess = true;
+        }
+
+        if (usersResult.status === 'fulfilled') {
+          setUsers(usersResult.value);
+          hasAnySuccess = true;
+        }
+
+        if (!hasAnySuccess) {
+          const mentorsMessage =
+            mentorsResult.status === 'rejected'
+              ? mentorsResult.reason instanceof Error
+                ? mentorsResult.reason.message
+                : 'Ошибка загрузки менторов'
+              : '';
+
+          const usersMessage =
+            usersResult.status === 'rejected'
+              ? usersResult.reason instanceof Error
+                ? usersResult.reason.message
+                : 'Ошибка загрузки пользователей'
+              : '';
+
+          setError([mentorsMessage, usersMessage].filter(Boolean).join('. '));
+        }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
       } finally {
@@ -69,22 +96,27 @@ const AdminMentorsScreen = (): JSX.Element => {
     void loadData();
   }, []);
 
+  const clearMessages = (): void => {
+    setError(null);
+    setSuccess(null);
+  };
+
   const handleCreateChange = (
     field: keyof MentorCreatePayload,
     value: string | number | boolean
-  ) => {
+  ): void => {
     setCreateForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleEditChange = (
     field: keyof MentorAdminUpdatePayload,
     value: string | number | boolean
-  ) => {
+  ): void => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleStartEdit = (mentor: MentorApi): void => {
-    setEditingId(mentor.id as number);
+    setEditingId(Number(mentor.id));
     setEditForm({
       name: mentor.name,
       description: mentor.description,
@@ -99,9 +131,9 @@ const AdminMentorsScreen = (): JSX.Element => {
     });
   };
 
-  const clearMessages = (): void => {
-    setError(null);
-    setSuccess(null);
+  const handleCancelEdit = (): void => {
+    setEditingId(null);
+    setEditForm(defaultEditForm);
   };
 
   const refreshMentors = async (): Promise<void> => {
@@ -109,39 +141,53 @@ const AdminMentorsScreen = (): JSX.Element => {
     setMentors(mentorData);
   };
 
-  const handleCreate = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreate = async (
+    event: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
     event.preventDefault();
     clearMessages();
+
+    if (!createForm.user_id) {
+      setError('Выберите пользователя для профиля ментора');
+      return;
+    }
 
     try {
       const createdMentor = await ApiService.createAdminMentor(createForm);
       setMentors((prev) => [createdMentor, ...prev]);
       setSuccess('Ментор создан');
       setCreateForm(defaultCreateForm);
+      await refreshMentors();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Ошибка создания ментора');
     }
   };
 
-  const handleSaveEdit = async (mentorId: number) => {
+  const handleSaveEdit = async (mentorId: number): Promise<void> => {
     clearMessages();
+
     try {
       const updatedMentor = await ApiService.updateAdminMentor(mentorId, editForm);
+
       setMentors((prev) =>
-        prev.map((mentor) =>
-          mentor.id === mentorId ? updatedMentor : mentor
-        )
+        prev.map((mentor) => (mentor.id === mentorId ? updatedMentor : mentor))
       );
+
       setSuccess('Профиль ментора обновлён');
       setEditingId(null);
+      setEditForm(defaultEditForm);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Ошибка обновления ментора');
     }
   };
 
-  const handleDelete = async (mentorId: number) => {
-    if (!window.confirm('Удалить ментора?')) return;
+  const handleDelete = async (mentorId: number): Promise<void> => {
+    if (!window.confirm('Удалить ментора?')) {
+      return;
+    }
+
     clearMessages();
+
     try {
       await ApiService.deleteAdminMentor(mentorId);
       setMentors((prev) => prev.filter((mentor) => mentor.id !== mentorId));
@@ -152,12 +198,21 @@ const AdminMentorsScreen = (): JSX.Element => {
   };
 
   const availableUsers = useMemo(
-    () => users.filter((user) => user.role !== 'admin'),
-    [users]
+    () =>
+      users.filter(
+        (user) =>
+          user.role === 'mentor' &&
+          !mentors.some((mentor) => mentor.user_id === user.id)
+      ),
+    [users, mentors]
   );
 
   if (loading) {
     return <div className="admin-mentors-loading">Загрузка...</div>;
+  }
+
+  if (error && mentors.length === 0 && users.length === 0) {
+    return <div className="admin-mentors-error">⚠ {error}</div>;
   }
 
   return (
@@ -169,11 +224,12 @@ const AdminMentorsScreen = (): JSX.Element => {
         </Link>
       </div>
 
-      {error && <div className="admin-mentors-error">⚠ {error}</div>}
-      {success && <div className="admin-mentors-success">✅ {success}</div>}
+      {error ? <div className="admin-mentors-error">⚠ {error}</div> : null}
+      {success ? <div className="admin-mentors-success">✅ {success}</div> : null}
 
       <section className="admin-mentor-create">
         <h2>Создать нового ментора</h2>
+
         <form onSubmit={handleCreate}>
           <div className="form-row">
             <label>
@@ -191,9 +247,11 @@ const AdminMentorsScreen = (): JSX.Element => {
                 ))}
               </select>
             </label>
+
             <label>
               Имя ментора
               <input
+                type="text"
                 value={createForm.name}
                 onChange={(e) => handleCreateChange('name', e.target.value)}
                 required
@@ -205,14 +263,17 @@ const AdminMentorsScreen = (): JSX.Element => {
             <label>
               Город
               <input
+                type="text"
                 value={createForm.city}
                 onChange={(e) => handleCreateChange('city', e.target.value)}
                 required
               />
             </label>
+
             <label>
               Стиль йоги
               <input
+                type="text"
                 value={createForm.yoga_style}
                 onChange={(e) => handleCreateChange('yoga_style', e.target.value)}
                 required
@@ -231,6 +292,7 @@ const AdminMentorsScreen = (): JSX.Element => {
                 required
               />
             </label>
+
             <label>
               Пол
               <select
@@ -258,6 +320,7 @@ const AdminMentorsScreen = (): JSX.Element => {
 
       <section className="admin-mentors-list">
         <h2>Список менторов</h2>
+
         {mentors.length === 0 ? (
           <div className="empty-state">Менторы не найдены</div>
         ) : (
@@ -270,40 +333,54 @@ const AdminMentorsScreen = (): JSX.Element => {
               <div>Статус</div>
               <div>Действия</div>
             </div>
+
             {mentors.map((mentor) => (
               <div key={mentor.id} className="mentor-row">
                 {editingId === mentor.id ? (
                   <>
                     <input
+                      type="text"
                       value={editForm.name ?? ''}
                       onChange={(e) => handleEditChange('name', e.target.value)}
                     />
+
                     <input
+                      type="text"
                       value={editForm.city ?? ''}
                       onChange={(e) => handleEditChange('city', e.target.value)}
                     />
+
                     <input
+                      type="text"
                       value={editForm.yoga_style ?? ''}
                       onChange={(e) => handleEditChange('yoga_style', e.target.value)}
                     />
+
                     <input
                       type="number"
                       min="0"
                       value={editForm.price ?? 0}
                       onChange={(e) => handleEditChange('price', Number(e.target.value))}
                     />
+
                     <select
-                      value={editForm.is_available ? 'true' : 'false'}
-                      onChange={(e) => handleEditChange('is_available', e.target.value === 'true')}
+                      value={editForm.is_available === false ? 'false' : 'true'}
+                      onChange={(e) =>
+                        handleEditChange('is_available', e.target.value === 'true')
+                      }
                     >
                       <option value="true">Доступен</option>
                       <option value="false">Не доступен</option>
                     </select>
+
                     <div className="actions-cell">
-                      <button onClick={() => void handleSaveEdit(mentor.id as number)}>
+                      <button
+                        type="button"
+                        onClick={() => void handleSaveEdit(Number(mentor.id))}
+                      >
                         Сохранить
                       </button>
-                      <button onClick={() => setEditingId(null)}>
+                      <button type="button" onClick={handleCancelEdit}>
                         Отмена
                       </button>
                     </div>
@@ -316,8 +393,13 @@ const AdminMentorsScreen = (): JSX.Element => {
                     <div>{mentor.price} ₽</div>
                     <div>{mentor.is_available ? 'Активен' : 'Неактивен'}</div>
                     <div className="actions-cell">
-                      <button onClick={() => handleStartEdit(mentor)}>Изменить</button>
-                      <button onClick={() => void handleDelete(mentor.id as number)}>
+                      <button type="button" onClick={() => handleStartEdit(mentor)}>
+                        Изменить
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(Number(mentor.id))}
+                      >
                         Удалить
                       </button>
                     </div>

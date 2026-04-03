@@ -15,7 +15,7 @@ class NoteService:
         db: Session, user_id: int, skip: int = 0, limit: int = 100
     ) -> List[schemas.NoteResponse]:
         """Get all notes for current user"""
-        notes = crud.note_crud.get_notes(db, user_id, skip=skip, limit=limit)
+        notes = crud.note_crud.get_user_notes(db, user_id, skip=skip, limit=limit)
         return [schemas.NoteResponse.model_validate(n) for n in notes]
 
     @staticmethod
@@ -23,12 +23,12 @@ class NoteService:
         db: Session, user_id: int, note_data: schemas.NoteCreate
     ) -> schemas.NoteResponse:
         """Create a new note"""
-        note = crud.note_crud.create_note(db, user_id, note_data)
+        note = crud.note_crud.create_note(db, note_data, user_id)        
         return schemas.NoteResponse.model_validate(note)
 
     @staticmethod
     def update_note(
-        db: Session, note_id: int, user_id: int, updates: schemas.NoteUpdate
+        db: Session, note_id: int, user_id: int, updates: schemas.NoteCreate
     ) -> schemas.NoteResponse:
         """Update note (only owner can update)"""
         note = crud.note_crud.get_note(db, note_id)
@@ -44,9 +44,7 @@ class NoteService:
                 detail="Cannot update another user's note",
             )
 
-        note = crud.note_crud.update_note(
-            db, note_id, updates.model_dump(exclude_unset=True)
-        )
+        note = crud.note_crud.update_note(db, note_id, updates)
         return schemas.NoteResponse.model_validate(note)
 
     @staticmethod

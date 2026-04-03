@@ -16,7 +16,7 @@ class MentorService:
     ) -> List[schemas.MentorResponse]:
         """Get all mentors with filters"""
         mentors = crud.mentor_crud.get_mentors(
-            db, filters=filters, skip=skip, limit=limit
+            db, skip=skip, limit=limit, city=filters.city, yoga_style=filters.yoga_style
         )
         return [schemas.MentorResponse.model_validate(m) for m in mentors]
 
@@ -44,7 +44,7 @@ class MentorService:
 
     @staticmethod
     def update_mentor(
-        db: Session, user_id: int, updates: schemas.MentorUpdate
+        db: Session, user_id: int, updates: schemas.MentorSelfUpdate
     ) -> schemas.MentorResponse:
         """Update mentor profile"""
         mentor = crud.mentor_crud.get_mentor_by_user_id(db, user_id)
@@ -71,14 +71,14 @@ class MentorService:
                 detail="Mentor profile not found",
             )
 
-        bookings = crud.booking_crud.get_bookings_by_mentor(
+        bookings = crud.booking_crud.get_mentor_bookings(
             db, mentor.id, skip=skip, limit=limit
         )
         return [schemas.BookingResponse.model_validate(b) for b in bookings]
 
     @staticmethod
     def create_mentor(
-        db: Session, mentor_data: schemas.MentorCreatePayload
+        db: Session, mentor_data: schemas.MentorCreate
     ) -> schemas.MentorResponse:
         """Create mentor (admin only)"""
         user = crud.user_crud.get_user(db, mentor_data.user_id)
@@ -103,7 +103,7 @@ class MentorService:
 
     @staticmethod
     def update_mentor_by_admin(
-        db: Session, mentor_id: int, updates: schemas.MentorAdminUpdatePayload
+        db: Session, mentor_id: int, updates: schemas.MentorAdminUpdate
     ) -> schemas.MentorResponse:
         """Update mentor (admin only)"""
         mentor = crud.mentor_crud.get_mentor(db, mentor_id)

@@ -41,7 +41,7 @@ class AuthService:
 
         # Store refresh token in database
         crud.refresh_token_crud.create_token(
-            db, refresh_token, user.id, days=7
+            db, refresh_token, user.id, timedelta(days=7)
         )
 
         return schemas.AuthResponse(
@@ -76,7 +76,7 @@ class AuthService:
 
         # Store refresh token in database
         crud.refresh_token_crud.create_token(
-            db, refresh_token, user.id, days=7
+            db, refresh_token, user.id, timedelta(days=7)
         )
 
         return schemas.AuthResponse(
@@ -137,7 +137,7 @@ class AuthService:
 
         # Store new refresh token
         crud.refresh_token_crud.create_token(
-            db, new_refresh_token, user.id, days=7
+            db, new_refresh_token, user.id, timedelta(days=7)
         )
 
         return schemas.Token(
@@ -177,7 +177,7 @@ class AuthService:
 
         # Store refresh token
         crud.refresh_token_crud.create_token(
-            db, refresh_token, user.id, days=7
+            db, refresh_token, user.id, timedelta(days=7)
         )
 
         return schemas.AuthResponse(

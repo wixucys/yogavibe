@@ -1,9 +1,9 @@
-import React, { JSX, useEffect, useState } from 'react';import { Link } from 'react-router-dom';import ApiService from '../../services/ApiService';
+import React, { useEffect, useState } from 'react';import { Link } from 'react-router-dom';import ApiService from '../../services/ApiService';
 import type { MentorApi } from '../../types/mentor';
 import type { Booking, BookingResponse } from '../../types/booking';
 import './MentorDashboardScreen.css';
 
-const MentorDashboardScreen = (): JSX.Element => {
+const MentorDashboardScreen = () => {
   const [mentor, setMentor] = useState<MentorApi | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);

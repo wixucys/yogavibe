@@ -183,7 +183,7 @@ async def get_my_mentor_profile(
 
 @router.put("/mentor/me", response_model=schemas.MentorResponse)
 async def update_my_mentor_profile(
-    mentor_update: schemas.MentorUpdate,
+    mentor_update: schemas.MentorSelfUpdate,
     current_user: schemas.UserResponse = Depends(require_roles("mentor")),
     db: Session = Depends(get_db),
 ):
@@ -225,7 +225,7 @@ async def create_note(
 @router.put("/notes/{note_id}", response_model=schemas.NoteResponse)
 async def update_note(
     note_id: int,
-    note_data: schemas.NoteUpdate,
+    note_data: schemas.NoteCreate,
     current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
@@ -297,7 +297,7 @@ async def get_all_users(
 @router.put("/admin/users/{user_id}", response_model=schemas.UserResponse)
 async def admin_update_user(
     user_id: int,
-    user_update: schemas.AdminUserUpdate,
+    user_update: schemas.UserAdminUpdate,
     current_user: schemas.UserResponse = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):
@@ -337,7 +337,7 @@ async def get_all_mentors_for_admin(
 
 @router.post("/admin/mentors", response_model=schemas.MentorResponse)
 async def create_mentor(
-    mentor_data: schemas.MentorCreatePayload,
+    mentor_data: schemas.MentorCreate,
     current_user: schemas.UserResponse = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):
@@ -347,7 +347,7 @@ async def create_mentor(
 @router.put("/admin/mentors/{mentor_id}", response_model=schemas.MentorResponse)
 async def update_mentor(
     mentor_id: int,
-    mentor_update: schemas.MentorAdminUpdatePayload,
+    mentor_update: schemas.MentorAdminUpdate,
     current_user: schemas.UserResponse = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):

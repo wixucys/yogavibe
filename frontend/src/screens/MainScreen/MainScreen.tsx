@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './MainScreen.css';
 
@@ -33,7 +33,7 @@ interface MainScreenProps {
   onLogout: () => Promise<void> | void;
 }
 
-const MainScreen = ({ user, onLogout }: MainScreenProps): JSX.Element => {
+const MainScreen = ({ user, onLogout }: MainScreenProps) => {
   const navigate = useNavigate();
 
   const [activeNav, setActiveNav] = useState<NavItem>('МЕНТОРЫ');

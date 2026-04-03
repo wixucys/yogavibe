@@ -1,11 +1,11 @@
-import React, { JSX } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './WelcomeScreen.css';
 import eyeIcon from './eye.svg';
 import talkIcon from './talk.svg';
 import commIcon from './comm.svg';
 
-const WelcomeScreen = (): JSX.Element => {
+const WelcomeScreen = () => {
   const navigate = useNavigate();
 
   const handleFindMentor = (): void => {

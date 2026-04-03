@@ -1,5 +1,5 @@
-import React, { JSX, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './RegisterScreen.css';
 import logo from './flower.svg';
@@ -21,7 +21,7 @@ interface RegisterFormErrors {
   general?: string;
 }
 
-const RegisterScreen = (): JSX.Element => {
+const RegisterScreen = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
 

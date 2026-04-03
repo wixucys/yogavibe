@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import type {
@@ -19,7 +19,7 @@ const defaultFormData: MentorSelfUpdatePayload = {
   is_available: true,
 };
 
-const MentorEditScreen = (): JSX.Element => {
+const MentorEditScreen = () => {
   const [mentor, setMentor] = useState<MentorApi | null>(null);
   const [formData, setFormData] = useState<MentorSelfUpdatePayload>(defaultFormData);
   const [loading, setLoading] = useState(true);

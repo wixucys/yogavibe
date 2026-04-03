@@ -4,7 +4,6 @@ import React, {
   useRef,
   useCallback,
   useMemo,
-  JSX,
 } from 'react';
 import UserService from '../../services/UserService';
 import AuthService from '../../services/AuthService';
@@ -93,7 +92,7 @@ interface FileReaderError extends Error {
 const ProfileScreen = ({
   user = null,
   onUpdateProfile = () => {},
-}: ProfileScreenProps): JSX.Element => {
+}: ProfileScreenProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [profile, setProfile] = useState<ProfileState>({
@@ -429,7 +428,7 @@ const ProfileScreen = ({
   }, []);
 
   const renderField = useCallback(
-    (field: GroupedField): JSX.Element => {
+    (field: GroupedField) => {
       const { name, label, isTextArea, type } = field;
       const value = profile[name];
       const isEditing = editingField === name;

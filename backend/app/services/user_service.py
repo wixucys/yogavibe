@@ -44,7 +44,7 @@ class UserService:
 
     @staticmethod
     def update_user_by_admin(
-        db: Session, user_id: int, updates: schemas.AdminUserUpdate
+        db: Session, user_id: int, updates: schemas.UserAdminUpdate
     ) -> schemas.UserResponse:
         """Update user by admin"""
         user = crud.user_crud.get_user(db, user_id)
@@ -118,15 +118,19 @@ class UserService:
         mentor_count = crud.user_crud.count_users_by_role(db, "mentor")
         user_count = crud.user_crud.count_users_by_role(db, "user")
 
-        total_mentors = crud.mentor_crud.count_mentors(db)
-        total_bookings = crud.booking_crud.count_bookings(db)
+        mentor_profiles_count = crud.mentor_crud.count_mentor_profiles(db)
+        bookings_count = crud.booking_crud.count_bookings(db)
+        active_bookings_count = crud.booking_crud.count_bookings_by_status(db, "active")
+        notes_count = crud.note_crud.count_notes(db)
 
         return schemas.AdminDashboardResponse(
             total_users=total_users,
             active_users=active_users,
-            admins=admin_count,
-            mentors=mentor_count,
-            regular_users=user_count,
-            total_mentors=total_mentors,
-            total_bookings=total_bookings,
+            admins_count=admin_count,
+            mentors_count=mentor_count,
+            regular_users_count=user_count,
+            mentor_profiles_count=mentor_profiles_count,
+            bookings_count=bookings_count,
+            active_bookings_count=active_bookings_count,
+            notes_count=notes_count,
         )

@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import './BookingConfirmationScreen.css';
 import type { Booking, SessionType, BookingStatus } from '../../types/booking';
@@ -11,7 +11,7 @@ interface BookingConfirmationLocationState {
   mentor?: BookingMentor;
 }
 
-const BookingConfirmationScreen = (): JSX.Element => {
+const BookingConfirmationScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
 

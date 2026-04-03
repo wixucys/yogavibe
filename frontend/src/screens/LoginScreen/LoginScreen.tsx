@@ -1,19 +1,19 @@
-import React, { JSX, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './LoginScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
+import AuthService from '../../services/AuthService';
 
 interface LoginFormData {
   login: string;
   password: string;
 }
 
-const LoginScreen = (): JSX.Element => {
+const LoginScreen = ()=> {
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [formData, setFormData] = useState<LoginFormData>({
@@ -86,8 +86,13 @@ const LoginScreen = (): JSX.Element => {
         password: formData.password,
       };
 
-      await login(credentials);
-      navigate(getRedirectPath());
+      const result = await AuthService.login(credentials);
+
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+
+      navigate(getRedirectPath(result.user?.role));
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Ошибка при входе. Попробуйте позже.';

@@ -1,4 +1,4 @@
-import React, { JSX, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BookingService from '../../services/BookingService';
 import './MyBookingScreen.css';
@@ -19,7 +19,7 @@ const normalizeBooking = (booking: BookingDto): BookingView => ({
   sessionType: booking.sessionType || 'individual',
 });
 
-const MyBookingsScreen = (): JSX.Element => {
+const MyBookingsScreen = () => {
   const navigate = useNavigate();
 
   const [bookings, setBookings] = useState<BookingView[]>([]);

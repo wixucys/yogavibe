@@ -138,6 +138,13 @@ class AuthResponse(Token):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MentorFilters(BaseModel):
+    city: Optional[str] = None
+    yoga_style: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class MentorBase(BaseModel):
     name: str
     description: str

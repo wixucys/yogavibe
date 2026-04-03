@@ -1,4 +1,4 @@
-import React, { JSX, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import './MentorProfileScreen.css';
@@ -17,7 +17,7 @@ const InfoField = ({ label, value }: InfoFieldProps): JSX.Element => (
   </div>
 );
 
-const MentorProfileScreen = (): JSX.Element | null => {
+const MentorProfileScreen = () => {
   const { mentorId } = useParams<{ mentorId: string }>();
   const navigate = useNavigate();
 

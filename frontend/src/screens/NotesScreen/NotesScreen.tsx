@@ -1,9 +1,9 @@
-import React, { JSX, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './NotesScreen.css';
 import NotesService from '../../services/NotesService';
 import type { Note, NoteId } from '../../types/note';
 
-const NotesScreen = (): JSX.Element => {
+const NotesScreen = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');

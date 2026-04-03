@@ -16,7 +16,7 @@ class BookingService:
         db: Session, user_id: int, skip: int = 0, limit: int = 100
     ) -> List[schemas.BookingResponse]:
         """Get all bookings for current user"""
-        bookings = crud.booking_crud.get_bookings(db, user_id, skip=skip, limit=limit)
+        bookings = crud.booking_crud.get_user_bookings(db, user_id, skip=skip, limit=limit)
         return [schemas.BookingResponse.model_validate(b) for b in bookings]
 
     @staticmethod
@@ -66,5 +66,5 @@ class BookingService:
                 detail="Booking is already cancelled",
             )
 
-        booking = crud.booking_crud.cancel_booking(db, booking_id)
+        booking = crud.booking_crud.update_booking_status(db, booking_id, "cancelled")
         return schemas.BookingResponse.model_validate(booking)

@@ -535,29 +535,6 @@ class RefreshTokenCRUD:
         return deactivated_count
 
     @staticmethod
-    def clear_expired_tokens(db: Session, user_id: int) -> int:
-        """Удаляет просроченные токены пользователя"""
-        now = datetime.now(timezone.utc)
-        stmt = (
-            select(models.RefreshToken)
-            .where(
-                models.RefreshToken.user_id == user_id,
-                models.RefreshToken.expires_at <= now
-            )
-        )
-        expired_tokens = db.scalars(stmt).all()
-        
-        deleted_count = 0
-        for token in expired_tokens:
-            db.delete(token)
-            deleted_count += 1
-        
-        if deleted_count > 0:
-            db.commit()
-        
-        return deleted_count
-
-    @staticmethod
     def clear_expired_tokens(db: Session, user_id: int) -> None:
         stmt = delete(models.RefreshToken).where(
             models.RefreshToken.user_id == user_id,

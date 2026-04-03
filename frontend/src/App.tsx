@@ -1,6 +1,6 @@
-import React, { JSX } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
@@ -15,7 +15,13 @@ import BookingScreen from './screens/BookingScreen/BookingScreen';
 import BookingConfirmationScreen from './screens/BookingConfirm/BookingConfirmationScreen';
 import './App.css';
 
-function AppRoutes(): JSX.Element {
+function AppRoutes() {
+  const { user, logout } = useAuth();
+
+  const handleLogout = async (): Promise<void> => {
+    await logout();
+  };
+
   return (
     <Routes>
       {/* Public routes */}
@@ -28,7 +34,7 @@ function AppRoutes(): JSX.Element {
         path="/main"
         element={
           <ProtectedRoute allowedRoles={['user']}>
-            <MainScreen />
+            <MainScreen user={user} onLogout={handleLogout} />
           </ProtectedRoute>
         }
       />
@@ -101,7 +107,7 @@ function AppRoutes(): JSX.Element {
   );
 }
 
-function App(): JSX.Element {
+function App() {
   return (
     <Router>
       <AuthProvider>

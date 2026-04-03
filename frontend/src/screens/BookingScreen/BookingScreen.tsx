@@ -1,4 +1,4 @@
-import React, { JSX, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import BookingService from '../../services/BookingService';
 import ApiService from '../../services/ApiService';
@@ -20,7 +20,7 @@ interface BookingFormData {
   sessionType: SessionType;
 }
 
-const BookingScreen = (): JSX.Element => {
+const BookingScreen = () => {
   const { mentorId } = useParams<{ mentorId: string }>();
   const navigate = useNavigate();
   const location = useLocation();

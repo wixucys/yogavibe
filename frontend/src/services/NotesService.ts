@@ -1,4 +1,5 @@
 import ApiService from './ApiService';
+import { ApiError } from './ApiService';
 import type {
   Note,
   NoteApiResponse,
@@ -21,7 +22,49 @@ interface DeleteApiResponse {
   [key: string]: unknown;
 }
 
+interface PaginatedResponse<T> {
+  items: T[];
+}
+
 class NotesService {
+  private getErrorMessage(error: unknown, fallback: string): string {
+    if (error instanceof ApiError) {
+      if (error.status === 403) {
+        return 'Недостаточно прав для выполнения операции';
+      }
+
+      if (error.status === 404) {
+        return 'Запись не найдена';
+      }
+
+      if (error.status === 409) {
+        return 'Запись была изменена. Обновите страницу и повторите действие';
+      }
+
+      if (error.message) {
+        return error.message;
+      }
+    }
+
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+
+    return fallback;
+  }
+
+  private extractItems<T>(response: T[] | PaginatedResponse<T>): T[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (response && Array.isArray(response.items)) {
+      return response.items;
+    }
+
+    return [];
+  }
+
   private normalizeNote(note: NoteApiResponse): Note {
     return {
       id: note.id,
@@ -34,11 +77,13 @@ class NotesService {
 
   async getNotes(): Promise<NotesListResult> {
     try {
-      const response = (await ApiService.request('/notes')) as NoteApiResponse[];
+      const response = (await ApiService.request('/notes')) as
+        | NoteApiResponse[]
+        | PaginatedResponse<NoteApiResponse>;
 
-      const notes: Note[] = Array.isArray(response)
-        ? response.map((note) => this.normalizeNote(note))
-        : [];
+      const notes: Note[] = this.extractItems(response).map((note) =>
+        this.normalizeNote(note)
+      );
 
       return {
         success: true,
@@ -49,7 +94,7 @@ class NotesService {
 
       return {
         success: false,
-        message: 'Не удалось загрузить заметки',
+        message: this.getErrorMessage(error, 'Не удалось загрузить заметки'),
       };
     }
   }
@@ -72,14 +117,21 @@ class NotesService {
 
       return {
         success: false,
-        message: 'Не удалось создать заметку',
+        message: this.getErrorMessage(error, 'Не удалось создать заметку'),
       };
     }
   }
 
-  async updateNote(id: NoteId, text: string): Promise<NoteResult> {
+  async updateNote(
+    id: NoteId,
+    text: string,
+    expectedUpdatedAt?: string | null
+  ): Promise<NoteResult> {
     try {
-      const payload: NotePayload = { text };
+      const payload: NotePayload = {
+        text,
+        expected_updated_at: expectedUpdatedAt ?? undefined,
+      };
 
       const response = (await ApiService.request(`/notes/${id}`, {
         method: 'PUT',
@@ -95,7 +147,7 @@ class NotesService {
 
       return {
         success: false,
-        message: 'Не удалось обновить заметку',
+        message: this.getErrorMessage(error, 'Не удалось обновить заметку'),
       };
     }
   }
@@ -117,7 +169,7 @@ class NotesService {
 
       return {
         success: false,
-        message: 'Не удалось удалить заметку',
+        message: this.getErrorMessage(error, 'Не удалось удалить заметку'),
       };
     }
   }

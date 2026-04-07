@@ -57,6 +57,14 @@ export interface CreateBookingInput {
   [key: string]: unknown;
 }
 
+export interface UpdateBookingInput {
+  session_date?: string;
+  duration_minutes?: number;
+  notes?: string;
+  session_type?: SessionType;
+  expected_updated_at?: string;
+}
+
 export interface StoredBooking extends Booking {
   userId?: UserId;
 }

@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -11,20 +9,50 @@ class MentorService:
     """Business logic for mentor operations"""
 
     @staticmethod
-    def get_all_mentors(
-        db: Session, filters: schemas.MentorFilters, skip: int = 0, limit: int = 100
-    ) -> List[schemas.MentorResponse]:
-        mentors = crud.mentor_crud.get_mentors(
-            db,
-            skip=skip,
-            limit=limit,
-            city=filters.city,
-            yoga_style=filters.yoga_style,
+    def get_mentors_catalog(
+        db: Session,
+        query: schemas.MentorListQuery,
+    ) -> schemas.MentorListPage:
+        mentors, total = crud.mentor_crud.get_mentors_page(
+            db=db,
+            query=query,
+            admin_mode=False,
         )
-        return [schemas.MentorResponse.model_validate(m) for m in mentors]
+
+        return schemas.MentorListPage(
+            items=[schemas.MentorResponse.model_validate(m) for m in mentors],
+            meta=crud.build_page_meta(
+                page=query.page,
+                page_size=query.page_size,
+                total=total,
+            ),
+        )
 
     @staticmethod
-    def get_mentor_by_id(db: Session, mentor_id: int) -> schemas.MentorResponse:
+    def get_admin_mentors(
+        db: Session,
+        query: schemas.MentorListQuery,
+    ) -> schemas.MentorListPage:
+        mentors, total = crud.mentor_crud.get_mentors_page(
+            db=db,
+            query=query,
+            admin_mode=True,
+        )
+
+        return schemas.MentorListPage(
+            items=[schemas.MentorResponse.model_validate(m) for m in mentors],
+            meta=crud.build_page_meta(
+                page=query.page,
+                page_size=query.page_size,
+                total=total,
+            ),
+        )
+
+    @staticmethod
+    def get_mentor_by_id(
+        db: Session,
+        mentor_id: int,
+    ) -> schemas.MentorResponse:
         mentor = crud.mentor_crud.get_mentor(db, mentor_id)
         if not mentor:
             raise HTTPException(
@@ -34,7 +62,10 @@ class MentorService:
         return schemas.MentorResponse.model_validate(mentor)
 
     @staticmethod
-    def get_current_mentor(db: Session, user_id: int) -> schemas.MentorResponse:
+    def get_current_mentor(
+        db: Session,
+        user_id: int,
+    ) -> schemas.MentorResponse:
         mentor = crud.mentor_crud.get_mentor_by_user_id(db, user_id)
         if not mentor:
             raise HTTPException(
@@ -45,7 +76,9 @@ class MentorService:
 
     @staticmethod
     def update_mentor(
-        db: Session, user_id: int, updates: schemas.MentorSelfUpdate
+        db: Session,
+        user_id: int,
+        updates: schemas.MentorSelfUpdate,
     ) -> schemas.MentorResponse:
         mentor = crud.mentor_crud.get_mentor_by_user_id(db, user_id)
         if not mentor:
@@ -69,8 +102,10 @@ class MentorService:
 
     @staticmethod
     def get_mentor_bookings(
-        db: Session, user_id: int, skip: int = 0, limit: int = 100
-    ) -> List[schemas.BookingResponse]:
+        db: Session,
+        user_id: int,
+        query: schemas.BookingListQuery,
+    ) -> schemas.BookingListPage:
         mentor = crud.mentor_crud.get_mentor_by_user_id(db, user_id)
         if not mentor:
             raise HTTPException(
@@ -78,14 +113,25 @@ class MentorService:
                 detail="Профиль ментора не найден",
             )
 
-        bookings = crud.booking_crud.get_mentor_bookings(
-            db, mentor.id, skip=skip, limit=limit
+        bookings, total = crud.booking_crud.get_mentor_bookings_page(
+            db=db,
+            mentor_id=mentor.id,
+            query=query,
         )
-        return [schemas.BookingResponse.model_validate(b) for b in bookings]
+
+        return schemas.BookingListPage(
+            items=[schemas.BookingResponse.model_validate(b) for b in bookings],
+            meta=crud.build_page_meta(
+                page=query.page,
+                page_size=query.page_size,
+                total=total,
+            ),
+        )
 
     @staticmethod
     def create_mentor(
-        db: Session, mentor_data: schemas.MentorCreate
+        db: Session,
+        mentor_data: schemas.MentorCreate,
     ) -> schemas.MentorResponse:
         user = crud.user_crud.get_user(db, mentor_data.user_id)
         if not user:
@@ -113,7 +159,9 @@ class MentorService:
 
     @staticmethod
     def update_mentor_by_admin(
-        db: Session, mentor_id: int, updates: schemas.MentorAdminUpdate
+        db: Session,
+        mentor_id: int,
+        updates: schemas.MentorAdminUpdate,
     ) -> schemas.MentorResponse:
         mentor = crud.mentor_crud.get_mentor(db, mentor_id)
         if not mentor:
@@ -123,7 +171,9 @@ class MentorService:
             )
 
         updated_mentor = crud.mentor_crud.update_mentor(
-            db, mentor_id, updates.model_dump(exclude_unset=True)
+            db,
+            mentor_id,
+            updates.model_dump(exclude_unset=True),
         )
         if not updated_mentor:
             raise HTTPException(
@@ -134,7 +184,10 @@ class MentorService:
         return schemas.MentorResponse.model_validate(updated_mentor)
 
     @staticmethod
-    def delete_mentor(db: Session, mentor_id: int) -> None:
+    def delete_mentor(
+        db: Session,
+        mentor_id: int,
+    ) -> None:
         mentor = crud.mentor_crud.get_mentor(db, mentor_id)
         if not mentor:
             raise HTTPException(

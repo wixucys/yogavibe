@@ -11,8 +11,23 @@ const NotesScreen = () => {
   const [newNote, setNewNote] = useState<string>('');
   const [editingNoteId, setEditingNoteId] = useState<NoteId | null>(null);
   const [editingText, setEditingText] = useState<string>('');
+  const [editingOriginalUpdatedAt, setEditingOriginalUpdatedAt] = useState<string | null>(null);
 
   const editModeRef = useRef<HTMLDivElement | null>(null);
+
+  const validateNoteText = (text: string): string | null => {
+    const trimmed = text.trim();
+
+    if (trimmed.length === 0) {
+      return 'Текст заметки не может быть пустым';
+    }
+
+    if (trimmed.length > 1000) {
+      return 'Текст заметки слишком длинный (максимум 1000 символов)';
+    }
+
+    return null;
+  };
 
   const loadNotes = async (): Promise<void> => {
     setLoading(true);
@@ -42,7 +57,11 @@ const NotesScreen = () => {
   }, []);
 
   const addNote = async (text: string): Promise<boolean> => {
-    if (!text.trim()) return false;
+    const validationError = validateNoteText(text);
+    if (validationError) {
+      setError(validationError);
+      return false;
+    }
 
     setError('');
 
@@ -64,12 +83,20 @@ const NotesScreen = () => {
   };
 
   const updateNote = async (id: NoteId, text: string): Promise<boolean> => {
-    if (!text.trim()) return false;
+    const validationError = validateNoteText(text);
+    if (validationError) {
+      setError(validationError);
+      return false;
+    }
 
     setError('');
 
     try {
-      const result = await NotesService.updateNote(id, text);
+      const result = await NotesService.updateNote(
+        id,
+        text,
+        editingOriginalUpdatedAt
+      );
 
       if (!result.success) {
         setError(result.message);
@@ -117,6 +144,7 @@ const NotesScreen = () => {
     setError('');
     setEditingNoteId(note.id);
     setEditingText(note.text);
+    setEditingOriginalUpdatedAt(note.updatedAt ?? note.createdAt);
   };
 
   const saveEditing = async (id: NoteId): Promise<void> => {
@@ -125,12 +153,14 @@ const NotesScreen = () => {
     if (success) {
       setEditingNoteId(null);
       setEditingText('');
+      setEditingOriginalUpdatedAt(null);
     }
   };
 
   const cancelEditing = (): void => {
     setEditingNoteId(null);
     setEditingText('');
+    setEditingOriginalUpdatedAt(null);
     setError('');
   };
 

@@ -22,6 +22,7 @@ export interface NoteApiResponse {
 
 export interface NotePayload {
   text: string;
+  expected_updated_at?: string;
 }
 
 export type NoteData = NotePayload;

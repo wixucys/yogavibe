@@ -1,12 +1,23 @@
 from datetime import datetime, timedelta, timezone
-from typing import Literal, Optional
+from typing import Generic, Literal, Optional, TypeVar
 
-from pydantic import BaseModel, ConfigDict, EmailStr, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_serializer, field_validator
 
 
 UserRole = Literal["user", "mentor", "admin"]
 BookingStatus = Literal["active", "completed", "cancelled"]
 SessionType = Literal["individual", "group"]
+
+MentorSortField = Literal["created_at", "price", "rating", "experience_years", "name"]
+BookingSortField = Literal["created_at", "session_date", "price", "status"]
+NoteSortField = Literal["created_at", "updated_at"]
+UserSortField = Literal["created_at", "username", "email", "role"]
+SortOrder = Literal["asc", "desc"]
+
+FileOwnerType = Literal["user", "mentor", "booking", "note"]
+FileCategory = Literal["avatar", "certificate", "booking_document", "note_attachment", "other"]
+
+T = TypeVar("T")
 
 
 class DateTimeSchema(BaseModel):
@@ -20,6 +31,39 @@ class DateTimeSchema(BaseModel):
 
         moscow_tz = timezone(timedelta(hours=3))
         return value.astimezone(moscow_tz).isoformat()
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PaginationParams(BaseModel):
+    page: int = Field(default=1, ge=1, description="Номер страницы, начиная с 1")
+    page_size: int = Field(default=10, ge=1, le=100, description="Размер страницы")
+
+    @property
+    def skip(self) -> int:
+        return (self.page - 1) * self.page_size
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SortParams(BaseModel):
+    sort_order: SortOrder = "desc"
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PageMeta(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    pages: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: list[T]
+    meta: PageMeta
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -65,6 +109,14 @@ class UserUpdate(BaseModel):
     experience: Optional[str] = None
     goals: Optional[str] = None
 
+    @field_validator("city", "yoga_style", "experience", "goals")
+    @classmethod
+    def strip_optional_text_fields(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -75,6 +127,14 @@ class UserAdminUpdate(BaseModel):
     yoga_style: Optional[str] = None
     experience: Optional[str] = None
     goals: Optional[str] = None
+
+    @field_validator("city", "yoga_style", "experience", "goals")
+    @classmethod
+    def strip_optional_text_fields(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -100,7 +160,7 @@ class UserResponse(DateTimeSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
-class UserListResponse(DateTimeSchema):
+class UserListItem(DateTimeSchema):
     id: int
     username: str
     email: str
@@ -111,9 +171,38 @@ class UserListResponse(DateTimeSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
+class UserListQuery(PaginationParams, SortParams):
+    search: Optional[str] = None
+    role: Optional[UserRole] = None
+    is_active: Optional[bool] = None
+    sort_by: UserSortField = "created_at"
+
+    @field_validator("search")
+    @classmethod
+    def normalize_search(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class UserListPage(PaginatedResponse[UserListItem]):
+    pass
+
+
 class LoginRequest(BaseModel):
     login: str
     password: str
+
+    @field_validator("login")
+    @classmethod
+    def validate_login(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Логин не может быть пустым")
+        return stripped
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -139,8 +228,58 @@ class AuthResponse(Token):
 
 
 class MentorFilters(BaseModel):
+    search: Optional[str] = None
+    gender: Optional[str] = None
     city: Optional[str] = None
     yoga_style: Optional[str] = None
+    min_price: Optional[int] = Field(default=None, ge=0)
+    max_price: Optional[int] = Field(default=None, ge=0)
+    is_available: Optional[bool] = None
+
+    @field_validator("search", "gender", "city", "yoga_style")
+    @classmethod
+    def normalize_text_filters(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("max_price")
+    @classmethod
+    def validate_price_range(cls, value: Optional[int], info) -> Optional[int]:
+        min_price = info.data.get("min_price")
+        if value is not None and min_price is not None and value < min_price:
+            raise ValueError("max_price не может быть меньше min_price")
+        return value
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MentorListQuery(PaginationParams, SortParams):
+    search: Optional[str] = None
+    gender: Optional[str] = None
+    city: Optional[str] = None
+    yoga_style: Optional[str] = None
+    min_price: Optional[int] = Field(default=None, ge=0)
+    max_price: Optional[int] = Field(default=None, ge=0)
+    is_available: Optional[bool] = None
+    sort_by: MentorSortField = "created_at"
+
+    @field_validator("search", "gender", "city", "yoga_style")
+    @classmethod
+    def normalize_text_filters(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("max_price")
+    @classmethod
+    def validate_price_range(cls, value: Optional[int], info) -> Optional[int]:
+        min_price = info.data.get("min_price")
+        if value is not None and min_price is not None and value < min_price:
+            raise ValueError("max_price не может быть меньше min_price")
+        return value
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -211,6 +350,41 @@ class MentorAdminUpdate(BaseModel):
     photo_url: Optional[str] = None
     is_available: Optional[bool] = None
 
+    @field_validator("name", "description", "gender", "city", "yoga_style", "photo_url")
+    @classmethod
+    def strip_optional_text_fields(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("price")
+    @classmethod
+    def validate_price(cls, value: Optional[int]) -> Optional[int]:
+        if value is None:
+            return value
+        if value < 0:
+            raise ValueError("Цена не может быть отрицательной")
+        return value
+
+    @field_validator("rating")
+    @classmethod
+    def validate_rating(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value < 0 or value > 5:
+            raise ValueError("Рейтинг должен быть в диапазоне от 0 до 5")
+        return value
+
+    @field_validator("experience_years")
+    @classmethod
+    def validate_experience_years(cls, value: Optional[int]) -> Optional[int]:
+        if value is None:
+            return value
+        if value < 0:
+            raise ValueError("Опыт не может быть отрицательным")
+        return value
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -223,6 +397,23 @@ class MentorSelfUpdate(BaseModel):
     experience_years: Optional[int] = None
     photo_url: Optional[str] = None
     is_available: Optional[bool] = None
+
+    @field_validator("name", "description", "gender", "city", "yoga_style", "photo_url")
+    @classmethod
+    def strip_optional_text_fields(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    @field_validator("experience_years")
+    @classmethod
+    def validate_experience_years(cls, value: Optional[int]) -> Optional[int]:
+        if value is None:
+            return value
+        if value < 0:
+            raise ValueError("Опыт не может быть отрицательным")
+        return value
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -254,6 +445,10 @@ class MentorResponse(DateTimeSchema):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MentorListPage(PaginatedResponse[MentorResponse]):
+    pass
+
+
 class NoteBase(BaseModel):
     text: str
 
@@ -274,6 +469,27 @@ class NoteCreate(NoteBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class NoteUpdate(NoteCreate):
+    expected_updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class NoteListQuery(PaginationParams, SortParams):
+    search: Optional[str] = None
+    sort_by: NoteSortField = "created_at"
+
+    @field_validator("search")
+    @classmethod
+    def normalize_search(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class NoteResponse(DateTimeSchema):
     id: int
     user_id: int
@@ -282,6 +498,10 @@ class NoteResponse(DateTimeSchema):
     updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class NoteListPage(PaginatedResponse[NoteResponse]):
+    pass
 
 
 class BookingBase(BaseModel):
@@ -317,6 +537,47 @@ class BookingCreate(BookingBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class BookingUpdate(BaseModel):
+    session_date: Optional[datetime] = None
+    duration_minutes: Optional[int] = Field(default=None, gt=0)
+    notes: Optional[str] = None
+    session_type: Optional[SessionType] = None
+    expected_updated_at: Optional[datetime] = None
+
+    @field_validator("notes")
+    @classmethod
+    def validate_notes(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+
+        stripped = value.strip()
+        if len(stripped) > 1000:
+            raise ValueError("Комментарий к бронированию слишком длинный")
+
+        return stripped or None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingListQuery(PaginationParams, SortParams):
+    status: Optional[BookingStatus] = None
+    mentor_id: Optional[int] = None
+    session_type: Optional[SessionType] = None
+    date_from: Optional[datetime] = None
+    date_to: Optional[datetime] = None
+    sort_by: BookingSortField = "session_date"
+
+    @field_validator("date_to")
+    @classmethod
+    def validate_date_range(cls, value: Optional[datetime], info) -> Optional[datetime]:
+        date_from = info.data.get("date_from")
+        if value is not None and date_from is not None and value < date_from:
+            raise ValueError("date_to не может быть раньше date_from")
+        return value
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class BookingResponse(DateTimeSchema):
     id: int
     user_id: int
@@ -332,6 +593,72 @@ class BookingResponse(DateTimeSchema):
     updated_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class BookingListPage(PaginatedResponse[BookingResponse]):
+    pass
+
+
+class FileAttachmentBase(BaseModel):
+    owner_type: FileOwnerType
+    owner_id: int
+    category: FileCategory = "other"
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FileAttachmentCreate(FileAttachmentBase):
+    original_filename: str
+    stored_filename: str
+    file_url: str
+    mime_type: Optional[str] = None
+    size_bytes: int = Field(ge=0)
+
+    @field_validator("original_filename", "stored_filename", "file_url")
+    @classmethod
+    def validate_required_strings(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Поле не может быть пустым")
+        return stripped
+
+    @field_validator("mime_type")
+    @classmethod
+    def normalize_mime_type(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip()
+        return stripped or None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FileAttachmentResponse(DateTimeSchema):
+    id: int
+    owner_type: FileOwnerType
+    owner_id: int
+    category: FileCategory
+    original_filename: str
+    stored_filename: str
+    file_url: str
+    mime_type: Optional[str] = None
+    size_bytes: int
+    uploaded_by_user_id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FileAttachmentListQuery(PaginationParams, SortParams):
+    owner_type: Optional[FileOwnerType] = None
+    owner_id: Optional[int] = None
+    category: Optional[FileCategory] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FileAttachmentListPage(PaginatedResponse[FileAttachmentResponse]):
+    pass
 
 
 class AdminDashboardResponse(BaseModel):

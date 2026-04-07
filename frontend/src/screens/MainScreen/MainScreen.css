@@ -143,6 +143,24 @@
   transition: border-color 0.3s ease;
 }
 
+.search-input {
+  width: 14.375rem;
+  height: 2.9375rem;
+  padding: 0.75rem 0.9375rem;
+  border: 0.125rem solid #ded8d2;
+  border-radius: 0.625rem;
+  background: white;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
+  color: #69505c;
+  transition: border-color 0.3s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #69505c;
+}
+
 .filter-select:focus,
 .price-input:focus {
   outline: none;
@@ -176,6 +194,25 @@
   align-items: center;
   justify-content: center;
   gap: 0.625rem;
+}
+
+.sort-order-btn {
+  width: 100%;
+  margin-top: 0.625rem;
+  height: 2.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: #ded8d2;
+  color: #35252c;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.sort-order-btn:hover {
+  background: #cfc3bb;
 }
 
 .clear-filters-btn {

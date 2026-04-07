@@ -1,19 +1,37 @@
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
-import math
+from typing import Optional
 
-from sqlalchemy import and_, delete, func, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
+import math
 import models_db as models
 import schemas
 from utils import get_password_hash, verify_password
 
 
+def build_page_meta(page: int, page_size: int, total: int) -> schemas.PageMeta:
+    pages = math.ceil(total / page_size) if total > 0 else 0
+    return schemas.PageMeta(
+        page=page,
+        page_size=page_size,
+        total=total,
+        pages=pages,
+    )
+
+
 class UserCRUD:
     @staticmethod
     def get_user(db: Session, user_id: int) -> Optional[models.User]:
-        return db.get(models.User, user_id)
+        stmt = (
+            select(models.User)
+            .options(
+                selectinload(models.User.mentor_profile),
+                selectinload(models.User.avatar_file),
+            )
+            .where(models.User.id == user_id)
+        )
+        return db.scalar(stmt)
 
     @staticmethod
     def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
@@ -29,19 +47,12 @@ class UserCRUD:
     def get_user_by_login(db: Session, login: str) -> Optional[models.User]:
         login = login.strip()
         stmt = select(models.User).where(
-            (models.User.email == login.lower()) | (models.User.username == login)
+            or_(
+                models.User.email == login.lower(),
+                models.User.username == login,
+            )
         )
         return db.scalar(stmt)
-
-    @staticmethod
-    def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]:
-        stmt = (
-            select(models.User)
-            .order_by(models.User.created_at.desc())
-            .offset(skip)
-            .limit(limit)
-        )
-        return list(db.scalars(stmt))
 
     @staticmethod
     def authenticate_user(db: Session, login: str, password: str) -> Optional[models.User]:
@@ -51,6 +62,46 @@ class UserCRUD:
         if not verify_password(password, user.hashed_password):
             return None
         return user
+
+    @staticmethod
+    def get_users_page(
+        db: Session,
+        query: schemas.UserListQuery,
+    ) -> tuple[list[models.User], int]:
+        stmt = select(models.User)
+
+        if query.search:
+            pattern = f"%{query.search.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    func.lower(models.User.username).like(pattern),
+                    func.lower(models.User.email).like(pattern),
+                )
+            )
+
+        if query.role:
+            stmt = stmt.where(models.User.role == query.role)
+
+        if query.is_active is not None:
+            stmt = stmt.where(models.User.is_active.is_(query.is_active))
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = int(db.scalar(count_stmt) or 0)
+
+        sort_field_map = {
+            "created_at": models.User.created_at,
+            "username": models.User.username,
+            "email": models.User.email,
+            "role": models.User.role,
+        }
+        sort_column = sort_field_map[query.sort_by]
+        stmt = stmt.order_by(
+            sort_column.asc() if query.sort_order == "asc" else sort_column.desc()
+        )
+
+        stmt = stmt.offset(query.skip).limit(query.page_size)
+        users = list(db.scalars(stmt))
+        return users, total
 
     @staticmethod
     def count_users_by_role(db: Session, role: str) -> int:
@@ -95,7 +146,7 @@ class UserCRUD:
         if not user:
             return None
 
-        allowed_fields = {"city", "yoga_style", "experience", "goals"}
+        allowed_fields = {"city", "yoga_style", "experience", "goals", "avatar_file_id"}
 
         for key, value in updates.items():
             if key in allowed_fields:
@@ -115,7 +166,15 @@ class UserCRUD:
         if not user:
             return None
 
-        allowed_fields = {"role", "is_active", "city", "yoga_style", "experience", "goals"}
+        allowed_fields = {
+            "role",
+            "is_active",
+            "city",
+            "yoga_style",
+            "experience",
+            "goals",
+            "avatar_file_id",
+        }
 
         new_role = updates.get("role")
         if new_role and user.role == "mentor" and new_role != "mentor":
@@ -139,14 +198,10 @@ class UserCRUD:
             if key in allowed_fields:
                 setattr(user, key, value)
 
-        # Если пользователь деактивируется, отзываем все его токены
         if "is_active" in updates and updates["is_active"] is False:
-            stmt = (
-                select(models.RefreshToken)
-                .where(
-                    models.RefreshToken.user_id == user_id,
-                    models.RefreshToken.is_active.is_(True)
-                )
+            stmt = select(models.RefreshToken).where(
+                models.RefreshToken.user_id == user_id,
+                models.RefreshToken.is_active.is_(True),
             )
             tokens = db.scalars(stmt).all()
             for token in tokens:
@@ -162,10 +217,10 @@ class UserCRUD:
         if not user:
             return False
 
-        if user.role == 'admin':
-            admins_count = UserCRUD.count_users_by_role(db, 'admin')
+        if user.role == "admin":
+            admins_count = UserCRUD.count_users_by_role(db, "admin")
             if admins_count <= 1:
-                raise ValueError('Нельзя удалить последнего администратора')
+                raise ValueError("Нельзя удалить последнего администратора")
 
         mentor_profile = MentorCRUD.get_mentor_by_user_id(db, user.id)
         if mentor_profile:
@@ -179,40 +234,86 @@ class UserCRUD:
 class MentorCRUD:
     @staticmethod
     def get_mentor(db: Session, mentor_id: int) -> Optional[models.Mentor]:
-        return db.get(models.Mentor, mentor_id)
-
-    @staticmethod
-    def get_mentor_by_user_id(db: Session, user_id: int) -> Optional[models.Mentor]:
-        stmt = select(models.Mentor).where(models.Mentor.user_id == user_id)
+        stmt = (
+            select(models.Mentor)
+            .options(
+                selectinload(models.Mentor.user),
+                selectinload(models.Mentor.photo_file),
+            )
+            .where(models.Mentor.id == mentor_id)
+        )
         return db.scalar(stmt)
 
     @staticmethod
-    def get_mentors(
-        db: Session,
-        skip: int = 0,
-        limit: int = 100,
-        city: Optional[str] = None,
-        yoga_style: Optional[str] = None,
-    ) -> List[models.Mentor]:
-        stmt = select(models.Mentor).where(models.Mentor.is_available.is_(True))
-
-        if city:
-            stmt = stmt.where(models.Mentor.city == city)
-        if yoga_style:
-            stmt = stmt.where(models.Mentor.yoga_style == yoga_style)
-
-        stmt = stmt.order_by(models.Mentor.created_at.desc()).offset(skip).limit(limit)
-        return list(db.scalars(stmt))
-
-    @staticmethod
-    def get_all_mentors(db: Session, skip: int = 0, limit: int = 100) -> List[models.Mentor]:
+    def get_mentor_by_user_id(db: Session, user_id: int) -> Optional[models.Mentor]:
         stmt = (
             select(models.Mentor)
-            .order_by(models.Mentor.created_at.desc())
-            .offset(skip)
-            .limit(limit)
+            .options(
+                selectinload(models.Mentor.user),
+                selectinload(models.Mentor.photo_file),
+            )
+            .where(models.Mentor.user_id == user_id)
         )
-        return list(db.scalars(stmt))
+        return db.scalar(stmt)
+
+    @staticmethod
+    def get_mentors_page(
+        db: Session,
+        query: schemas.MentorListQuery,
+        admin_mode: bool = False,
+    ) -> tuple[list[models.Mentor], int]:
+        stmt = select(models.Mentor)
+
+        if not admin_mode:
+            stmt = stmt.where(models.Mentor.is_available.is_(True))
+
+        if query.search:
+            pattern = f"%{query.search.lower()}%"
+            stmt = stmt.where(
+                or_(
+                    func.lower(models.Mentor.name).like(pattern),
+                    func.lower(models.Mentor.description).like(pattern),
+                    func.lower(models.Mentor.city).like(pattern),
+                    func.lower(models.Mentor.yoga_style).like(pattern),
+                )
+            )
+
+        if query.gender:
+            stmt = stmt.where(func.lower(models.Mentor.gender) == query.gender.lower())
+
+        if query.city:
+            stmt = stmt.where(func.lower(models.Mentor.city) == query.city.lower())
+
+        if query.yoga_style:
+            stmt = stmt.where(func.lower(models.Mentor.yoga_style) == query.yoga_style.lower())
+
+        if query.min_price is not None:
+            stmt = stmt.where(models.Mentor.price >= query.min_price)
+
+        if query.max_price is not None:
+            stmt = stmt.where(models.Mentor.price <= query.max_price)
+
+        if query.is_available is not None:
+            stmt = stmt.where(models.Mentor.is_available.is_(query.is_available))
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = int(db.scalar(count_stmt) or 0)
+
+        sort_field_map = {
+            "created_at": models.Mentor.created_at,
+            "price": models.Mentor.price,
+            "rating": models.Mentor.rating,
+            "experience_years": models.Mentor.experience_years,
+            "name": models.Mentor.name,
+        }
+        sort_column = sort_field_map[query.sort_by]
+        stmt = stmt.order_by(
+            sort_column.asc() if query.sort_order == "asc" else sort_column.desc()
+        )
+
+        stmt = stmt.offset(query.skip).limit(query.page_size)
+        mentors = list(db.scalars(stmt))
+        return mentors, total
 
     @staticmethod
     def count_mentor_profiles(db: Session) -> int:
@@ -254,6 +355,7 @@ class MentorCRUD:
             "rating",
             "experience_years",
             "photo_url",
+            "photo_file_id",
             "is_available",
         }
 
@@ -279,6 +381,7 @@ class MentorCRUD:
             "yoga_style",
             "experience_years",
             "photo_url",
+            "photo_file_id",
             "is_available",
         }
 
@@ -304,18 +407,40 @@ class MentorCRUD:
 class NoteCRUD:
     @staticmethod
     def get_note(db: Session, note_id: int) -> Optional[models.Note]:
-        return db.get(models.Note, note_id)
-
-    @staticmethod
-    def get_user_notes(db: Session, user_id: int, skip: int = 0, limit: int = 100) -> List[models.Note]:
         stmt = (
             select(models.Note)
-            .where(models.Note.user_id == user_id)
-            .order_by(models.Note.created_at.desc())
-            .offset(skip)
-            .limit(limit)
+            .options(selectinload(models.Note.attachments))
+            .where(models.Note.id == note_id)
         )
-        return list(db.scalars(stmt))
+        return db.scalar(stmt)
+
+    @staticmethod
+    def get_user_notes_page(
+        db: Session,
+        user_id: int,
+        query: schemas.NoteListQuery,
+    ) -> tuple[list[models.Note], int]:
+        stmt = select(models.Note).where(models.Note.user_id == user_id)
+
+        if query.search:
+            pattern = f"%{query.search.lower()}%"
+            stmt = stmt.where(func.lower(models.Note.text).like(pattern))
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = int(db.scalar(count_stmt) or 0)
+
+        sort_field_map = {
+            "created_at": models.Note.created_at,
+            "updated_at": models.Note.updated_at,
+        }
+        sort_column = sort_field_map[query.sort_by]
+        stmt = stmt.order_by(
+            sort_column.asc() if query.sort_order == "asc" else sort_column.desc()
+        )
+
+        stmt = stmt.offset(query.skip).limit(query.page_size)
+        notes = list(db.scalars(stmt))
+        return notes, total
 
     @staticmethod
     def count_notes(db: Session) -> int:
@@ -359,34 +484,100 @@ class BookingCRUD:
     def get_booking(db: Session, booking_id: int) -> Optional[models.Booking]:
         stmt = (
             select(models.Booking)
-            .options(selectinload(models.Booking.mentor))
+            .options(
+                selectinload(models.Booking.mentor),
+                selectinload(models.Booking.attachments),
+            )
             .where(models.Booking.id == booking_id)
         )
         return db.scalar(stmt)
 
     @staticmethod
-    def get_user_bookings(db: Session, user_id: int, skip: int = 0, limit: int = 100) -> List[models.Booking]:
+    def get_user_bookings_page(
+        db: Session,
+        user_id: int,
+        query: schemas.BookingListQuery,
+    ) -> tuple[list[models.Booking], int]:
         stmt = (
             select(models.Booking)
             .options(selectinload(models.Booking.mentor))
             .where(models.Booking.user_id == user_id)
-            .order_by(models.Booking.session_date.desc())
-            .offset(skip)
-            .limit(limit)
         )
-        return list(db.scalars(stmt))
+
+        if query.status:
+            stmt = stmt.where(models.Booking.status == query.status)
+
+        if query.mentor_id is not None:
+            stmt = stmt.where(models.Booking.mentor_id == query.mentor_id)
+
+        if query.session_type:
+            stmt = stmt.where(models.Booking.session_type == query.session_type)
+
+        if query.date_from is not None:
+            stmt = stmt.where(models.Booking.session_date >= query.date_from)
+
+        if query.date_to is not None:
+            stmt = stmt.where(models.Booking.session_date <= query.date_to)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = int(db.scalar(count_stmt) or 0)
+
+        sort_field_map = {
+            "created_at": models.Booking.created_at,
+            "session_date": models.Booking.session_date,
+            "price": models.Booking.price,
+            "status": models.Booking.status,
+        }
+        sort_column = sort_field_map[query.sort_by]
+        stmt = stmt.order_by(
+            sort_column.asc() if query.sort_order == "asc" else sort_column.desc()
+        )
+
+        stmt = stmt.offset(query.skip).limit(query.page_size)
+        bookings = list(db.scalars(stmt))
+        return bookings, total
 
     @staticmethod
-    def get_mentor_bookings(db: Session, mentor_id: int, skip: int = 0, limit: int = 100) -> List[models.Booking]:
+    def get_mentor_bookings_page(
+        db: Session,
+        mentor_id: int,
+        query: schemas.BookingListQuery,
+    ) -> tuple[list[models.Booking], int]:
         stmt = (
             select(models.Booking)
             .options(selectinload(models.Booking.mentor))
             .where(models.Booking.mentor_id == mentor_id)
-            .order_by(models.Booking.session_date.desc())
-            .offset(skip)
-            .limit(limit)
         )
-        return list(db.scalars(stmt))
+
+        if query.status:
+            stmt = stmt.where(models.Booking.status == query.status)
+
+        if query.session_type:
+            stmt = stmt.where(models.Booking.session_type == query.session_type)
+
+        if query.date_from is not None:
+            stmt = stmt.where(models.Booking.session_date >= query.date_from)
+
+        if query.date_to is not None:
+            stmt = stmt.where(models.Booking.session_date <= query.date_to)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = int(db.scalar(count_stmt) or 0)
+
+        sort_field_map = {
+            "created_at": models.Booking.created_at,
+            "session_date": models.Booking.session_date,
+            "price": models.Booking.price,
+            "status": models.Booking.status,
+        }
+        sort_column = sort_field_map[query.sort_by]
+        stmt = stmt.order_by(
+            sort_column.asc() if query.sort_order == "asc" else sort_column.desc()
+        )
+
+        stmt = stmt.offset(query.skip).limit(query.page_size)
+        bookings = list(db.scalars(stmt))
+        return bookings, total
 
     @staticmethod
     def count_bookings(db: Session) -> int:
@@ -460,8 +651,145 @@ class BookingCRUD:
 
         db.commit()
         db.refresh(booking)
-
         return BookingCRUD.get_booking(db, booking.id)
+
+    @staticmethod
+    def update_booking(
+        db: Session,
+        booking_id: int,
+        updates: schemas.BookingUpdate,
+    ) -> Optional[models.Booking]:
+        booking = BookingCRUD.get_booking(db, booking_id)
+        if not booking:
+            return None
+
+        if updates.session_date is not None:
+            booking.session_date = updates.session_date
+
+        if updates.duration_minutes is not None:
+            booking.duration_minutes = updates.duration_minutes
+
+        if updates.notes is not None:
+            booking.notes = updates.notes
+
+        if updates.session_type is not None:
+            booking.session_type = updates.session_type
+
+        if updates.session_date is not None or updates.duration_minutes is not None:
+            mentor = MentorCRUD.get_mentor(db, booking.mentor_id)
+            if mentor:
+                hours = math.ceil(booking.duration_minutes / 60)
+                booking.price = mentor.price * hours
+
+        booking.updated_at = datetime.now(timezone.utc)
+
+        db.commit()
+        db.refresh(booking)
+        return BookingCRUD.get_booking(db, booking.id)
+
+    @staticmethod
+    def delete_booking(db: Session, booking_id: int) -> bool:
+        booking = BookingCRUD.get_booking(db, booking_id)
+        if not booking:
+            return False
+
+        db.delete(booking)
+        db.commit()
+        return True
+
+
+class FileAttachmentCRUD:
+    @staticmethod
+    def get_file(db: Session, file_id: int) -> Optional[models.FileAttachment]:
+        return db.get(models.FileAttachment, file_id)
+
+    @staticmethod
+    def create_file(
+        db: Session,
+        file_data: schemas.FileAttachmentCreate,
+        uploaded_by_user_id: int,
+    ) -> models.FileAttachment:
+        payload = file_data.model_dump()
+        owner_type = payload.pop("owner_type")
+        owner_id = payload.pop("owner_id")
+
+        relation_fields = {
+            "user_id": None,
+            "mentor_id": None,
+            "booking_id": None,
+            "note_id": None,
+        }
+
+        owner_field_map = {
+            "user": "user_id",
+            "mentor": "mentor_id",
+            "booking": "booking_id",
+            "note": "note_id",
+        }
+        relation_fields[owner_field_map[owner_type]] = owner_id
+
+        file_attachment = models.FileAttachment(
+            uploaded_by_user_id=uploaded_by_user_id,
+            **payload,
+            **relation_fields,
+        )
+
+        db.add(file_attachment)
+        db.commit()
+        db.refresh(file_attachment)
+        return file_attachment
+
+    @staticmethod
+    def get_files_page(
+        db: Session,
+        query: schemas.FileAttachmentListQuery,
+    ) -> tuple[list[models.FileAttachment], int]:
+        stmt = select(models.FileAttachment)
+
+        if query.owner_type:
+            owner_field_map = {
+                "user": models.FileAttachment.user_id,
+                "mentor": models.FileAttachment.mentor_id,
+                "booking": models.FileAttachment.booking_id,
+                "note": models.FileAttachment.note_id,
+            }
+            stmt = stmt.where(owner_field_map[query.owner_type].is_not(None))
+
+        if query.owner_id is not None:
+            stmt = stmt.where(
+                or_(
+                    models.FileAttachment.user_id == query.owner_id,
+                    models.FileAttachment.mentor_id == query.owner_id,
+                    models.FileAttachment.booking_id == query.owner_id,
+                    models.FileAttachment.note_id == query.owner_id,
+                )
+            )
+
+        if query.category:
+            stmt = stmt.where(models.FileAttachment.category == query.category)
+
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = int(db.scalar(count_stmt) or 0)
+
+        stmt = stmt.order_by(
+            models.FileAttachment.created_at.asc()
+            if query.sort_order == "asc"
+            else models.FileAttachment.created_at.desc()
+        )
+
+        stmt = stmt.offset(query.skip).limit(query.page_size)
+        items = list(db.scalars(stmt))
+        return items, total
+
+    @staticmethod
+    def delete_file(db: Session, file_id: int) -> bool:
+        file_attachment = FileAttachmentCRUD.get_file(db, file_id)
+        if not file_attachment:
+            return False
+
+        db.delete(file_attachment)
+        db.commit()
+        return True
 
 
 class RefreshTokenCRUD:
@@ -514,24 +842,20 @@ class RefreshTokenCRUD:
 
     @staticmethod
     def clear_all_user_tokens(db: Session, user_id: int) -> int:
-        """Деактивирует все активные refresh токены пользователя"""
-        stmt = (
-            select(models.RefreshToken)
-            .where(
-                models.RefreshToken.user_id == user_id,
-                models.RefreshToken.is_active.is_(True)
-            )
+        stmt = select(models.RefreshToken).where(
+            models.RefreshToken.user_id == user_id,
+            models.RefreshToken.is_active.is_(True),
         )
         tokens = db.scalars(stmt).all()
-        
+
         deactivated_count = 0
         for token in tokens:
             token.is_active = False
             deactivated_count += 1
-        
+
         if deactivated_count > 0:
             db.commit()
-        
+
         return deactivated_count
 
     @staticmethod
@@ -548,4 +872,5 @@ user_crud = UserCRUD()
 mentor_crud = MentorCRUD()
 note_crud = NoteCRUD()
 booking_crud = BookingCRUD()
+file_attachment_crud = FileAttachmentCRUD()
 refresh_token_crud = RefreshTokenCRUD()

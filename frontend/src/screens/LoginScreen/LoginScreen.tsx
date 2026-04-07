@@ -5,7 +5,6 @@ import './LoginScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
-import AuthService from '../../services/AuthService';
 
 interface LoginFormData {
   login: string;
@@ -14,6 +13,7 @@ interface LoginFormData {
 
 const LoginScreen = ()=> {
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [formData, setFormData] = useState<LoginFormData>({
@@ -86,13 +86,11 @@ const LoginScreen = ()=> {
         password: formData.password,
       };
 
-      const result = await AuthService.login(credentials);
+      await login(credentials);
+      const savedUserRaw = localStorage.getItem('yogavibe_user');
+      const savedUser = savedUserRaw ? JSON.parse(savedUserRaw) : null;
 
-      if (!result.success) {
-        throw new Error(result.message);
-      }
-
-      navigate(getRedirectPath(result.user?.role));
+      navigate(getRedirectPath(savedUser?.role));
     } catch (err: unknown) {
       const errorMessage =
         err instanceof Error ? err.message : 'Ошибка при входе. Попробуйте позже.';

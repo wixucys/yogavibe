@@ -1,15 +1,15 @@
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from datetime import datetime
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 import crud
 import schemas
-from config import settings
 from database import get_db
-from utils import create_access_token, create_refresh_token, verify_token
+from utils import verify_token
 from services.auth_service import AuthService
 from services.user_service import UserService
 from services.mentor_service import MentorService
@@ -77,6 +77,118 @@ def require_roles(*allowed_roles: str):
         return current_user
 
     return dependency
+
+
+def _raise_query_validation_error(exc: ValidationError) -> None:
+    errors = [
+        {
+            "loc": error.get("loc", []),
+            "msg": error.get("msg", "Validation error"),
+            "type": error.get("type", "value_error"),
+        }
+        for error in exc.errors()
+    ]
+    raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=errors) from exc
+
+
+def build_mentor_list_query(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    search: Optional[str] = None,
+    gender: Optional[str] = None,
+    city: Optional[str] = None,
+    yoga_style: Optional[str] = None,
+    min_price: Optional[int] = Query(None, ge=0),
+    max_price: Optional[int] = Query(None, ge=0),
+    is_available: Optional[bool] = None,
+    sort_by: schemas.MentorSortField = "created_at",
+    sort_order: schemas.SortOrder = "desc",
+) -> schemas.MentorListQuery:
+    try:
+        return schemas.MentorListQuery(
+            page=page,
+            page_size=page_size,
+            search=search,
+            gender=gender,
+            city=city,
+            yoga_style=yoga_style,
+            min_price=min_price,
+            max_price=max_price,
+            is_available=is_available,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+    except ValidationError as exc:
+        _raise_query_validation_error(exc)
+
+
+def build_booking_list_query(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    status_filter: Optional[schemas.BookingStatus] = Query(None, alias="status"),
+    mentor_id: Optional[int] = None,
+    session_type: Optional[schemas.SessionType] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    sort_by: schemas.BookingSortField = "session_date",
+    sort_order: schemas.SortOrder = "desc",
+) -> schemas.BookingListQuery:
+    try:
+        return schemas.BookingListQuery(
+            page=page,
+            page_size=page_size,
+            status=status_filter,
+            mentor_id=mentor_id,
+            session_type=session_type,
+            date_from=date_from,
+            date_to=date_to,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+    except ValidationError as exc:
+        _raise_query_validation_error(exc)
+
+
+def build_note_list_query(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    search: Optional[str] = None,
+    sort_by: schemas.NoteSortField = "created_at",
+    sort_order: schemas.SortOrder = "desc",
+) -> schemas.NoteListQuery:
+    try:
+        return schemas.NoteListQuery(
+            page=page,
+            page_size=page_size,
+            search=search,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+    except ValidationError as exc:
+        _raise_query_validation_error(exc)
+
+
+def build_user_list_query(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    search: Optional[str] = None,
+    role: Optional[schemas.UserRole] = None,
+    is_active: Optional[bool] = None,
+    sort_by: schemas.UserSortField = "created_at",
+    sort_order: schemas.SortOrder = "desc",
+) -> schemas.UserListQuery:
+    try:
+        return schemas.UserListQuery(
+            page=page,
+            page_size=page_size,
+            search=search,
+            role=role,
+            is_active=is_active,
+            sort_by=sort_by,
+            sort_order=sort_order,
+        )
+    except ValidationError as exc:
+        _raise_query_validation_error(exc)
 
 
 # =========================
@@ -148,17 +260,13 @@ async def update_me(
 # =========================
 # MENTORS CATALOG
 # =========================
-@router.get("/mentors", response_model=List[schemas.MentorResponse])
+@router.get("/mentors", response_model=schemas.MentorListPage)
 async def get_mentors(
-    city: Optional[str] = None,
-    yoga_style: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 100,
+    query: schemas.MentorListQuery = Depends(build_mentor_list_query),
     current_user: schemas.UserResponse = Depends(require_roles("user", "admin")),
     db: Session = Depends(get_db),
 ):
-    filters = schemas.MentorFilters(city=city, yoga_style=yoga_style)
-    return MentorService.get_all_mentors(db, filters, skip, limit)
+    return MentorService.get_mentors_catalog(db, query)
 
 
 @router.get("/mentors/{mentor_id}", response_model=schemas.MentorResponse)
@@ -190,27 +298,34 @@ async def update_my_mentor_profile(
     return MentorService.update_mentor(db, current_user.id, mentor_update)
 
 
-@router.get("/mentor/bookings", response_model=List[schemas.BookingResponse])
+@router.get("/mentor/bookings", response_model=schemas.BookingListPage)
 async def get_my_mentor_bookings(
-    skip: int = 0,
-    limit: int = 100,
+    query: schemas.BookingListQuery = Depends(build_booking_list_query),
     current_user: schemas.UserResponse = Depends(require_roles("mentor")),
     db: Session = Depends(get_db),
 ):
-    return MentorService.get_mentor_bookings(db, current_user.id, skip, limit)
+    return MentorService.get_mentor_bookings(db, current_user.id, query)
 
 
 # =========================
 # NOTES
 # =========================
-@router.get("/notes", response_model=List[schemas.NoteResponse])
+@router.get("/notes", response_model=schemas.NoteListPage)
 async def get_notes(
-    skip: int = 0,
-    limit: int = 100,
+    query: schemas.NoteListQuery = Depends(build_note_list_query),
     current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
-    return NoteService.get_user_notes(db, current_user.id, skip, limit)
+    return NoteService.get_user_notes(db, current_user.id, query)
+
+
+@router.get("/notes/{note_id}", response_model=schemas.NoteResponse)
+async def get_note(
+    note_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
+    db: Session = Depends(get_db),
+):
+    return NoteService.get_note(db, note_id, current_user.id)
 
 
 @router.post("/notes", response_model=schemas.NoteResponse)
@@ -225,7 +340,7 @@ async def create_note(
 @router.put("/notes/{note_id}", response_model=schemas.NoteResponse)
 async def update_note(
     note_id: int,
-    note_data: schemas.NoteCreate,
+    note_data: schemas.NoteUpdate,
     current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
@@ -245,14 +360,22 @@ async def delete_note(
 # =========================
 # BOOKINGS
 # =========================
-@router.get("/bookings", response_model=List[schemas.BookingResponse])
+@router.get("/bookings", response_model=schemas.BookingListPage)
 async def get_bookings(
-    skip: int = 0,
-    limit: int = 100,
+    query: schemas.BookingListQuery = Depends(build_booking_list_query),
     current_user: schemas.UserResponse = Depends(require_roles("user")),
     db: Session = Depends(get_db),
 ):
-    return BookingService.get_user_bookings(db, current_user.id, skip, limit)
+    return BookingService.get_user_bookings(db, current_user.id, query)
+
+
+@router.get("/bookings/{booking_id}", response_model=schemas.BookingResponse)
+async def get_booking(
+    booking_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
+    db: Session = Depends(get_db),
+):
+    return BookingService.get_booking(db, booking_id, current_user.id)
 
 
 @router.post("/bookings", response_model=schemas.BookingResponse)
@@ -264,6 +387,16 @@ async def create_booking(
     return BookingService.create_booking(db, current_user.id, booking_data)
 
 
+@router.put("/bookings/{booking_id}", response_model=schemas.BookingResponse)
+async def update_booking(
+    booking_id: int,
+    booking_data: schemas.BookingUpdate,
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
+    db: Session = Depends(get_db),
+):
+    return BookingService.update_booking(db, booking_id, current_user.id, booking_data)
+
+
 @router.put("/bookings/{booking_id}/cancel", response_model=schemas.BookingResponse)
 async def cancel_booking(
     booking_id: int,
@@ -271,6 +404,25 @@ async def cancel_booking(
     db: Session = Depends(get_db),
 ):
     return BookingService.cancel_booking(db, booking_id, current_user.id)
+
+
+@router.delete("/bookings/{booking_id}")
+async def delete_booking(
+    booking_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
+    db: Session = Depends(get_db),
+):
+    BookingService.delete_booking(db, booking_id, current_user.id)
+    return {"message": "Бронирование удалено"}
+
+
+@router.put("/mentor/bookings/{booking_id}/complete", response_model=schemas.BookingResponse)
+async def complete_booking_by_mentor(
+    booking_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("mentor")),
+    db: Session = Depends(get_db),
+):
+    return BookingService.complete_booking_by_mentor(db, booking_id, current_user.id)
 
 
 # =========================
@@ -284,14 +436,13 @@ async def get_admin_dashboard(
     return UserService.get_dashboard_stats(db)
 
 
-@router.get("/admin/users", response_model=List[schemas.UserListResponse])
+@router.get("/admin/users", response_model=schemas.UserListPage)
 async def get_all_users(
-    skip: int = 0,
-    limit: int = 100,
+    query: schemas.UserListQuery = Depends(build_user_list_query),
     current_user: schemas.UserResponse = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):
-    return UserService.list_users(db, skip, limit)
+    return UserService.list_users(db, query)
 
 
 @router.put("/admin/users/{user_id}", response_model=schemas.UserResponse)
@@ -324,15 +475,13 @@ async def admin_change_user_role(
     return UserService.change_user_role(db, user_id, role_data)
 
 
-@router.get("/admin/mentors", response_model=List[schemas.MentorResponse])
+@router.get("/admin/mentors", response_model=schemas.MentorListPage)
 async def get_all_mentors_for_admin(
-    skip: int = 0,
-    limit: int = 100,
+    query: schemas.MentorListQuery = Depends(build_mentor_list_query),
     current_user: schemas.UserResponse = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):
-    filters = schemas.MentorFilters()
-    return MentorService.get_all_mentors(db, filters, skip, limit)
+    return MentorService.get_admin_mentors(db, query)
 
 
 @router.post("/admin/mentors", response_model=schemas.MentorResponse)
@@ -362,4 +511,3 @@ async def delete_mentor(
 ):
     MentorService.delete_mentor(db, mentor_id)
     return {"message": "Ментор удален"}
-    

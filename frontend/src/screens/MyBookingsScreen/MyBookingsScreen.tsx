@@ -92,6 +92,50 @@ const MyBookingsScreen = () => {
     }
   }, []);
 
+  const handleEditBooking = useCallback(async (booking: BookingView) => {
+    const nextNotesRaw = window.prompt(
+      'Измените комментарий к записи (до 1000 символов):',
+      booking.notes || ''
+    );
+
+    if (nextNotesRaw === null) return;
+
+    const nextNotes = nextNotesRaw.trim();
+
+    if (nextNotes.length > 1000) {
+      setError('Комментарий к записи слишком длинный');
+      return;
+    }
+
+    try {
+      const updated = await BookingService.updateBooking(booking.id, {
+        notes: nextNotes === '' ? undefined : nextNotes,
+        expected_updated_at: (booking.updatedAt || booking.createdAt.toISOString()),
+      });
+
+      setBookings((prev) =>
+        prev.map((item) =>
+          item.id === booking.id
+            ? normalizeBooking(updated)
+            : item
+        )
+      );
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ошибка обновления записи');
+    }
+  }, []);
+
+  const handleDeleteBooking = useCallback(async (id: string | number) => {
+    if (!window.confirm('Удалить запись окончательно?')) return;
+
+    try {
+      await BookingService.deleteBooking(id);
+      setBookings((prev) => prev.filter((booking) => booking.id !== id));
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Ошибка удаления записи');
+    }
+  }, []);
+
   const handleViewMentor = useCallback(
     (mentorId: string | number) => {
       if (!mentorId) return;
@@ -176,6 +220,16 @@ const MyBookingsScreen = () => {
                   {booking.status === 'active' && booking.sessionDate > new Date() && (
                     <button className="action-btn cancel-btn" onClick={() => handleCancelBooking(booking.id)}>
                       Отменить
+                    </button>
+                  )}
+                  {booking.status === 'active' && booking.sessionDate > new Date() && (
+                    <button className="action-btn view-mentor-btn" onClick={() => handleEditBooking(booking)}>
+                      Изменить
+                    </button>
+                  )}
+                  {booking.status !== 'active' && (
+                    <button className="action-btn cancel-btn" onClick={() => handleDeleteBooking(booking.id)}>
+                      Удалить
                     </button>
                   )}
                 </div>

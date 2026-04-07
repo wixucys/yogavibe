@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import './MentorProfileScreen.css';
 import type { MentorApi, MentorProfile } from '../../types/mentor';
 import { mapMentorToProfile } from '../../types/mentor';
+
+interface MentorProfileLocationState {
+  returnTo?: string;
+}
 
 interface InfoFieldProps {
   label: string;
@@ -20,6 +24,8 @@ const InfoField = ({ label, value }: InfoFieldProps): JSX.Element => (
 const MentorProfileScreen = () => {
   const { mentorId } = useParams<{ mentorId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const locationState = (location.state as MentorProfileLocationState | null) ?? null;
 
   const [mentor, setMentor] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +66,7 @@ const MentorProfileScreen = () => {
   }, [mentorId]);
 
   const handleBackClick = (): void => {
-    navigate('/main');
+    navigate(locationState?.returnTo ?? '/main');
   };
 
   const handleBookSession = (): void => {

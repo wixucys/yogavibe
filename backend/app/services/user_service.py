@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -22,28 +20,43 @@ class UserService:
 
     @staticmethod
     def update_user(
-        db: Session, user_id: int, updates: schemas.UserUpdate
+        db: Session,
+        user_id: int,
+        updates: schemas.UserUpdate,
     ) -> schemas.UserResponse:
-        user = crud.user_crud.update_user(
-            db, user_id, updates.model_dump(exclude_unset=True)
+        updated_user = crud.user_crud.update_user(
+            db,
+            user_id,
+            updates.model_dump(exclude_unset=True),
         )
-        if not user:
+        if not updated_user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Пользователь не найден",
             )
-        return schemas.UserResponse.model_validate(user)
+        return schemas.UserResponse.model_validate(updated_user)
 
     @staticmethod
     def list_users(
-        db: Session, skip: int = 0, limit: int = 100
-    ) -> List[schemas.UserListResponse]:
-        users = crud.user_crud.get_users(db, skip, limit)
-        return [schemas.UserListResponse.model_validate(user) for user in users]
+        db: Session,
+        query: schemas.UserListQuery,
+    ) -> schemas.UserListPage:
+        users, total = crud.user_crud.get_users_page(db, query)
+
+        return schemas.UserListPage(
+            items=[schemas.UserListItem.model_validate(user) for user in users],
+            meta=crud.build_page_meta(
+                page=query.page,
+                page_size=query.page_size,
+                total=total,
+            ),
+        )
 
     @staticmethod
     def update_user_by_admin(
-        db: Session, user_id: int, updates: schemas.UserAdminUpdate
+        db: Session,
+        user_id: int,
+        updates: schemas.UserAdminUpdate,
     ) -> schemas.UserResponse:
         user = crud.user_crud.get_user(db, user_id)
         if not user:
@@ -98,7 +111,9 @@ class UserService:
 
     @staticmethod
     def change_user_role(
-        db: Session, user_id: int, role_update: schemas.UserRoleUpdate
+        db: Session,
+        user_id: int,
+        role_update: schemas.UserRoleUpdate,
     ) -> schemas.UserResponse:
         user = crud.user_crud.get_user(db, user_id)
         if not user:

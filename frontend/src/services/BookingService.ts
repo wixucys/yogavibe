@@ -8,29 +8,50 @@ import type {
   MentorResponse,
   StoredBooking,
   StoredUser,
+  UpdateBookingInput,
   UserId,
 } from '../types/booking';
 
+interface PaginatedResponse<T> {
+  items: T[];
+}
+
 class BookingService {
+  private static extractItems<T>(response: T[] | PaginatedResponse<T>): T[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (response && Array.isArray(response.items)) {
+      return response.items;
+    }
+
+    return [];
+  }
+
   static async getBookings(): Promise<Booking[]> {
     try {
       console.log('BookingService: Getting bookings...');
 
-      const response = await ApiService.request<BookingResponse[]>('/bookings', {
+      const response = await ApiService.request<BookingResponse[] | PaginatedResponse<BookingResponse>>('/bookings', {
         method: 'GET',
       });
       console.log('BookingService: Bookings received:', response);
 
-      const mentorsResponse = await ApiService.request<MentorResponse[]>('/mentors', {
+      const bookingItems = this.extractItems(response);
+
+      const mentorsResponse = await ApiService.request<MentorResponse[] | PaginatedResponse<MentorResponse>>('/mentors', {
         method: 'GET',
       });
 
+      const mentorItems = this.extractItems(mentorsResponse);
+
       const mentorsMap: Record<string, MentorResponse> = {};
-      mentorsResponse.forEach((mentor) => {
+      mentorItems.forEach((mentor) => {
         mentorsMap[String(mentor.id)] = mentor;
       });
 
-      return response.map((booking) =>
+      return bookingItems.map((booking) =>
         this.mapBookingResponseToBooking(booking, mentorsMap[String(booking.mentor_id)])
       );
     } catch (error) {
@@ -88,6 +109,41 @@ class BookingService {
     }
   }
 
+  static async getBookingById(bookingId: BookingId): Promise<Booking> {
+    try {
+      const response = await ApiService.request<BookingResponse>(`/bookings/${bookingId}`, {
+        method: 'GET',
+      });
+
+      return this.mapBookingResponseToBooking(response, response.mentor);
+    } catch (error: unknown) {
+      console.error('BookingService: Error getting booking:', error);
+      throw this.createEnhancedError(error, 'Не удалось получить запись');
+    }
+  }
+
+  static async updateBooking(
+    bookingId: BookingId,
+    updateData: UpdateBookingInput
+  ): Promise<Booking> {
+    try {
+      this.validateUpdateData(updateData);
+
+      const response = await ApiService.request<BookingResponse>(`/bookings/${bookingId}`, {
+        method: 'PUT',
+        body: updateData,
+      });
+
+      const updatedBooking = this.mapBookingResponseToBooking(response, response.mentor);
+      this.upsertLocalBooking(updatedBooking);
+
+      return updatedBooking;
+    } catch (error: unknown) {
+      console.error('BookingService: Error updating booking:', error);
+      throw this.createEnhancedError(error, 'Не удалось обновить запись');
+    }
+  }
+
   static async cancelBooking(bookingId: BookingId): Promise<BookingResponse> {
     try {
       console.log('BookingService: Cancelling booking:', bookingId);
@@ -115,7 +171,7 @@ class BookingService {
       console.log('BookingService: Completing booking:', bookingId);
 
       const response = await ApiService.request<BookingResponse>(
-        `/bookings/${bookingId}/complete`,
+        `/mentor/bookings/${bookingId}/complete`,
         {
           method: 'PUT',
         }
@@ -127,6 +183,19 @@ class BookingService {
     } catch (error) {
       console.error('BookingService: Error completing booking:', error);
       throw error;
+    }
+  }
+
+  static async deleteBooking(bookingId: BookingId): Promise<void> {
+    try {
+      await ApiService.request<{ message: string }>(`/bookings/${bookingId}`, {
+        method: 'DELETE',
+      });
+
+      this.removeLocalBooking(bookingId);
+    } catch (error: unknown) {
+      console.error('BookingService: Error deleting booking:', error);
+      throw this.createEnhancedError(error, 'Не удалось удалить запись');
     }
   }
 
@@ -198,6 +267,60 @@ class BookingService {
     }
   }
 
+  private static validateUpdateData(updateData: UpdateBookingInput): void {
+    if (updateData.duration_minutes !== undefined && updateData.duration_minutes <= 0) {
+      throw new Error('Длительность должна быть больше 0 минут');
+    }
+
+    if (updateData.session_date) {
+      const sessionDate = new Date(updateData.session_date);
+      if (Number.isNaN(sessionDate.getTime())) {
+        throw new Error('Некорректный формат даты');
+      }
+
+      if (sessionDate <= new Date()) {
+        throw new Error('Дата сессии должна быть в будущем');
+      }
+    }
+
+    if (updateData.notes !== undefined && updateData.notes.trim().length > 1000) {
+      throw new Error('Комментарий к записи слишком длинный');
+    }
+  }
+
+  private static upsertLocalBooking(bookingData: Booking): void {
+    try {
+      const allBookings = JSON.parse(
+        localStorage.getItem('yogavibe_bookings') || '[]'
+      ) as StoredBooking[];
+
+      const bookingExists = allBookings.some((booking) => booking.id === bookingData.id);
+
+      const updated = bookingExists
+        ? allBookings.map((booking) =>
+            booking.id === bookingData.id ? { ...booking, ...bookingData } : booking
+          )
+        : [...allBookings, bookingData as StoredBooking];
+
+      localStorage.setItem('yogavibe_bookings', JSON.stringify(updated));
+    } catch (storageError) {
+      console.warn('BookingService: Could not upsert local booking:', storageError);
+    }
+  }
+
+  private static removeLocalBooking(bookingId: BookingId): void {
+    try {
+      const allBookings = JSON.parse(
+        localStorage.getItem('yogavibe_bookings') || '[]'
+      ) as StoredBooking[];
+
+      const filtered = allBookings.filter((booking) => booking.id !== bookingId);
+      localStorage.setItem('yogavibe_bookings', JSON.stringify(filtered));
+    } catch (storageError) {
+      console.warn('BookingService: Could not remove local booking:', storageError);
+    }
+  }
+
   private static updateLocalBookingStatus(
     bookingId: BookingId,
     status: BookingStatus
@@ -240,6 +363,10 @@ class BookingService {
 
   private static getErrorMessage(error: unknown, fallbackMessage: string): string {
     if (error instanceof ApiError) {
+      if (error.status === 409) {
+        return 'Запись была изменена. Обновите данные и повторите действие';
+      }
+
       if (
         error.body &&
         typeof error.body === 'object' &&

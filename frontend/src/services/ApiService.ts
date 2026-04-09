@@ -13,7 +13,7 @@ import type {
   MentorAdminUpdatePayload,
 } from '../types/mentor';
 import type { NoteData, Note } from '../types/note';
-import type { BookingData, Booking } from '../types/booking';
+import type { BookingData, Booking, BookingResponse } from '../types/booking';
 
 class ApiError extends Error {
   status?: number;
@@ -33,6 +33,16 @@ type RequestBody = BodyInit | JsonBody | null | undefined;
 interface RequestOptions extends Omit<RequestInit, 'body' | 'headers'> {
   headers?: Record<string, string>;
   body?: RequestBody;
+}
+
+interface PaginatedResponse<T> {
+  items: T[];
+  meta: {
+    page: number;
+    page_size: number;
+    total: number;
+    pages: number;
+  };
 }
 
 class ApiService {
@@ -156,6 +166,29 @@ class ApiService {
     } catch {
       throw new ApiError('Failed to parse response', response.status);
     }
+  }
+
+  private static buildPaginationParams(skip = 0, limit = 100): string {
+    const safeLimit = Math.max(1, limit);
+    const safeSkip = Math.max(0, skip);
+    const page = Math.floor(safeSkip / safeLimit) + 1;
+
+    return new URLSearchParams({
+      page: String(page),
+      page_size: String(safeLimit),
+    }).toString();
+  }
+
+  private static extractItems<T>(response: T[] | PaginatedResponse<T>): T[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+
+    if (response && Array.isArray(response.items)) {
+      return response.items;
+    }
+
+    throw new ApiError('Некорректный ответ сервера');
   }
 
   static async refreshAccessToken(): Promise<boolean> {
@@ -296,7 +329,12 @@ class ApiService {
     skip = 0,
     limit = 100
   ): Promise<MentorApi[]> {
-    return this.request<MentorApi[]>(`/admin/mentors?skip=${skip}&limit=${limit}`);
+    const params = this.buildPaginationParams(skip, limit);
+    const response = await this.request<MentorApi[] | PaginatedResponse<MentorApi>>(
+      `/admin/mentors?${params}`
+    );
+
+    return this.extractItems(response);
   }
 
   static async createAdminMentor(
@@ -350,12 +388,22 @@ class ApiService {
     });
   }
 
-  static async getBookings(skip = 0, limit = 100): Promise<Booking[]> {
-    return this.request<Booking[]>(`/bookings?skip=${skip}&limit=${limit}`);
+  static async getBookings(skip = 0, limit = 100): Promise<BookingResponse[]> {
+    const params = this.buildPaginationParams(skip, limit);
+    const response = await this.request<
+      BookingResponse[] | PaginatedResponse<BookingResponse>
+    >(`/bookings?${params}`);
+
+    return this.extractItems(response);
   }
 
-  static async getMentorBookings(skip = 0, limit = 100): Promise<Booking[]> {
-    return this.request<Booking[]>(`/mentor/bookings?skip=${skip}&limit=${limit}`);
+  static async getMentorBookings(skip = 0, limit = 100): Promise<BookingResponse[]> {
+    const params = this.buildPaginationParams(skip, limit);
+    const response = await this.request<
+      BookingResponse[] | PaginatedResponse<BookingResponse>
+    >(`/mentor/bookings?${params}`);
+
+    return this.extractItems(response);
   }
 
   static async createBooking(bookingData: BookingData): Promise<Booking> {
@@ -374,7 +422,12 @@ class ApiService {
   }
 
   static async getAdminUsers(skip = 0, limit = 100): Promise<User[]> {
-    return this.request<User[]>(`/admin/users?skip=${skip}&limit=${limit}`);
+    const params = this.buildPaginationParams(skip, limit);
+    const response = await this.request<User[] | PaginatedResponse<User>>(
+      `/admin/users?${params}`
+    );
+
+    return this.extractItems(response);
   }
 
   static async getAdminDashboard(): Promise<AdminDashboard> {

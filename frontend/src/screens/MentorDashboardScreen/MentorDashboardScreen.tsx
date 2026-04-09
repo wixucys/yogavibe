@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';import { Link } from 'react-router-dom';import ApiService from '../../services/ApiService';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import ApiService from '../../services/ApiService';
 import type { MentorApi } from '../../types/mentor';
 import type { Booking, BookingResponse } from '../../types/booking';
 import './MentorDashboardScreen.css';
@@ -33,8 +35,8 @@ const MentorDashboardScreen = () => {
         setError(null);
 
         const [mentorData, mentorBookings] = await Promise.all([
-          ApiService.request<MentorApi>('/mentor/me'),
-          ApiService.request<BookingResponse[]>('/mentor/bookings'),
+          ApiService.getMyMentorProfile(),
+          ApiService.getMentorBookings(),
         ]);
 
         setMentor(mentorData);

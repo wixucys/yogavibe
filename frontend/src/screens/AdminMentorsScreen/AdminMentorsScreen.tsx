@@ -7,6 +7,7 @@ import type {
   MentorAdminUpdatePayload,
 } from '../../types/mentor';
 import type { User } from '../../types/user';
+import { CITIES, YOGA_STYLES } from '../../constants/filters';
 import './AdminMentorsScreen.css';
 
 const defaultCreateForm: MentorCreatePayload = {
@@ -262,22 +263,34 @@ const AdminMentorsScreen = () => {
           <div className="form-row">
             <label>
               Город
-              <input
-                type="text"
+              <select
                 value={createForm.city}
                 onChange={(e) => handleCreateChange('city', e.target.value)}
                 required
-              />
+              >
+                <option value="">Выберите город</option>
+                {CITIES.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label>
               Стиль йоги
-              <input
-                type="text"
+              <select
                 value={createForm.yoga_style}
                 onChange={(e) => handleCreateChange('yoga_style', e.target.value)}
                 required
-              />
+              >
+                <option value="">Выберите стиль</option>
+                {YOGA_STYLES.map((style) => (
+                  <option key={style} value={style}>
+                    {style}
+                  </option>
+                ))}
+              </select>
             </label>
           </div>
 
@@ -344,17 +357,29 @@ const AdminMentorsScreen = () => {
                       onChange={(e) => handleEditChange('name', e.target.value)}
                     />
 
-                    <input
-                      type="text"
+                    <select
                       value={editForm.city ?? ''}
                       onChange={(e) => handleEditChange('city', e.target.value)}
-                    />
+                    >
+                      <option value="">Выберите город</option>
+                      {CITIES.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
 
-                    <input
-                      type="text"
+                    <select
                       value={editForm.yoga_style ?? ''}
                       onChange={(e) => handleEditChange('yoga_style', e.target.value)}
-                    />
+                    >
+                      <option value="">Выберите стиль</option>
+                      {YOGA_STYLES.map((style) => (
+                        <option key={style} value={style}>
+                          {style}
+                        </option>
+                      ))}
+                    </select>
 
                     <input
                       type="number"

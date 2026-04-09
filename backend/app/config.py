@@ -8,8 +8,11 @@ from pydantic_settings import BaseSettings
 BACKEND_ENV_PATH = Path(__file__).parent.parent / ".env"
 APP_ENV_PATH = Path(__file__).parent / ".env"
 
-load_dotenv(dotenv_path=BACKEND_ENV_PATH)
-load_dotenv(dotenv_path=APP_ENV_PATH, override=True)
+# Keep runtime/container environment variables authoritative.
+# This allows Docker Compose values like S3_ENDPOINT_URL=http://minio:9000
+# to override local development defaults stored in `.env` files.
+load_dotenv(dotenv_path=BACKEND_ENV_PATH, override=False)
+load_dotenv(dotenv_path=APP_ENV_PATH, override=False)
 
 class Settings(BaseSettings):
     # Настройки JWT
@@ -28,6 +31,7 @@ class Settings(BaseSettings):
 
     S3_BUCKET_NAME: Optional[str] = None
     S3_ENDPOINT_URL: Optional[str] = None
+    S3_PUBLIC_ENDPOINT_URL: Optional[str] = None
     S3_ACCESS_KEY_ID: Optional[str] = None
     S3_SECRET_ACCESS_KEY: Optional[str] = None
     S3_REGION: str = "us-east-1"

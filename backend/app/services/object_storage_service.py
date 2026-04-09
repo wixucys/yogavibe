@@ -145,7 +145,7 @@ class ObjectStorageService:
         original_filename: str,
         content_type: Optional[str],
     ) -> str:
-        client = cls._get_s3_client()
+        client = cls._get_s3_client(public=True)
         params = {
             "Bucket": settings.S3_BUCKET_NAME,
             "Key": object_key,
@@ -167,7 +167,7 @@ class ObjectStorageService:
             ) from exc
 
     @classmethod
-    def _get_s3_client(cls):
+    def _get_s3_client(cls, public: bool = False):
         if boto3 is None or BotoConfig is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -186,9 +186,11 @@ class ObjectStorageService:
                 detail="Не настроены учётные данные объектного хранилища",
             )
 
+        endpoint_url = settings.S3_PUBLIC_ENDPOINT_URL if public else settings.S3_ENDPOINT_URL
+
         return boto3.client(
             "s3",
-            endpoint_url=settings.S3_ENDPOINT_URL or None,
+            endpoint_url=endpoint_url or None,
             region_name=settings.S3_REGION,
             aws_access_key_id=settings.S3_ACCESS_KEY_ID,
             aws_secret_access_key=settings.S3_SECRET_ACCESS_KEY,

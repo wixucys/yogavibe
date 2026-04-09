@@ -7,6 +7,7 @@ import type {
   MentorSelfUpdatePayload,
 } from '../../types/mentor';
 import type { FileAttachment } from '../../types/file';
+import { CITIES, YOGA_STYLES } from '../../constants/filters';
 import './MentorEditScreen.css';
 
 const defaultFormData: MentorSelfUpdatePayload = {
@@ -189,20 +190,34 @@ const MentorEditScreen = () => {
 
         <label>
           Город
-          <input
+          <select
             value={formData.city || ''}
             onChange={(e) => handleChange('city', e.target.value)}
             required
-          />
+          >
+            <option value="">Выберите город</option>
+            {CITIES.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>
           Стиль йоги
-          <input
+          <select
             value={formData.yoga_style || ''}
             onChange={(e) => handleChange('yoga_style', e.target.value)}
             required
-          />
+          >
+            <option value="">Выберите стиль</option>
+            {YOGA_STYLES.map((style) => (
+              <option key={style} value={style}>
+                {style}
+              </option>
+            ))}
+          </select>
         </label>
 
         <label>

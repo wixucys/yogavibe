@@ -20,6 +20,29 @@ def build_page_meta(page: int, page_size: int, total: int) -> schemas.PageMeta:
     )
 
 
+def normalize_search_value(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+
+    normalized = " ".join(value.strip().replace("ё", "е").replace("Ё", "Е").split())
+    return normalized or None
+
+
+def build_search_variants(value: str) -> list[str]:
+    variants = {
+        value,
+        value.lower(),
+        value.upper(),
+        value.capitalize(),
+        value.title(),
+    }
+    return [variant for variant in variants if variant]
+
+
+def normalize_search_column(column):
+    return func.replace(func.replace(func.coalesce(column, ""), "ё", "е"), "Ё", "Е")
+
+
 class UserCRUD:
     @staticmethod
     def get_user(db: Session, user_id: int) -> Optional[models.User]:
@@ -268,24 +291,73 @@ class MentorCRUD:
             stmt = stmt.where(models.Mentor.is_available.is_(True))
 
         if query.search:
-            pattern = f"%{query.search.lower()}%"
-            stmt = stmt.where(
-                or_(
-                    func.lower(models.Mentor.name).like(pattern),
-                    func.lower(models.Mentor.description).like(pattern),
-                    func.lower(models.Mentor.city).like(pattern),
-                    func.lower(models.Mentor.yoga_style).like(pattern),
+            normalized_search = normalize_search_value(query.search)
+            if normalized_search:
+                searchable_columns = (
+                    normalize_search_column(models.Mentor.name),
+                    normalize_search_column(models.Mentor.description),
+                    normalize_search_column(models.Mentor.city),
+                    normalize_search_column(models.Mentor.yoga_style),
                 )
-            )
+                search_tokens = [token for token in normalized_search.split(" ") if token]
+                token_conditions = []
+
+                for token in search_tokens:
+                    patterns = [f"%{variant}%" for variant in build_search_variants(token)]
+                    token_conditions.append(
+                        or_(
+                            *[
+                                column.like(pattern)
+                                for column in searchable_columns
+                                for pattern in patterns
+                            ]
+                        )
+                    )
+
+                if token_conditions:
+                    stmt = stmt.where(and_(*token_conditions))
 
         if query.gender:
-            stmt = stmt.where(func.lower(models.Mentor.gender) == query.gender.lower())
+            normalized_gender = normalize_search_value(query.gender)
+            if normalized_gender:
+                stmt = stmt.where(
+                    or_(
+                        *[
+                            normalize_search_column(models.Mentor.gender) == variant
+                            for variant in build_search_variants(normalized_gender)
+                        ]
+                    )
+                )
 
         if query.city:
-            stmt = stmt.where(func.lower(models.Mentor.city) == query.city.lower())
+            normalized_city = normalize_search_value(query.city)
+            if normalized_city:
+                city_patterns = [
+                    f"%{variant}%" for variant in build_search_variants(normalized_city)
+                ]
+                stmt = stmt.where(
+                    or_(
+                        *[
+                            normalize_search_column(models.Mentor.city).like(pattern)
+                            for pattern in city_patterns
+                        ]
+                    )
+                )
 
         if query.yoga_style:
-            stmt = stmt.where(func.lower(models.Mentor.yoga_style) == query.yoga_style.lower())
+            normalized_style = normalize_search_value(query.yoga_style)
+            if normalized_style:
+                style_patterns = [
+                    f"%{variant}%" for variant in build_search_variants(normalized_style)
+                ]
+                stmt = stmt.where(
+                    or_(
+                        *[
+                            normalize_search_column(models.Mentor.yoga_style).like(pattern)
+                            for pattern in style_patterns
+                        ]
+                    )
+                )
 
         if query.min_price is not None:
             stmt = stmt.where(models.Mentor.price >= query.min_price)

@@ -2,10 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import FileService from '../../services/FileService';
-import type {
-  MentorApi,
-  MentorSelfUpdatePayload,
-} from '../../types/mentor';
+import type { MentorSelfUpdatePayload } from '../../types/mentor';
 import type { FileAttachment } from '../../types/file';
 import { CITIES, YOGA_STYLES } from '../../constants/filters';
 import './MentorEditScreen.css';
@@ -25,7 +22,6 @@ const defaultFormData: MentorSelfUpdatePayload = {
 const MentorEditScreen = () => {
   const certificateInputRef = useRef<HTMLInputElement | null>(null);
 
-  const [mentor, setMentor] = useState<MentorApi | null>(null);
   const [formData, setFormData] = useState<MentorSelfUpdatePayload>(defaultFormData);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,7 +41,6 @@ const MentorEditScreen = () => {
         setLoading(true);
         setError(null);
         const data = await ApiService.getMyMentorProfile();
-        setMentor(data);
         setFormData({
           name: data.name,
           description: data.description,

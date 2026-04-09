@@ -87,10 +87,6 @@ type ServerProfile = Partial<User>;
 
 type LocalProfile = Partial<ProfileState>;
 
-interface FileReaderError extends Error {
-  [key: string]: unknown;
-}
-
 const ProfileScreen = ({
   user = null,
   onUpdateProfile = () => {},

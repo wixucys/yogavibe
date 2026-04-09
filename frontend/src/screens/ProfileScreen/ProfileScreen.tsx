@@ -127,6 +127,10 @@ const ProfileScreen = ({
   const [medicalFiles, setMedicalFiles] = useState<FileAttachment[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
   const [isUploadingMedicalFile, setIsUploadingMedicalFile] = useState<boolean>(false);
+  const [medicalFileAction, setMedicalFileAction] = useState<{
+    fileId: number;
+    action: 'view' | 'download' | 'delete';
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async (): Promise<void> => {
@@ -191,6 +195,11 @@ const ProfileScreen = ({
         setMedicalFiles(uploadedFiles);
       } catch (fileError) {
         console.warn('Не удалось загрузить медицинские документы:', fileError);
+        setError(
+          fileError instanceof Error
+            ? fileError.message
+            : 'Не удалось загрузить медицинские документы'
+        );
       }
     } catch (error: unknown) {
       console.error('ProfileScreen: Error loading profile:', error);
@@ -388,20 +397,59 @@ const ProfileScreen = ({
     []
   );
 
+  const handleViewMedicalFile = useCallback(async (file: FileAttachment): Promise<void> => {
+    setError(null);
+    setMedicalFileAction({ fileId: file.id, action: 'view' });
+
+    try {
+      await FileService.openFile(file);
+    } catch (viewError: unknown) {
+      setError(
+        viewError instanceof Error
+          ? viewError.message
+          : 'Не удалось открыть файл'
+      );
+    } finally {
+      setMedicalFileAction(null);
+    }
+  }, []);
+
+  const handleDownloadMedicalFile = useCallback(async (file: FileAttachment): Promise<void> => {
+    setError(null);
+    setMedicalFileAction({ fileId: file.id, action: 'download' });
+
+    try {
+      await FileService.downloadFile(file);
+    } catch (downloadError: unknown) {
+      setError(
+        downloadError instanceof Error
+          ? downloadError.message
+          : 'Не удалось скачать файл'
+      );
+    } finally {
+      setMedicalFileAction(null);
+    }
+  }, []);
+
   const handleDeleteMedicalFile = useCallback(async (fileId: number): Promise<void> => {
     if (!window.confirm('Удалить загруженный документ?')) return;
 
     setError(null);
+    setMedicalFileAction({ fileId, action: 'delete' });
 
     try {
       await FileService.deleteFile('user', fileId);
       setMedicalFiles((prev) => prev.filter((file) => file.id !== fileId));
+      setSaveSuccess(true);
+      window.setTimeout(() => setSaveSuccess(false), 2000);
     } catch (deleteError: unknown) {
       setError(
         deleteError instanceof Error
           ? deleteError.message
           : 'Не удалось удалить файл'
       );
+    } finally {
+      setMedicalFileAction(null);
     }
   }, []);
 
@@ -727,35 +775,73 @@ const ProfileScreen = ({
                     {isUploadingMedicalFile ? 'Загрузка...' : 'Добавить документ'}
                   </button>
 
+                  <div className="profile-file-status" role="status">
+                    {isUploadingMedicalFile
+                      ? 'Документ отправляется в защищённое хранилище...'
+                      : 'Доступны PDF, JPG, PNG, GIF и WebP до 10 МБ'}
+                  </div>
+
                   {medicalFiles.length === 0 ? (
                     <div className="profile-files-empty">Документы ещё не загружены</div>
                   ) : (
                     <div className="profile-files-list">
-                      {medicalFiles.map((file) => (
-                        <div key={file.id} className="profile-file-item">
-                          <a
-                            href={file.fileUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="profile-file-link"
-                          >
-                            {file.originalFilename}
-                          </a>
-                          <div className="profile-file-meta">
-                            <span>{FileService.formatFileSize(file.sizeBytes)}</span>
-                            <span>{formatDate(file.createdAt)}</span>
+                      {medicalFiles.map((file) => {
+                        const isViewing =
+                          medicalFileAction?.fileId === file.id &&
+                          medicalFileAction.action === 'view';
+                        const isDownloading =
+                          medicalFileAction?.fileId === file.id &&
+                          medicalFileAction.action === 'download';
+                        const isDeleting =
+                          medicalFileAction?.fileId === file.id &&
+                          medicalFileAction.action === 'delete';
+
+                        return (
+                          <div key={file.id} className="profile-file-item">
+                            <div className="profile-file-link">{file.originalFilename}</div>
+                            <div className="profile-file-meta">
+                              <span>{FileService.formatFileSize(file.sizeBytes)}</span>
+                              <span>{formatDate(file.createdAt)}</span>
+                            </div>
+                            <div className="profile-file-actions">
+                              <button
+                                type="button"
+                                className="file-action-btn secondary"
+                                disabled={!!medicalFileAction}
+                                onClick={() => {
+                                  void handleViewMedicalFile(file);
+                                }}
+                              >
+                                {isViewing
+                                  ? 'Открытие...'
+                                  : FileService.isPreviewable(file)
+                                    ? 'Просмотреть'
+                                    : 'Открыть'}
+                              </button>
+                              <button
+                                type="button"
+                                className="file-action-btn secondary"
+                                disabled={!!medicalFileAction}
+                                onClick={() => {
+                                  void handleDownloadMedicalFile(file);
+                                }}
+                              >
+                                {isDownloading ? 'Подготовка...' : 'Скачать'}
+                              </button>
+                              <button
+                                type="button"
+                                className="delete-document-btn"
+                                disabled={!!medicalFileAction}
+                                onClick={() => {
+                                  void handleDeleteMedicalFile(file.id);
+                                }}
+                              >
+                                {isDeleting ? 'Удаление...' : 'Удалить'}
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            type="button"
-                            className="delete-document-btn"
-                            onClick={() => {
-                              void handleDeleteMedicalFile(file.id);
-                            }}
-                          >
-                            Удалить
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

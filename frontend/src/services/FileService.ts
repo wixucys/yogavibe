@@ -11,6 +11,11 @@ interface PaginatedResponse<T> {
   items: T[];
 }
 
+interface FileAccessUrlResponse {
+  url: string;
+  expires_in: number;
+}
+
 class FileService {
   private static readonly MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
   private static readonly ALLOWED_TYPES = [
@@ -91,8 +96,12 @@ class FileService {
 
   private static getErrorMessage(error: unknown, fallback: string): string {
     if (error instanceof ApiError) {
+      if (error.status === 401) {
+        return 'Сессия истекла. Выполните вход заново';
+      }
+
       if (error.status === 403) {
-        return 'Недостаточно прав для управления файлами';
+        return 'Недостаточно прав для доступа к этому файлу';
       }
 
       if (error.status === 404) {
@@ -105,6 +114,10 @@ class FileService {
 
       if (error.status === 415) {
         return 'Разрешены только PDF, JPG, PNG, GIF и WebP файлы';
+      }
+
+      if (error.status === 502) {
+        return 'Сервис хранения файлов временно недоступен';
       }
 
       if (error.message) {
@@ -171,6 +184,55 @@ class FileService {
     } catch (error: unknown) {
       throw new Error(this.getErrorMessage(error, 'Не удалось удалить файл'));
     }
+  }
+
+  static async getDownloadUrl(fileId: number): Promise<string> {
+    try {
+      const response = await ApiService.request<FileAccessUrlResponse>(
+        `/files/${fileId}/download-url`
+      );
+      return response.url;
+    } catch (error: unknown) {
+      throw new Error(
+        this.getErrorMessage(error, 'Не удалось подготовить ссылку на файл')
+      );
+    }
+  }
+
+  static isPreviewable(file: Pick<FileAttachment, 'mimeType' | 'originalFilename'>): boolean {
+    const mimeType = file.mimeType?.toLowerCase() ?? '';
+    const filename = file.originalFilename.toLowerCase();
+
+    return (
+      mimeType === 'application/pdf' ||
+      mimeType.startsWith('image/') ||
+      /\.(pdf|png|jpe?g|gif|webp)$/i.test(filename)
+    );
+  }
+
+  static async openFile(
+    file: Pick<FileAttachment, 'id' | 'originalFilename'>
+  ): Promise<void> {
+    const url = await this.getDownloadUrl(file.id);
+    const openedWindow = window.open(url, '_blank', 'noopener,noreferrer');
+
+    if (!openedWindow) {
+      window.location.href = url;
+    }
+  }
+
+  static async downloadFile(
+    file: Pick<FileAttachment, 'id' | 'originalFilename'>
+  ): Promise<void> {
+    const url = await this.getDownloadUrl(file.id);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = file.originalFilename;
+    link.rel = 'noreferrer';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   static formatFileSize(sizeBytes: number): string {

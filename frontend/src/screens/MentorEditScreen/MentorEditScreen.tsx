@@ -31,6 +31,10 @@ const MentorEditScreen = () => {
   const [saving, setSaving] = useState(false);
   const [certificateFiles, setCertificateFiles] = useState<FileAttachment[]>([]);
   const [uploadingCertificate, setUploadingCertificate] = useState(false);
+  const [certificateAction, setCertificateAction] = useState<{
+    fileId: number;
+    action: 'view' | 'download' | 'delete';
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -59,6 +63,11 @@ const MentorEditScreen = () => {
           setCertificateFiles(files);
         } catch (fileError) {
           console.warn('Не удалось загрузить сертификаты ментора:', fileError);
+          setError(
+            fileError instanceof Error
+              ? fileError.message
+              : 'Не удалось загрузить сертификаты ментора'
+          );
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Не удалось загрузить профиль');
@@ -122,6 +131,34 @@ const MentorEditScreen = () => {
     }
   };
 
+  const handleViewCertificate = async (file: FileAttachment): Promise<void> => {
+    setError(null);
+    setSuccess(null);
+    setCertificateAction({ fileId: file.id, action: 'view' });
+
+    try {
+      await FileService.openFile(file);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Не удалось открыть файл');
+    } finally {
+      setCertificateAction(null);
+    }
+  };
+
+  const handleDownloadCertificate = async (file: FileAttachment): Promise<void> => {
+    setError(null);
+    setSuccess(null);
+    setCertificateAction({ fileId: file.id, action: 'download' });
+
+    try {
+      await FileService.downloadFile(file);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Не удалось скачать файл');
+    } finally {
+      setCertificateAction(null);
+    }
+  };
+
   const handleDeleteCertificate = async (fileId: number): Promise<void> => {
     if (!window.confirm('Удалить файл сертификата?')) {
       return;
@@ -129,6 +166,7 @@ const MentorEditScreen = () => {
 
     setError(null);
     setSuccess(null);
+    setCertificateAction({ fileId, action: 'delete' });
 
     try {
       await FileService.deleteFile('mentor', fileId);
@@ -136,6 +174,8 @@ const MentorEditScreen = () => {
       setSuccess('Файл удалён');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Не удалось удалить файл');
+    } finally {
+      setCertificateAction(null);
     }
   };
 
@@ -282,35 +322,73 @@ const MentorEditScreen = () => {
             {uploadingCertificate ? 'Загрузка...' : 'Добавить сертификат'}
           </button>
 
+          <div className="mentor-file-status" role="status">
+            {uploadingCertificate
+              ? 'Сертификат загружается в защищённое хранилище...'
+              : 'Доступны просмотр, скачивание и удаление файлов'}
+          </div>
+
           {certificateFiles.length === 0 ? (
             <div className="mentor-files-empty">Сертификаты пока не загружены</div>
           ) : (
             <div className="mentor-files-list">
-              {certificateFiles.map((file) => (
-                <div key={file.id} className="mentor-file-item">
-                  <a
-                    href={file.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mentor-file-link"
-                  >
-                    {file.originalFilename}
-                  </a>
-                  <div className="mentor-file-meta">
-                    <span>{FileService.formatFileSize(file.sizeBytes)}</span>
-                    <span>{new Date(file.createdAt).toLocaleDateString('ru-RU')}</span>
+              {certificateFiles.map((file) => {
+                const isViewing =
+                  certificateAction?.fileId === file.id &&
+                  certificateAction.action === 'view';
+                const isDownloading =
+                  certificateAction?.fileId === file.id &&
+                  certificateAction.action === 'download';
+                const isDeleting =
+                  certificateAction?.fileId === file.id &&
+                  certificateAction.action === 'delete';
+
+                return (
+                  <div key={file.id} className="mentor-file-item">
+                    <div className="mentor-file-link">{file.originalFilename}</div>
+                    <div className="mentor-file-meta">
+                      <span>{FileService.formatFileSize(file.sizeBytes)}</span>
+                      <span>{new Date(file.createdAt).toLocaleDateString('ru-RU')}</span>
+                    </div>
+                    <div className="mentor-file-actions">
+                      <button
+                        type="button"
+                        className="mentor-secondary-file-btn"
+                        disabled={!!certificateAction}
+                        onClick={() => {
+                          void handleViewCertificate(file);
+                        }}
+                      >
+                        {isViewing
+                          ? 'Открытие...'
+                          : FileService.isPreviewable(file)
+                            ? 'Просмотреть'
+                            : 'Открыть'}
+                      </button>
+                      <button
+                        type="button"
+                        className="mentor-secondary-file-btn"
+                        disabled={!!certificateAction}
+                        onClick={() => {
+                          void handleDownloadCertificate(file);
+                        }}
+                      >
+                        {isDownloading ? 'Подготовка...' : 'Скачать'}
+                      </button>
+                      <button
+                        type="button"
+                        className="mentor-delete-file-btn"
+                        disabled={!!certificateAction}
+                        onClick={() => {
+                          void handleDeleteCertificate(file.id);
+                        }}
+                      >
+                        {isDeleting ? 'Удаление...' : 'Удалить'}
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    className="mentor-delete-file-btn"
-                    onClick={() => {
-                      void handleDeleteCertificate(file.id);
-                    }}
-                  >
-                    Удалить
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

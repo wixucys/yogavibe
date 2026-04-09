@@ -664,3 +664,88 @@
     justify-content: center;
   }
 }
+
+.profile-files-section {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.875rem;
+  background: #f8f4f1;
+  border: 1px solid #ded8d2;
+}
+
+.profile-files-header h3 {
+  margin: 0 0 0.35rem;
+  color: #69505c;
+  font-size: 1rem;
+}
+
+.profile-files-header p {
+  margin: 0 0 0.875rem;
+  color: #5e4c55;
+  font-size: 0.85rem;
+}
+
+.upload-document-btn,
+.delete-document-btn {
+  border: none;
+  border-radius: 0.625rem;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.upload-document-btn {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: #69505c;
+  color: white;
+}
+
+.delete-document-btn {
+  padding: 0.55rem 0.85rem;
+  background: #efe1d9;
+  color: #69505c;
+}
+
+.profile-files-empty {
+  margin-top: 0.875rem;
+  color: #69505c;
+  font-size: 0.9rem;
+}
+
+.profile-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.875rem;
+}
+
+.profile-file-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: white;
+  border: 1px solid #ded8d2;
+}
+
+.profile-file-link {
+  color: #4d3d45;
+  font-weight: 700;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.profile-file-link:hover {
+  text-decoration: underline;
+}
+
+.profile-file-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: #69505c;
+  font-size: 0.8rem;
+}

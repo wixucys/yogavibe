@@ -15,7 +15,14 @@ UserSortField = Literal["created_at", "username", "email", "role"]
 SortOrder = Literal["asc", "desc"]
 
 FileOwnerType = Literal["user", "mentor", "booking", "note"]
-FileCategory = Literal["avatar", "certificate", "booking_document", "note_attachment", "other"]
+FileCategory = Literal[
+    "avatar",
+    "certificate",
+    "medical_document",
+    "booking_document",
+    "note_attachment",
+    "other",
+]
 
 T = TypeVar("T")
 
@@ -607,6 +614,31 @@ class FileAttachmentBase(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class FileUploadRequest(BaseModel):
+    filename: str
+    content_base64: str
+    mime_type: Optional[str] = None
+    category: FileCategory = "other"
+
+    @field_validator("filename", "content_base64")
+    @classmethod
+    def validate_required_strings(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Поле не может быть пустым")
+        return stripped
+
+    @field_validator("mime_type")
+    @classmethod
+    def normalize_mime_type(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        stripped = value.strip().lower()
+        return stripped or None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class FileAttachmentCreate(FileAttachmentBase):
     original_filename: str
     stored_filename: str
@@ -659,6 +691,13 @@ class FileAttachmentListQuery(PaginationParams, SortParams):
 
 class FileAttachmentListPage(PaginatedResponse[FileAttachmentResponse]):
     pass
+
+
+class FileAccessUrlResponse(BaseModel):
+    url: str
+    expires_in: int
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AdminDashboardResponse(BaseModel):

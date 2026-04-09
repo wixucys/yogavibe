@@ -118,3 +118,70 @@
   align-items: center;
   justify-content: center;
 }
+
+.mentor-files-section {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #d8cdc6;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.mentor-files-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #69505c;
+}
+
+.mentor-files-header p {
+  margin: 0.3rem 0 0;
+  color: #5e4c55;
+  font-size: 0.9rem;
+}
+
+.mentor-hidden-file-input {
+  display: none;
+}
+
+.mentor-upload-file-btn,
+.mentor-delete-file-btn {
+  width: fit-content;
+}
+
+.mentor-files-empty {
+  color: #69505c;
+}
+
+.mentor-files-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mentor-file-item {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #d8cdc6;
+  background: white;
+}
+
+.mentor-file-link {
+  color: #4d3d45;
+  font-weight: 700;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.mentor-file-link:hover {
+  text-decoration: underline;
+}
+
+.mentor-file-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  color: #69505c;
+  font-size: 0.85rem;
+}

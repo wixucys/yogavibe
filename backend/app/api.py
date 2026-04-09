@@ -15,6 +15,7 @@ from services.user_service import UserService
 from services.mentor_service import MentorService
 from services.note_service import NoteService
 from services.booking_service import BookingService
+from services.file_service import FileService
 
 router = APIRouter(prefix="/api/v1")
 security = HTTPBearer()
@@ -191,6 +192,23 @@ def build_user_list_query(
         _raise_query_validation_error(exc)
 
 
+def build_file_list_query(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1, le=100),
+    category: Optional[schemas.FileCategory] = None,
+    sort_order: schemas.SortOrder = "desc",
+) -> schemas.FileAttachmentListQuery:
+    try:
+        return schemas.FileAttachmentListQuery(
+            page=page,
+            page_size=page_size,
+            category=category,
+            sort_order=sort_order,
+        )
+    except ValidationError as exc:
+        _raise_query_validation_error(exc)
+
+
 # =========================
 # SETUP
 # =========================
@@ -257,6 +275,53 @@ async def update_me(
     return UserService.update_user(db, current_user.id, user_update)
 
 
+@router.get("/users/me/files", response_model=schemas.FileAttachmentListPage)
+async def get_my_user_files(
+    query: schemas.FileAttachmentListQuery = Depends(build_file_list_query),
+    current_user: schemas.UserResponse = Depends(require_roles("user", "mentor", "admin")),
+    db: Session = Depends(get_db),
+):
+    return FileService.list_user_files(db, current_user.id, query)
+
+
+@router.post("/users/me/files", response_model=schemas.FileAttachmentResponse)
+async def upload_my_user_file(
+    file_data: schemas.FileUploadRequest,
+    current_user: schemas.UserResponse = Depends(require_roles("user", "mentor", "admin")),
+    db: Session = Depends(get_db),
+):
+    return FileService.upload_user_file(db, current_user.id, file_data)
+
+
+@router.delete("/users/me/files/{file_id}")
+async def delete_my_user_file(
+    file_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("user", "mentor", "admin")),
+    db: Session = Depends(get_db),
+):
+    FileService.delete_user_file(db, current_user.id, file_id)
+    return {"message": "Файл удалён"}
+
+
+@router.get("/files/{file_id}/download-url", response_model=schemas.FileAccessUrlResponse)
+async def get_file_download_url(
+    file_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("user", "mentor", "admin")),
+    db: Session = Depends(get_db),
+):
+    return FileService.get_file_download_url(db, current_user, file_id)
+
+
+@router.get("/files/{file_id}/download")
+async def download_file_by_signature(
+    file_id: int,
+    expires: int = Query(..., ge=1),
+    signature: str = Query(..., min_length=16),
+    db: Session = Depends(get_db),
+):
+    return FileService.stream_file_by_signature(db, file_id, expires, signature)
+
+
 # =========================
 # MENTORS CATALOG
 # =========================
@@ -296,6 +361,34 @@ async def update_my_mentor_profile(
     db: Session = Depends(get_db),
 ):
     return MentorService.update_mentor(db, current_user.id, mentor_update)
+
+
+@router.get("/mentor/me/files", response_model=schemas.FileAttachmentListPage)
+async def get_my_mentor_files(
+    query: schemas.FileAttachmentListQuery = Depends(build_file_list_query),
+    current_user: schemas.UserResponse = Depends(require_roles("mentor")),
+    db: Session = Depends(get_db),
+):
+    return FileService.list_mentor_files(db, current_user.id, query)
+
+
+@router.post("/mentor/me/files", response_model=schemas.FileAttachmentResponse)
+async def upload_my_mentor_file(
+    file_data: schemas.FileUploadRequest,
+    current_user: schemas.UserResponse = Depends(require_roles("mentor")),
+    db: Session = Depends(get_db),
+):
+    return FileService.upload_mentor_file(db, current_user.id, file_data)
+
+
+@router.delete("/mentor/me/files/{file_id}")
+async def delete_my_mentor_file(
+    file_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("mentor")),
+    db: Session = Depends(get_db),
+):
+    FileService.delete_mentor_file(db, current_user.id, file_id)
+    return {"message": "Файл удалён"}
 
 
 @router.get("/mentor/bookings", response_model=schemas.BookingListPage)

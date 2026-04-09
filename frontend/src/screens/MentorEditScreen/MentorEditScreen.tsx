@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
+import FileService from '../../services/FileService';
 import type {
   MentorApi,
   MentorSelfUpdatePayload,
 } from '../../types/mentor';
+import type { FileAttachment } from '../../types/file';
 import './MentorEditScreen.css';
 
 const defaultFormData: MentorSelfUpdatePayload = {
@@ -20,10 +22,14 @@ const defaultFormData: MentorSelfUpdatePayload = {
 };
 
 const MentorEditScreen = () => {
+  const certificateInputRef = useRef<HTMLInputElement | null>(null);
+
   const [mentor, setMentor] = useState<MentorApi | null>(null);
   const [formData, setFormData] = useState<MentorSelfUpdatePayload>(defaultFormData);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [certificateFiles, setCertificateFiles] = useState<FileAttachment[]>([]);
+  const [uploadingCertificate, setUploadingCertificate] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -46,6 +52,13 @@ const MentorEditScreen = () => {
           photo_url: data.photo_url || '',
           is_available: data.is_available,
         });
+
+        try {
+          const files = await FileService.listFiles('mentor', 'certificate');
+          setCertificateFiles(files);
+        } catch (fileError) {
+          console.warn('Не удалось загрузить сертификаты ментора:', fileError);
+        }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : 'Не удалось загрузить профиль');
       } finally {
@@ -76,6 +89,52 @@ const MentorEditScreen = () => {
       setError(err instanceof Error ? err.message : 'Ошибка при сохранении');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleCertificateUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ): Promise<void> => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setSuccess(null);
+    setUploadingCertificate(true);
+
+    try {
+      const uploadedFile = await FileService.uploadFile(
+        'mentor',
+        file,
+        'certificate'
+      );
+      setCertificateFiles((prev) => [uploadedFile, ...prev]);
+      setSuccess('Файл сертификата загружен');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить файл');
+    } finally {
+      setUploadingCertificate(false);
+
+      if (certificateInputRef.current) {
+        certificateInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteCertificate = async (fileId: number): Promise<void> => {
+    if (!window.confirm('Удалить файл сертификата?')) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await FileService.deleteFile('mentor', fileId);
+      setCertificateFiles((prev) => prev.filter((file) => file.id !== fileId));
+      setSuccess('Файл удалён');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Не удалось удалить файл');
     }
   };
 
@@ -183,6 +242,63 @@ const MentorEditScreen = () => {
           />
           Доступен для бронирований
         </label>
+
+        <div className="mentor-files-section">
+          <div className="mentor-files-header">
+            <h2>Сертификаты и документы</h2>
+            <p>Можно загрузить PDF или изображение сертификата до 10 МБ</p>
+          </div>
+
+          <input
+            ref={certificateInputRef}
+            type="file"
+            accept=".pdf,image/jpeg,image/png,image/gif,image/webp"
+            className="mentor-hidden-file-input"
+            onChange={handleCertificateUpload}
+            disabled={uploadingCertificate}
+          />
+
+          <button
+            type="button"
+            className="mentor-upload-file-btn"
+            onClick={() => certificateInputRef.current?.click()}
+            disabled={uploadingCertificate}
+          >
+            {uploadingCertificate ? 'Загрузка...' : 'Добавить сертификат'}
+          </button>
+
+          {certificateFiles.length === 0 ? (
+            <div className="mentor-files-empty">Сертификаты пока не загружены</div>
+          ) : (
+            <div className="mentor-files-list">
+              {certificateFiles.map((file) => (
+                <div key={file.id} className="mentor-file-item">
+                  <a
+                    href={file.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mentor-file-link"
+                  >
+                    {file.originalFilename}
+                  </a>
+                  <div className="mentor-file-meta">
+                    <span>{FileService.formatFileSize(file.sizeBytes)}</span>
+                    <span>{new Date(file.createdAt).toLocaleDateString('ru-RU')}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="mentor-delete-file-btn"
+                    onClick={() => {
+                      void handleDeleteCertificate(file.id);
+                    }}
+                  >
+                    Удалить
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <button type="submit" disabled={saving}>
           {saving ? 'Сохранение...' : 'Сохранить'}

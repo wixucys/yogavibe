@@ -787,6 +787,14 @@ class FileAttachmentCRUD:
         if not file_attachment:
             return False
 
+        users_with_avatar = db.query(models.User).filter(models.User.avatar_file_id == file_id)
+        for user in users_with_avatar:
+            user.avatar_file_id = None
+
+        mentors_with_photo = db.query(models.Mentor).filter(models.Mentor.photo_file_id == file_id)
+        for mentor in mentors_with_photo:
+            mentor.photo_file_id = None
+
         db.delete(file_attachment)
         db.commit()
         return True

@@ -251,6 +251,26 @@ class RefreshToken(Base):
 class FileAttachment(Base):
     __tablename__ = "file_attachments"
 
+    @property
+    def owner_type(self) -> str:
+        if self.user_id is not None:
+            return "user"
+        if self.mentor_id is not None:
+            return "mentor"
+        if self.booking_id is not None:
+            return "booking"
+        return "note"
+
+    @property
+    def owner_id(self) -> int:
+        if self.user_id is not None:
+            return self.user_id
+        if self.mentor_id is not None:
+            return self.mentor_id
+        if self.booking_id is not None:
+            return self.booking_id
+        return self.note_id or 0
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)

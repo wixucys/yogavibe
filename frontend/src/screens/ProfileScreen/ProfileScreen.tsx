@@ -7,7 +7,9 @@ import React, {
 } from 'react';
 import UserService from '../../services/UserService';
 import AuthService from '../../services/AuthService';
+import FileService from '../../services/FileService';
 import type { User } from '../../services/AuthService';
+import type { FileAttachment } from '../../types/file';
 import './ProfileScreen.css';
 
 // Константы для полей профиля
@@ -94,6 +96,7 @@ const ProfileScreen = ({
   onUpdateProfile = () => {},
 }: ProfileScreenProps) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const documentInputRef = useRef<HTMLInputElement | null>(null);
 
   const [profile, setProfile] = useState<ProfileState>({
     city: '',
@@ -121,7 +124,9 @@ const ProfileScreen = ({
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [medicalFiles, setMedicalFiles] = useState<FileAttachment[]>([]);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const [isUploadingMedicalFile, setIsUploadingMedicalFile] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async (): Promise<void> => {
@@ -176,6 +181,16 @@ const ProfileScreen = ({
 
       if (localProfile?.photo) {
         setPhotoPreview(localProfile.photo);
+      }
+
+      try {
+        const uploadedFiles = await FileService.listFiles(
+          'user',
+          'medical_document'
+        );
+        setMedicalFiles(uploadedFiles);
+      } catch (fileError) {
+        console.warn('Не удалось загрузить медицинские документы:', fileError);
       }
     } catch (error: unknown) {
       console.error('ProfileScreen: Error loading profile:', error);
@@ -338,6 +353,72 @@ const ProfileScreen = ({
       UserService.saveProfilePhoto(userId, null);
     }
   }, [user]);
+
+  const handleMedicalFileUpload = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setError(null);
+      setIsUploadingMedicalFile(true);
+
+      try {
+        const uploadedFile = await FileService.uploadFile(
+          'user',
+          file,
+          'medical_document'
+        );
+        setMedicalFiles((prev) => [uploadedFile, ...prev]);
+        setSaveSuccess(true);
+        window.setTimeout(() => setSaveSuccess(false), 2000);
+      } catch (uploadError: unknown) {
+        setError(
+          uploadError instanceof Error
+            ? uploadError.message
+            : 'Не удалось загрузить файл'
+        );
+      } finally {
+        setIsUploadingMedicalFile(false);
+
+        if (documentInputRef.current) {
+          documentInputRef.current.value = '';
+        }
+      }
+    },
+    []
+  );
+
+  const handleDeleteMedicalFile = useCallback(async (fileId: number): Promise<void> => {
+    if (!window.confirm('Удалить загруженный документ?')) return;
+
+    setError(null);
+
+    try {
+      await FileService.deleteFile('user', fileId);
+      setMedicalFiles((prev) => prev.filter((file) => file.id !== fileId));
+    } catch (deleteError: unknown) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : 'Не удалось удалить файл'
+      );
+    }
+  }, []);
+
+  const formatDate = (value: string | null | undefined): string => {
+    if (!value) return '—';
+
+    const parsedDate = new Date(value);
+    if (Number.isNaN(parsedDate.getTime())) return value;
+
+    return new Intl.DateTimeFormat('ru-RU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(parsedDate);
+  };
 
   const handleSaveAll = useCallback(async (): Promise<void> => {
     setIsSaving(true);
@@ -621,6 +702,63 @@ const ProfileScreen = ({
                 </div>
 
                 <div className="photo-hint">JPG, PNG, GIF, WebP до 5MB</div>
+
+                <div className="profile-files-section">
+                  <div className="profile-files-header">
+                    <h3>Медицинские документы</h3>
+                    <p>Загрузите PDF или изображения со справками и заключениями</p>
+                  </div>
+
+                  <input
+                    type="file"
+                    ref={documentInputRef}
+                    onChange={handleMedicalFileUpload}
+                    accept=".pdf,image/jpeg,image/png,image/gif,image/webp"
+                    className="file-input"
+                    disabled={isUploadingMedicalFile}
+                  />
+
+                  <button
+                    className="upload-document-btn"
+                    type="button"
+                    onClick={() => documentInputRef.current?.click()}
+                    disabled={isUploadingMedicalFile}
+                  >
+                    {isUploadingMedicalFile ? 'Загрузка...' : 'Добавить документ'}
+                  </button>
+
+                  {medicalFiles.length === 0 ? (
+                    <div className="profile-files-empty">Документы ещё не загружены</div>
+                  ) : (
+                    <div className="profile-files-list">
+                      {medicalFiles.map((file) => (
+                        <div key={file.id} className="profile-file-item">
+                          <a
+                            href={file.fileUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="profile-file-link"
+                          >
+                            {file.originalFilename}
+                          </a>
+                          <div className="profile-file-meta">
+                            <span>{FileService.formatFileSize(file.sizeBytes)}</span>
+                            <span>{formatDate(file.createdAt)}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="delete-document-btn"
+                            onClick={() => {
+                              void handleDeleteMedicalFile(file.id);
+                            }}
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

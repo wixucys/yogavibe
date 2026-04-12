@@ -135,7 +135,6 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
 
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
 
-  // 4.2 Debounce text search to avoid a request on every keystroke
   const debouncedSearch = useDebounce(filters.search, 400);
 
   const notificationsRef = useRef<HTMLDivElement | null>(null);
@@ -418,7 +417,7 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
 
       {activeNav === 'МЕНТОРЫ' && (
         <div className="mentors-page">
-          {/* sidebar */}
+          
           <aside className="filters-sidebar">
 
             <div className="filter-group">
@@ -539,10 +538,9 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
 
           </aside>
 
-          {/* mentors */}
+          
           <main className="mentors-main">
             {loadingMentors ? (
-              // 4.4 Skeleton cards — fixed height prevents layout shift (CLS)
               <div className="mentors-area" aria-busy="true" aria-label="Загрузка менторов">
                 {Array.from({ length: PAGE_SIZE }).map((_, i) => (
                   <div className="mentor-card mentor-card--skeleton" key={i}>

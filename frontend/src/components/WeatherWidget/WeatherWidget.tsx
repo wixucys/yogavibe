@@ -2,7 +2,6 @@ import React from 'react';
 import { useWeather } from '../../hooks/useWeather';
 import './WeatherWidget.css';
 
-// Maps OWM condition group to a simple emoji fallback
 const CONDITION_EMOJI: Record<string, string> = {
   Clear: '☀️',
   Clouds: '☁️',
@@ -29,7 +28,7 @@ function isOwmIconCode(iconCode: string): boolean {
   return /^\d{2}[dn]$/.test(iconCode);
 }
 
-/** Full-size widget: used in BookingScreen */
+
 function WeatherWidgetFull({
   city,
   date,
@@ -144,7 +143,7 @@ function WeatherWidgetFull({
   );
 }
 
-/** Compact widget: used inside booking cards */
+
 function WeatherWidgetCompact({ bookingId }: { bookingId: string | number }) {
   const { data, loading, silent, error } = useWeather({ bookingId });
 
@@ -170,7 +169,6 @@ function WeatherWidgetCompact({ bookingId }: { bookingId: string | number }) {
         </div>
       );
     }
-    // Silently skip other errors in compact mode
     return null;
   }
 
@@ -200,16 +198,15 @@ function WeatherWidgetCompact({ bookingId }: { bookingId: string | number }) {
   );
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
 
 interface WeatherWidgetProps {
-  /** City name — use with the `date` prop for BookingScreen */
+  
   city?: string;
-  /** ISO 8601 date-time string (optional) */
+  
   date?: string;
-  /** Booking ID — use in MyBookingsScreen card; takes priority over city/date */
+  
   bookingId?: string | number;
-  /** Render compact inline variant (for booking cards) */
+  
   compact?: boolean;
 }
 

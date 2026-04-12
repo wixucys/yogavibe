@@ -5,7 +5,6 @@ from passlib.context import CryptContext
 from config import settings
 
 
-# Хеширование паролей - используем sha256_crypt
 
 pwd_context = CryptContext(
     schemes=["sha256_crypt", "bcrypt"],
@@ -15,19 +14,15 @@ pwd_context = CryptContext(
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Проверка пароля
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    # Получение хеша пароля
     return pwd_context.hash(password)
 
 
-# Функции для работы с JWT
 
 def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -> str:
-    # Создание access токена
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -40,7 +35,6 @@ def create_access_token(data: Dict, expires_delta: Optional[timedelta] = None) -
 
 
 def create_refresh_token(data: Dict) -> str:
-    # Создание refresh токена
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
@@ -49,7 +43,6 @@ def create_refresh_token(data: Dict) -> str:
 
 
 def verify_token(token: str) -> Optional[Dict]:
-    # Проверка токена
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload

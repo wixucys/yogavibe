@@ -31,7 +31,6 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Check authentication on mount
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       try {
@@ -103,7 +102,6 @@ export const AuthProvider = ({ children }: AuthProviderProps): JSX.Element => {
       setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
-      // Still clear state even if logout request fails
       setIsAuthenticated(false);
       setUser(null);
     }

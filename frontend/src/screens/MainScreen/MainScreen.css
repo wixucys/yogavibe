@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
-/* Фон для всей страницы */
+
 .main-bg {
   min-height: 100vh;
   background-image: url('../../../public/assets/images/background_2.png');
@@ -14,7 +14,7 @@
   filter: brightness(0.8);
 }
 
-/* Хедер */
+
 .main-header {
   width: 100%;
   background: #e4d8d2;
@@ -85,14 +85,14 @@
   outline: none;
 }
 
-/* Страница менторов с фильтрами слева */
+
 .mentors-page {
   display: flex;
   height: calc(100vh - 5.625rem);
   overflow: hidden;
 }
 
-/* Сайдбар с фильтрами */
+
 .filters-sidebar {
   width: 18.75rem;
   background: rgba(228, 216, 210, 0.6);
@@ -238,7 +238,7 @@
   font-size: 1rem;
 }
 
-/* Основной контент с менторами */
+
 .mentors-main {
   flex: 1;
   display: flex;
@@ -274,7 +274,7 @@
   flex-shrink: 0;
 }
 
-/* 4.4 Skeleton loading — prevents CLS by reserving fixed card space */
+
 @keyframes skeleton-shimmer {
   0%   { background-position: -30rem 0; }
   100% { background-position:  30rem 0; }
@@ -455,7 +455,7 @@
   padding-bottom: 1.25rem;
 }
 
-/* Пагинация */
+
 .pagination {
   display: flex;
   align-items: center;
@@ -508,7 +508,7 @@
   color: #35252c;
 }
 
-/* Контент других страниц (неиспользуемые стили - можно удалить, но оставляю на случай будущего использования) */
+
 .page-content {
   display: flex;
   flex-direction: column;
@@ -536,7 +536,7 @@
   line-height: 1.6;
 }
 
-/* Выпадающее меню уведомлений */
+
 .notifications-dropdown {
   position: absolute;
   top: 100%;
@@ -710,7 +710,7 @@
   box-shadow: 0 0.25rem 0.75rem rgba(246, 192, 202, 0.4);
 }
 
-/* Стили для информации о пользователе */
+
 .user-info {
   position: absolute;
   left: 50%;
@@ -727,7 +727,7 @@
   border-radius: 1.25rem;
 }
 
-/* Футер в сайдбаре */
+
 .sidebar-footer {
   margin-top: 2.5rem;
   padding-top: 1.25rem;
@@ -760,7 +760,7 @@
   transform: rotate(180deg);
 }
 
-/* Стили для экрана загрузки (объединены с дублирующимися стилями) */
+
 .loading-screen,
 .bookings-loading,
 .mentor-profile-loading,
@@ -813,7 +813,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Адаптивность */
+
 @media (max-width: 64rem) {
   .user-info {
     position: static;

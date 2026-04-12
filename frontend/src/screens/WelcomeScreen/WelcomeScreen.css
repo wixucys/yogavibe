@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,900;1,900&family=Montserrat:wght@700;900&display=swap');
 
-/* Базовые сбросы */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Основной контейнер страницы */
+
 .welcome-screen {
   background-image: url('../../../public/assets/images/background_img.jpg');
   background-size: cover;
@@ -20,7 +20,7 @@
   overflow-x: hidden;
 }
 
-/* Основной контент с мотивационным текстом */
+
 .content {
   flex: 1;
   display: flex;
@@ -30,7 +30,7 @@
   z-index: 2;
 }
 
-/* Контейнер с текстом и кнопкой */
+
 .main-text {
   text-align: center;
   max-width: 90%;
@@ -38,7 +38,7 @@
   padding: 1.25rem;
 }
 
-/* Главный заголовок */
+
 .main-text h1 {
   font-family: 'Montserrat', sans-serif;
   font-style: italic;
@@ -49,7 +49,7 @@
   margin-bottom: 0;
 }
 
-/* Описание под заголовком */
+
 .description {
   font-family: 'Montserrat', sans-serif;
   font-weight: 900;
@@ -60,7 +60,7 @@
   margin-bottom: 0;
 }
 
-/* Основная кнопка призыва к действию */
+
 .cta-button {
   font-family: 'Montserrat', sans-serif;
   font-weight: 900;
@@ -83,7 +83,7 @@
   transform: translateY(-0.125rem);
 }
 
-/* Футер с инструкцией */
+
 .footer {
   width: 100%;
   background-color: #F6C0CA;
@@ -91,14 +91,14 @@
   padding: clamp(1.25rem, 4vw, 2.5rem);
 }
 
-/* Контейнер инструкции "Как это работает" */
+
 .how-it-works {
   max-width: 75rem;
   margin: 0 auto;
   width: 100%;
 }
 
-/* Заголовок инструкции */
+
 .how-it-works h2 {
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
@@ -110,7 +110,7 @@
   padding: 0;
 }
 
-/* Контейнер для шагов инструкции */
+
 .steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(18.75rem, 100%), 1fr));
@@ -119,12 +119,12 @@
   padding: 0 0.625rem;
 }
 
-/* Отдельный шаг инструкции */
+
 .step {
   padding: 0;
 }
 
-/* Заголовок шага с иконкой */
+
 .step-header {
   display: flex;
   align-items: center;
@@ -132,14 +132,14 @@
   margin-bottom: 0.9375rem;
 }
 
-/* Иконка шага */
+
 .step-icon {
   width: clamp(1.875rem, 3vw, 2.5rem);
   height: clamp(1.875rem, 3vw, 2.5rem);
   flex-shrink: 0;
 }
 
-/* Заголовок шага */
+
 .step h3 {
   font-family: 'Montserrat', sans-serif;
   font-weight: 900;
@@ -153,7 +153,7 @@
   letter-spacing: 0.0625rem;
 }
 
-/* Текст шага */
+
 .step p {
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
@@ -163,7 +163,7 @@
   color: #35252c;
 }
 
-/* Адаптивность для планшетов и ноутбуков */
+
 @media (max-width: 64rem) {
   .content {
     min-height: 50vh;
@@ -174,7 +174,7 @@
   }
 }
 
-/* Адаптивность для планшетов */
+
 @media (max-width: 48rem) {
   .welcome-screen {
     background-attachment: scroll;
@@ -205,7 +205,7 @@
   }
 }
 
-/* Адаптивность для мобильных */
+
 @media (max-width: 30rem) {
   .main-text h1 {
     font-size: 1.5rem;

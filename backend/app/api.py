@@ -210,9 +210,6 @@ def build_file_list_query(
         _raise_query_validation_error(exc)
 
 
-# =========================
-# SETUP
-# =========================
 @router.post("/setup/bootstrap-admin", response_model=schemas.AuthResponse)
 async def bootstrap_admin(
     request: schemas.BootstrapAdminCreate,
@@ -221,9 +218,6 @@ async def bootstrap_admin(
     return AuthService.bootstrap_admin(db, request)
 
 
-# =========================
-# AUTH
-# =========================
 @router.post("/auth/register", response_model=schemas.AuthResponse)
 async def register(
     request: schemas.UserCreate,
@@ -257,9 +251,6 @@ async def logout(
     return {"message": "Выход выполнен успешно"}
 
 
-# =========================
-# USER
-# =========================
 @router.get("/users/me", response_model=schemas.UserResponse)
 async def get_me(
     current_user: schemas.UserResponse = Depends(require_roles("user", "mentor", "admin")),
@@ -323,9 +314,6 @@ async def download_file_by_signature(
     return FileService.stream_file_by_signature(db, file_id, expires, signature)
 
 
-# =========================
-# MENTORS CATALOG
-# =========================
 @router.get("/mentors", response_model=schemas.MentorListPage)
 async def get_mentors(
     query: schemas.MentorListQuery = Depends(build_mentor_list_query),
@@ -344,9 +332,6 @@ async def get_mentor(
     return MentorService.get_mentor_by_id(db, mentor_id)
 
 
-# =========================
-# MENTOR SELF
-# =========================
 @router.get("/mentor/me", response_model=schemas.MentorResponse)
 async def get_my_mentor_profile(
     current_user: schemas.UserResponse = Depends(require_roles("mentor")),
@@ -401,9 +386,6 @@ async def get_my_mentor_bookings(
     return MentorService.get_mentor_bookings(db, current_user.id, query)
 
 
-# =========================
-# NOTES
-# =========================
 @router.get("/notes", response_model=schemas.NoteListPage)
 async def get_notes(
     query: schemas.NoteListQuery = Depends(build_note_list_query),
@@ -451,9 +433,6 @@ async def delete_note(
     return {"message": "Заметка удалена"}
 
 
-# =========================
-# BOOKINGS
-# =========================
 @router.get("/bookings", response_model=schemas.BookingListPage)
 async def get_bookings(
     query: schemas.BookingListQuery = Depends(build_booking_list_query),
@@ -519,9 +498,6 @@ async def complete_booking_by_mentor(
     return BookingService.complete_booking_by_mentor(db, booking_id, current_user.id)
 
 
-# =========================
-# ADMIN
-# =========================
 @router.get("/admin/dashboard", response_model=schemas.AdminDashboardResponse)
 async def get_admin_dashboard(
     current_user: schemas.UserResponse = Depends(require_roles("admin")),
@@ -607,9 +583,6 @@ async def delete_mentor(
     return {"message": "Ментор удален"}
 
 
-# =========================
-# WEATHER
-# =========================
 
 @router.get("/weather/forecast", response_model=schemas.WeatherForecast)
 async def get_weather_forecast(

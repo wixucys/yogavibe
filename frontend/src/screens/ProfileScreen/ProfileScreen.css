@@ -1,7 +1,7 @@
-/* ProfilePage.css */
+
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
-/* Основной контейнер */
+
 .profile-page {
   min-height: 100vh;
   background-image: url('../../../public/assets/images/background_2.png');
@@ -26,7 +26,7 @@
   box-shadow: 0 0.5rem 2rem rgba(105, 80, 92, 0.1);
 }
 
-/* Двухколоночный лейаут */
+
 .profile-layout {
   display: flex;
   gap: 2rem;
@@ -47,7 +47,7 @@
   padding-right: 0.5rem;
 }
 
-/* Секция с фото */
+
 .photo-section {
   display: flex;
   flex-direction: column;
@@ -157,7 +157,7 @@
   font-style: italic;
 }
 
-/* Основная информация */
+
 .basic-info {
   background: #f5f0ec;
   border-radius: 0.75rem;
@@ -185,7 +185,7 @@
   word-break: break-all;
 }
 
-/* Правая колонка - поля анкеты */
+
 .sections-container {
   display: flex;
   flex-direction: column;
@@ -209,7 +209,7 @@
   border-bottom: 1px solid rgba(105, 80, 92, 0.2);
 }
 
-/* Поля */
+
 .profile-field {
   margin-bottom: 0.75rem;
 }
@@ -286,7 +286,7 @@
   border-style: solid;
 }
 
-/* Редактирование полей */
+
 .edit-container {
   display: flex;
   flex-direction: column;
@@ -360,7 +360,7 @@
   background: #d32f2f;
 }
 
-/* Футер */
+
 .profile-footer {
   display: flex;
   justify-content: space-between;
@@ -437,7 +437,7 @@
   transform: translateY(-2px);
 }
 
-/* Кастомный скроллбар */
+
 .profile-right::-webkit-scrollbar {
   width: 6px;
 }
@@ -456,7 +456,7 @@
   background: #35252c;
 }
 
-/* Индикаторы загрузки и ошибок */
+
 .loading-container {
   display: flex;
   flex-direction: column;
@@ -494,7 +494,7 @@
   gap: 0.5rem;
 }
 
-/* Бейдж для бэкендных полей */
+
 .backend-badge {
   margin-left: 0.5rem;
   font-size: 0.8rem;
@@ -502,7 +502,7 @@
   cursor: help;
 }
 
-/* Поле в основной информации */
+
 .user-info-field {
   margin-top: 1rem;
   text-align: left;
@@ -527,7 +527,7 @@
   border: 1px solid #ded8d2;
 }
 
-/* Адаптивные стили */
+
 @media (max-width: 1024px) {
   .profile-layout {
     flex-direction: column;
@@ -564,9 +564,9 @@
   }
 }
 
-/* Добавляем в конец ProfileScreen.css */
 
-/* Стили для неизменяемых полей */
+
+
 .field-value.read-only {
   background: #f5f0ec;
   color: #69505c;
@@ -582,7 +582,7 @@
   cursor: help;
 }
 
-/* Личная информация (неизменяемая) */
+
 .basic-info {
   background: #f5f0ec;
   border-radius: 0.75rem;
@@ -651,7 +651,7 @@
   }
 }
 
-/* Адаптивность */
+
 @media (max-width: 768px) {
   .footer-actions {
     flex-direction: column;

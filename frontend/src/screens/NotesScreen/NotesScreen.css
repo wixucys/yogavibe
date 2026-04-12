@@ -1,7 +1,7 @@
-/* NotesScreen.css */
+
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
 
-/* Основной контейнер страницы заметок */
+
 .notes-page {
   min-height: calc(100vh - 5.625rem);
   padding: 2.5rem;
@@ -10,7 +10,7 @@
   font-family: 'Montserrat', sans-serif;
 }
 
-/* Контейнер для всего контента заметок */
+
 .notes-container {
   background-image: url('../../../public/assets/images/background_2.png');
   background-size: cover;
@@ -26,7 +26,7 @@
   flex-direction: column;
 }
 
-/* Заголовок раздела заметок */
+
 .notes-header {
   text-align: center;
   margin-bottom: 1.5625rem;
@@ -53,7 +53,7 @@
   line-height: 1.6;
 }
 
-/* Секция для добавления новой заметки */
+
 .add-note-section {
   background: #ded8d2;
   border-radius: 0.9375rem;
@@ -63,7 +63,7 @@
   flex-shrink: 0;
 }
 
-/* Контейнер для поля ввода и кнопки */
+
 .note-input-container {
   display: flex;
   flex-direction: column;
@@ -78,7 +78,7 @@
   font-weight: 500;
 }
 
-/* Поле для ввода текста новой заметки */
+
 .note-textarea {
   width: 100%;
   padding: 0.9375rem;
@@ -102,7 +102,7 @@
   color: #999;
 }
 
-/* Кнопка добавления новой заметки */
+
 .add-note-btn {
   align-self: flex-end;
   background: #69505c;
@@ -128,7 +128,7 @@
   opacity: 0.7;
 }
 
-/* Основной контейнер для списка заметок */
+
 .notes-content {
   flex: 1;
   display: flex;
@@ -136,7 +136,7 @@
   min-height: 0;
 }
 
-/* Контейнер с прокруткой для списка заметок */
+
 .notes-list-container {
   flex: 1;
   overflow-y: auto;
@@ -146,7 +146,7 @@
   padding: 0.3125rem;
 }
 
-/* Кастомный скроллбар */
+
 .notes-list-container::-webkit-scrollbar {
   width: 0.5rem;
 }
@@ -165,7 +165,7 @@
   background: #35252c;
 }
 
-/* Список всех заметок */
+
 .notes-list {
   display: flex;
   flex-direction: column;
@@ -173,7 +173,7 @@
   padding: 0.625rem;
 }
 
-/* Сообщение при отсутствии заметок */
+
 .no-notes {
   text-align: center;
   padding: 3.75rem 1.25rem;
@@ -199,7 +199,7 @@
   font-size: 1rem;
 }
 
-/* Карточка отдельной заметки */
+
 .note-card {
   background: #e4d8d2;
   border-radius: 0.9375rem;
@@ -214,7 +214,7 @@
   box-shadow: 0 0.375rem 1.25rem rgba(105, 80, 92, 0.12);
 }
 
-/* Содержимое заметки */
+
 .note-content p {
   font-family: 'Montserrat', sans-serif;
   font-weight: 500;
@@ -226,7 +226,7 @@
   word-wrap: break-word;
 }
 
-/* Футер карточки с датой и действиями */
+
 .note-footer {
   display: flex;
   justify-content: space-between;
@@ -250,7 +250,7 @@
   font-size: 0.85rem;
 }
 
-/* Кнопки действий с заметкой */
+
 .note-actions {
   display: flex;
   gap: 0.625rem;
@@ -287,14 +287,14 @@
   transform: translateY(-0.0625rem);
 }
 
-/* Режим редактирования заметки */
+
 .note-edit-mode {
   display: flex;
   flex-direction: column;
   gap: 0.9375rem;
 }
 
-/* Поле для редактирования текста заметки */
+
 .note-edit-textarea {
   width: 100%;
   padding: 0.9375rem;
@@ -314,7 +314,7 @@
   border-color: #69505c;
 }
 
-/* Кнопки в режиме редактирования */
+
 .note-edit-actions {
   display: flex;
   gap: 0.625rem;
@@ -392,7 +392,7 @@
   font-weight: 500;
 }
 
-/* Контейнер для действий с полем ввода */
+
 .note-input-actions {
   display: flex;
   justify-content: space-between;
@@ -400,7 +400,7 @@
   margin-top: 10px;
 }
 
-/* Адаптивность для планшетов */
+
 @media (max-width: 48rem) {
   .notes-page {
     padding: 1.25rem;
@@ -430,7 +430,7 @@
   }
 }
 
-/* Адаптивность для мобильных */
+
 @media (max-width: 30rem) {
   .notes-page {
     padding: 0.9375rem;

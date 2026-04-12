@@ -1,4 +1,4 @@
-/* ─── Full-size weather widget ────────────────────────────────────────────── */
+
 
 .weather-widget {
   background: #f5f0ec;
@@ -13,7 +13,7 @@
   box-shadow: 0 4px 12px rgba(105, 80, 92, 0.1);
 }
 
-/* Header row */
+
 .weather-widget__header {
   display: flex;
   align-items: center;
@@ -29,7 +29,7 @@
   font-size: 1rem;
 }
 
-/* Outdoor suitability badges */
+
 .weather-widget__badge {
   padding: 0.2rem 0.65rem;
   border-radius: 1rem;
@@ -49,7 +49,7 @@
   border: 1px solid #FFB74D;
 }
 
-/* Body */
+
 .weather-widget__body {
   display: flex;
   align-items: center;
@@ -81,7 +81,7 @@
   line-height: 1;
 }
 
-/* Description + stat pills */
+
 .weather-widget__details {
   display: flex;
   flex-direction: column;
@@ -108,7 +108,7 @@
   white-space: nowrap;
 }
 
-/* ─── Loading state ────────────────────────────────────────────────────────── */
+
 
 .weather-widget--loading {
   display: flex;
@@ -137,7 +137,7 @@
   height: 0.8rem;
 }
 
-/* ─── Info / error banner ──────────────────────────────────────────────────── */
+
 
 .weather-widget--banner {
   display: flex;
@@ -161,7 +161,7 @@
   font-size: 1.2rem;
 }
 
-/* ─── Compact widget (booking cards) ──────────────────────────────────────── */
+
 
 .weather-compact {
   display: inline-flex;
@@ -224,7 +224,7 @@
   background: rgba(255, 152, 0, 0.15);
 }
 
-/* skeleton inside compact */
+
 .weather-compact--loading {
   width: 140px;
   height: 28px;
@@ -239,7 +239,7 @@
   animation: shimmer 1.4s infinite linear;
 }
 
-/* Responsive */
+
 @media (max-width: 480px) {
   .weather-widget__body {
     flex-direction: column;

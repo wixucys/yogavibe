@@ -187,7 +187,6 @@ const BookingScreen = () => {
 
   const minDate = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // ISO datetime for the selected session slot — drives the weather forecast
   const sessionIso = useMemo(() => {
     if (!bookingData.sessionDate || !bookingData.time) return undefined;
     return `${bookingData.sessionDate}T${bookingData.time}:00`;
@@ -326,7 +325,7 @@ const BookingScreen = () => {
             </div>
           </div>
 
-          {/* ── Прогноз погоды для выбранного города и даты сессии ── */}
+          
           {mentor.city && (
             <WeatherWidget city={mentor.city} date={sessionIso} />
           )}

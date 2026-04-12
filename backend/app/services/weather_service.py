@@ -30,24 +30,18 @@ import schemas
 
 logger = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Константы Open-Meteo
-# ---------------------------------------------------------------------------
 
 _GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 _FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
-# Таймауты: 5 с — на установку соединения, 10 с — на полный запрос
 _TIMEOUT = httpx.Timeout(timeout=10.0, connect=5.0)
 
-# Условия погоды, при которых занятия на улице нежелательны
 _UNSUITABLE_CONDITIONS = {"Thunderstorm", "Tornado", "Squall"}
 _RAINY_CONDITIONS = {"Rain", "Drizzle", "Snow"}
 _OUTDOOR_TEMP_MIN_C = 17.0
 _OUTDOOR_TEMP_MAX_C = 38.0
 _OUTDOOR_WIND_MAX_MS = 12.0
 
-# Open-Meteo weather_code -> (condition, description_ru)
 _WEATHER_CODE_MAP: dict[int, tuple[str, str]] = {
     0: ("Clear", "ясно"),
     1: ("Clouds", "преимущественно ясно"),
@@ -80,9 +74,6 @@ _WEATHER_CODE_MAP: dict[int, tuple[str, str]] = {
 }
 
 
-# ---------------------------------------------------------------------------
-# Токен-бакет: ограничение частоты запросов
-# ---------------------------------------------------------------------------
 
 class _TokenBucket:
     """
@@ -123,9 +114,6 @@ class _TokenBucket:
 _rate_limiter = _TokenBucket(rate=10, period=60.0)
 
 
-# ---------------------------------------------------------------------------
-# Декоратор повторных попыток
-# ---------------------------------------------------------------------------
 
 def _meteo_retry():
     """3 попытки с экспоненциальной задержкой при сетевых ошибках."""
@@ -138,9 +126,6 @@ def _meteo_retry():
     )
 
 
-# ---------------------------------------------------------------------------
-# Низкоуровневые HTTP-запросы к Open-Meteo
-# ---------------------------------------------------------------------------
 
 @_meteo_retry()
 async def _fetch_geocoding(city: str) -> dict:
@@ -186,9 +171,6 @@ async def _fetch_forecast(latitude: float, longitude: float) -> dict:
     return resp.json()
 
 
-# ---------------------------------------------------------------------------
-# Вспомогательные функции нормализации
-# ---------------------------------------------------------------------------
 
 def _is_outdoor_suitable(temp_c: float, wind_ms: float, condition: str) -> bool:
     """Эвристика: подходит ли погода для занятий йогой на улице."""
@@ -204,7 +186,6 @@ def _is_outdoor_suitable(temp_c: float, wind_ms: float, condition: str) -> bool:
 
 
 def _parse_hourly_dt(dt_text: str) -> datetime:
-    # Open-Meteo отдаёт время в формате "YYYY-MM-DDTHH:MM" (UTC, если timezone=UTC)
     return datetime.fromisoformat(dt_text).replace(tzinfo=timezone.utc)
 
 
@@ -259,15 +240,11 @@ def _normalize_open_meteo_response(
         wind_speed_ms=round(wind_ms, 1),
         condition=condition,
         description=description,
-        # Open-Meteo не отдаёт icon code в формате OWM; сохраняем weather_code как строку
         icon_code=str(weather_code),
         is_outdoor_suitable=_is_outdoor_suitable(temp_c, wind_ms, condition),
     )
 
 
-# ---------------------------------------------------------------------------
-# Публичный сервис
-# ---------------------------------------------------------------------------
 
 class WeatherService:
     """Сервисный слой интеграции с Open-Meteo API."""

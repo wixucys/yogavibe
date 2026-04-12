@@ -199,7 +199,7 @@ const MyBookingsScreen = () => {
                       <div className="detail-value">{booking.mentorCity}</div>
                     </div>
                   )}
-                    {/* Compact weather forecast — only for active future sessions */}
+                    
                     {booking.status === 'active' && booking.sessionDate > new Date() && (
                       <div className="detail-row">
                         <div className="detail-label">Погода:</div>

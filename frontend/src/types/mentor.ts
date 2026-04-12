@@ -3,7 +3,6 @@ import { formatMoscowDate } from '../utils/dateTime';
 export type MentorId = number | string;
 export type MentorGender = 'male' | 'female' | string;
 
-// ===== API (как приходит с бэка) =====
 export interface MentorApi {
   id: MentorId;
   user_id?: number;
@@ -23,7 +22,6 @@ export interface MentorApi {
   created_at?: string;
 }
 
-// ===== Нормализованный тип (используется в приложении) =====
 export interface Mentor {
   id: MentorId;
 
@@ -42,16 +40,13 @@ export interface Mentor {
   createdAt?: string;
 }
 
-// ===== Тип для детального экрана =====
 export interface MentorProfile extends Mentor {
   experience: string;
   registrationDate: string;
 }
 
-// ===== Для Booking используем тот же нормализованный тип =====
 export type BookingMentor = Mentor;
 
-// ===== Фильтры =====
 export interface MentorFilters {
   city?: string;
   yoga_style?: string;
@@ -98,7 +93,6 @@ export interface MentorSelfUpdatePayload {
   is_available?: boolean;
 }
 
-// ===== Мапперы =====
 export const mapMentorFromApi = (mentor: MentorApi): Mentor => ({
   id: mentor.id,
   name: mentor.name,

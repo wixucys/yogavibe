@@ -1,4 +1,4 @@
-/* src/App.css */
+
 * {
   margin: 0;
   padding: 0;
@@ -13,7 +13,7 @@ body {
   min-height: 100vh;
 }
 
-/* Стили для экрана загрузки */
+
 .loading-screen {
   display: flex;
   flex-direction: column;
@@ -47,7 +47,7 @@ body {
   font-size: 1.2rem;
 }
 
-/* Стили для глобальных уведомлений/сообщений */
+
 .notification {
   position: fixed;
   top: 20px;

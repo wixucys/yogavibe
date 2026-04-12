@@ -1,14 +1,14 @@
-/* RegisterScreen.css */
+
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,900;1,900&family=Montserrat:wght@700;900&display=swap');
 
-/* Базовые сбросы */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Основной контейнер страницы */
+
 .register-screen {
   background-image: url('../../../public/assets/images/background_2.png');
   background-size: cover;
@@ -24,7 +24,7 @@
   position: relative;
 }
 
-/* Контейнер формы регистрации */
+
 .register-container {
   display: flex;
   flex-direction: column;
@@ -32,7 +32,7 @@
   width: 100%;
 }
 
-/* Мотивационный текст */
+
 .register-text {
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
@@ -45,7 +45,7 @@
   line-height: 1.4;
 }
 
-/* Форма регистрации */
+
 .register-form {
   width: 25rem;
   background: #69505C;
@@ -57,7 +57,7 @@
   align-items: center;
 }
 
-/* Заголовок формы */
+
 .entry {
   font-family: 'Montserrat', sans-serif;
   font-weight: 900;
@@ -67,7 +67,7 @@
   color: #ffebdc;
 }
 
-/* Иконка цветка */
+
 .flower-icon {
   margin: 0.625rem 0 1.25rem;
   display: flex;
@@ -82,14 +82,14 @@
   filter: drop-shadow(0 0.25rem 0.5rem rgba(0, 0, 0, 0.1));
 }
 
-/* Группа полей ввода */
+
 .input-group {
   margin-bottom: 0.9375rem;
   width: 100%;
   position: relative;
 }
 
-/* Поле ввода */
+
 .register-input {
   width: 100%;
   padding: 0.75rem 0.9375rem;
@@ -111,22 +111,22 @@
   color: #999;
 }
 
-/* Группа для полей пароля */
+
 .password-group {
   position: relative;
 }
 
-/* Убираем иконку глаза в полях с ошибкой */
+
 .password-group .input-error {
   padding-right: 0.9375rem !important;
 }
 
-/* Поле для пароля с отступом под иконку */
+
 .password-input {
   padding-right: 2.8125rem;
 }
 
-/* Кнопка переключения видимости пароля */
+
 .password-toggle {
   position: absolute;
   right: 0.75rem;
@@ -145,7 +145,7 @@
   transition: background-color 0.3s ease;
 }
 
-/* Скрываем кнопку при ошибке */
+
 .password-group .input-error + .password-toggle {
   display: none;
 }
@@ -154,7 +154,7 @@
   background-color: rgba(0, 0, 0, 0.1);
 }
 
-/* Иконка пароля */
+
 .password-icon {
   width: 1.125rem;
   height: 1.125rem;
@@ -167,7 +167,7 @@
   filter: brightness(0.5);
 }
 
-/* Кнопка регистрации */
+
 .register-button {
   width: 100%;
   padding: 0.75rem;
@@ -194,7 +194,7 @@
   cursor: not-allowed;
 }
 
-/* Сообщение об ошибке */
+
 .error-message {
   background: rgba(244, 67, 54, 0.1);
   border: 0.0625rem solid #F44336;
@@ -231,7 +231,7 @@
   line-height: 1;
 }
 
-/* Ошибки для конкретных полей */
+
 .field-error {
   display: block;
   color: #F44336;
@@ -243,13 +243,13 @@
   padding-left: 0.3125rem;
 }
 
-/* Стили для полей с ошибками */
+
 .input-error {
   border-color: #F44336 !important;
   background: rgba(244, 67, 54, 0.05) !important;
 }
 
-/* Дополнительные опции */
+
 .register-options {
   display: flex;
   flex-direction: column;
@@ -259,7 +259,7 @@
   margin-top: 0.63rem;
 }
 
-/* Ссылка на страницу входа */
+
 .login-link {
   text-align: center;
   font-family: 'Montserrat', sans-serif;
@@ -275,7 +275,7 @@
   text-decoration: underline;
 }
 
-/* Кнопка возврата на главную */
+
 .welcome-back-container {
   position: fixed;
   left: 1.25rem;
@@ -305,14 +305,14 @@
   box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.2);
 }
 
-/* Стили для неактивных элементов */
+
 .register-input:disabled,
 .password-toggle:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Адаптивность для планшетов */
+
 @media (max-width: 48rem) {
   .register-screen {
     background-attachment: scroll;
@@ -347,7 +347,7 @@
   }
 }
 
-/* Адаптивность для мобильных */
+
 @media (max-width: 30rem) {
   .register-screen {
     padding: 0.625rem;
@@ -385,7 +385,7 @@
   }
 }
 
-/* Адаптивность для мотивационного текста */
+
 @media (max-width: 37.5rem) {
   .register-text p {
     width: auto;

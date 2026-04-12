@@ -31,7 +31,6 @@ _PUBLIC_ROUTES = [
 @router.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
 def robots_txt(response: FastAPIResponse) -> str:
     """Serve robots.txt with crawl directives."""
-    # 4.3 Cache for 1 day in CDN/browsers
     response.headers["Cache-Control"] = "public, max-age=86400"
     disallow_prefixes = [
         "/mentors",           # user dashboard (requires auth)
@@ -58,7 +57,6 @@ def sitemap_xml() -> Response:
     """Return a static sitemap for public indexable pages."""
     lastmod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
-    # Priority weights per route type
     priority_map = {
         "/": "1.0",
         "/auth/login": "0.3",
@@ -97,9 +95,6 @@ def sitemap_xml() -> Response:
     )
 
 
-# ---------------------------------------------------------------------------
-# 3.4  JSON-LD structured data — Person (yoga mentor)
-# ---------------------------------------------------------------------------
 @router.get(
     "/api/v1/seo/mentor/{mentor_id}/jsonld",
     summary="JSON-LD structured data for a mentor profile",

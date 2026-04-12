@@ -17,7 +17,6 @@ app = FastAPI(
 )
 
 
-# 4.3 Compress responses >= 1 KB with gzip
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 app.add_middleware(
@@ -29,9 +28,6 @@ app.add_middleware(
 )
 
 
-# ---------------------------------------------------------------------------
-# 3.3  Unified HTTP error responses
-# ---------------------------------------------------------------------------
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(

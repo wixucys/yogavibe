@@ -1,4 +1,3 @@
-# test_schemas.py
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
@@ -10,8 +9,6 @@ from app import schemas
 
 
 def test_user_create_schema():
-    # Тест схемы создания пользователя
-    # Корректные данные
     user_data = {
         "username": "testuser",
         "email": "TEST@EXAMPLE.COM",
@@ -23,7 +20,6 @@ def test_user_create_schema():
     assert user.email == "test@example.com"
     assert user.password == "securepassword123"
     
-    # Неверные данные
     try:
         schemas.UserCreate(username="", email="invalid", password="")
         assert False, "Должна быть ошибка валидации"
@@ -32,7 +28,6 @@ def test_user_create_schema():
 
 
 def test_user_response_schema():
-    # Тест схемы ответа пользователя
     user_data = {
         "id": 1,
         "username": "yogalover",
@@ -52,7 +47,6 @@ def test_user_response_schema():
 
 
 def test_login_request_schema():
-    # Тест схемы входа
     login_data = {
         "login": "user@example.com",
         "password": "password123"
@@ -64,7 +58,6 @@ def test_login_request_schema():
 
 
 def test_mentor_response_schema():
-    # Тест схемы ментора
     mentor_data = {
         "id": 1,
         "name": "Анна Петрова",
@@ -88,12 +81,9 @@ def test_mentor_response_schema():
 
 
 def test_note_create_schema():
-    # Тест схемы создания заметки
-    # Корректная заметка
     note = schemas.NoteCreate(text="Важная заметка о практике")
     assert note.text == "Важная заметка о практике"
     
-    # Пустая заметка
     try:
         schemas.NoteCreate(text="")
         assert False, "Должна быть ошибка валидации"
@@ -102,7 +92,6 @@ def test_note_create_schema():
 
 
 def test_note_response_schema():
-    # Тест схемы ответа заметки
     note_data = {
         "id": 1,
         "user_id": 1,
@@ -113,13 +102,11 @@ def test_note_response_schema():
     
     note = schemas.NoteResponse(**note_data)
     
-    # Проверяем сериализацию времени
     assert isinstance(note.created_at, str)
     assert note.updated_at is None
 
 
 def test_booking_create_schema():
-    # Тест схемы создания бронирования
     booking_data = {
         "mentor_id": 1,
         "session_date": datetime.now(timezone.utc) + timedelta(days=1),
@@ -134,7 +121,6 @@ def test_booking_create_schema():
 
 
 def test_auth_response_schema():
-    # Тест схемы ответа аутентификации
     user_data = {
         "id": 1,
         "username": "testuser",
@@ -163,7 +149,6 @@ def test_auth_response_schema():
     assert auth.user.username == "testuser"
 
 
-# Запуск без pytest
 if __name__ == "__main__":
     print("Запуск тестов схем...")
     try:

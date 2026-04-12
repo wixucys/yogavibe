@@ -700,9 +700,6 @@ class FileAccessUrlResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-# =============================================================================
-# WEATHER
-# =============================================================================
 
 class WeatherForecast(DateTimeSchema):
     """Нормализованный прогноз погоды для города на конкретный момент времени."""
@@ -714,13 +711,9 @@ class WeatherForecast(DateTimeSchema):
     feels_like_celsius: float
     humidity_percent: int
     wind_speed_ms: float
-    # "Clear", "Clouds", "Rain", "Snow", "Thunderstorm", …
     condition: str
-    # Локализованное описание на русском языке
     description: str
-    # Код иконки OpenWeatherMap, например "01d"
     icon_code: str
-    # True, если погода подходит для занятий йогой на улице
     is_outdoor_suitable: bool
 
 

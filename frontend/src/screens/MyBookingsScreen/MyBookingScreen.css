@@ -42,7 +42,7 @@
   opacity: 0.8;
 }
 
-/* Табы */
+
 .bookings-tabs {
   display: flex;
   background: #f5f0ec;
@@ -97,7 +97,7 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Список записей */
+
 .bookings-list {
   display: flex;
   flex-direction: column;
@@ -174,7 +174,7 @@
   font-size: 0.85rem;
 }
 
-/* Детали записи */
+
 .booking-details {
   margin-bottom: 1rem;
 }
@@ -218,7 +218,7 @@
   border: 1px solid #ded8d2;
 }
 
-/* Кнопки действий */
+
 .booking-actions {
   display: flex;
   gap: 0.75rem;
@@ -268,7 +268,7 @@
   outline-offset: 2px;
 }
 
-/* Статистика */
+
 .bookings-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -299,7 +299,7 @@
   font-size: 0.85rem;
 }
 
-/* Сообщение "нет записей" */
+
 .no-bookings {
   text-align: center;
   padding: 3rem 1rem;
@@ -356,7 +356,7 @@
   outline-offset: 2px;
 }
 
-/* Загрузка */
+
 .bookings-loading {
   display: flex;
   flex-direction: column;
@@ -388,7 +388,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Ошибка */
+
 .error-message {
   background: #f8d7da;
   color: #721c24;
@@ -403,7 +403,7 @@
   gap: 0.5rem;
 }
 
-/* Адаптивность */
+
 @media (max-width: 768px) {
   .bookings-page {
     padding: 1rem;

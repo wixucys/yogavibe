@@ -12,7 +12,6 @@ from app import models_db as models
 
 @pytest.fixture(scope="function")
 def db_session():
-    # Создаем тестовую БД в памяти
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(bind=engine)
     session = Session(engine)
@@ -22,7 +21,6 @@ def db_session():
 
 
 def test_user_model(db_session):
-    # Тест модели User
     user = models.User(
         username="testuser",
         email="test@example.com",
@@ -37,7 +35,6 @@ def test_user_model(db_session):
     db_session.commit()
     db_session.refresh(user)
     
-    # Проверяем поля
     assert user.id is not None
     assert user.username == "testuser"
     assert user.email == "test@example.com"
@@ -47,7 +44,6 @@ def test_user_model(db_session):
 
 
 def test_mentor_model(db_session):
-    # Тест модели Mentor
     mentor = models.Mentor(
         name="Анна Петрова",
         description="Опытный инструктор",
@@ -73,8 +69,6 @@ def test_mentor_model(db_session):
 
 
 def test_note_model(db_session):
-    # Тест модели Note
-    # Сначала создаем пользователя
     user = models.User(
         username="testuser2",
         email="test2@example.com",
@@ -83,7 +77,6 @@ def test_note_model(db_session):
     db_session.add(user)
     db_session.commit()
     
-    # Создаем заметку
     note = models.Note(
         text="Моя первая заметка о йоге",
         user_id=user.id
@@ -100,8 +93,6 @@ def test_note_model(db_session):
 
 
 def test_booking_model(db_session):
-    # Тест модели Booking
-    # Создаем пользователя и ментора
     user = models.User(
         username="client",
         email="client@example.com",
@@ -120,7 +111,6 @@ def test_booking_model(db_session):
     db_session.add_all([user, mentor])
     db_session.commit()
     
-    # Создаем бронирование
     session_date = datetime.now(timezone.utc) + timedelta(days=1)
     booking = models.Booking(
         user_id=user.id,
@@ -144,8 +134,6 @@ def test_booking_model(db_session):
 
 
 def test_refresh_token_model(db_session):
-    # Тест модели RefreshToken
-    # Создаем пользователя
     user = models.User(
         username="tokenuser",
         email="token@example.com",
@@ -154,7 +142,6 @@ def test_refresh_token_model(db_session):
     db_session.add(user)
     db_session.commit()
     
-    # Создаем refresh токен
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
     refresh_token = models.RefreshToken(
         token="test_refresh_token_123",
@@ -173,7 +160,6 @@ def test_refresh_token_model(db_session):
     assert refresh_token.user == user
 
 
-# Запуск без pytest
 if __name__ == "__main__":
     print("Запуск тестов моделей...")
     test_engine = create_engine("sqlite:///:memory:")

@@ -4,12 +4,10 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ROUTES } from './constants/routes';
 
-// Public screens – part of the initial bundle (fast first paint)
 import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen/RegisterScreen';
 
-// 4.1 Heavy protected screens – loaded lazily (code splitting)
 const MainScreen = lazy(() => import('./screens/MainScreen/MainScreen'));
 const MentorProfileScreen = lazy(() => import('./screens/MentorsProfile/MentorProfileScreen'));
 const MentorDashboardScreen = lazy(() => import('./screens/MentorDashboardScreen/MentorDashboardScreen'));
@@ -21,7 +19,6 @@ const BookingConfirmationScreen = lazy(() => import('./screens/BookingConfirm/Bo
 
 import './App.css';
 
-// Minimal fallback shown while a lazy chunk is downloading
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
     <div className="loading-spinner" />
@@ -38,19 +35,19 @@ function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-      {/* Public routes */}
+      
       <Route path={ROUTES.home} element={<WelcomeScreen />} />
       <Route path={ROUTES.auth.login} element={<LoginScreen />} />
       <Route path={ROUTES.auth.register} element={<RegisterScreen />} />
 
-      {/* Legacy auth aliases */}
+      
       <Route path={ROUTES.auth.legacyLogin} element={<Navigate to={ROUTES.auth.login} replace />} />
       <Route
         path={ROUTES.auth.legacyRegister}
         element={<Navigate to={ROUTES.auth.register} replace />}
       />
 
-      {/* User routes - role: user */}
+      
       <Route
         path={ROUTES.user.main}
         element={
@@ -81,7 +78,7 @@ function AppRoutes() {
         element={<Navigate to={ROUTES.booking.confirmation} replace />}
       />
 
-      {/* Mentor routes - role: mentor */}
+      
       <Route
         path={ROUTES.mentor.dashboard}
         element={
@@ -99,7 +96,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Admin routes - role: admin */}
+      
       <Route
         path={ROUTES.admin.dashboard}
         element={
@@ -117,7 +114,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Multi-role routes */}
+      
       <Route
         path="/mentors/:mentorId"
         element={
@@ -135,7 +132,7 @@ function AppRoutes() {
         }
       />
 
-      {/* Fallback */}
+      
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
     </Suspense>

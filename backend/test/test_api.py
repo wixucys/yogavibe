@@ -9,26 +9,22 @@ try:
     client = TestClient(main.app)
     
     def test_root_endpoint():
-        # Тест корневого эндпоинта
         response = client.get("/")
         assert response.status_code == 200
         assert response.json() == {"message": "YogaVibe API is running"}
         print("✅ test_root_endpoint: OK")
     
     def test_health_check():
-        # Тест проверки здоровья
         response = client.get("/api/health")
         assert response.status_code == 200
         assert response.json() == {"status": "ok"}
         print("✅ test_health_check: OK")
     
     def test_docs_endpoints():
-        # Тест документации
         response = client.get("/api/docs")
         assert response.status_code == 200
         print("✅ test_docs_endpoints: OK")
     
-    # Запуск без pytest
     if __name__ == "__main__":
         print("Запуск тестов API...")
         try:

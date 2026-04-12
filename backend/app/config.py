@@ -8,14 +8,10 @@ from pydantic_settings import BaseSettings
 BACKEND_ENV_PATH = Path(__file__).parent.parent / ".env"
 APP_ENV_PATH = Path(__file__).parent / ".env"
 
-# Keep runtime/container environment variables authoritative.
-# This allows Docker Compose values like S3_ENDPOINT_URL=http://minio:9000
-# to override local development defaults stored in `.env` files.
 load_dotenv(dotenv_path=BACKEND_ENV_PATH, override=False)
 load_dotenv(dotenv_path=APP_ENV_PATH, override=False)
 
 class Settings(BaseSettings):
-    # Настройки JWT
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
@@ -38,7 +34,6 @@ class Settings(BaseSettings):
     S3_USE_SSL: bool = False
     S3_ADDRESSING_STYLE: str = "path"
 
-    # OpenWeatherMap integration
     OPENWEATHER_API_KEY: Optional[str] = None
 
     @property

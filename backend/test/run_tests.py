@@ -9,7 +9,6 @@ def setup_pythonpath():
     backend_dir = os.path.dirname(current_dir)  # backend/
     project_root = os.path.dirname(backend_dir)  # yogavibe_app/
     
-    # Собираем все пути
     paths = [
         project_root,      # yogavibe_app/
         backend_dir,       # backend/
@@ -17,24 +16,20 @@ def setup_pythonpath():
         os.path.join(backend_dir, 'app')  # backend/app/
     ]
     
-    # Убираем дубликаты
     unique_paths = []
     for path in paths:
         if path not in unique_paths:
             unique_paths.append(path)
     
-    # Формируем PYTHONPATH
     pythonpath = ':'.join(unique_paths)
     
     return pythonpath
 
 
 def run_tests():
-    # Запускает все тесты
     print("🧪 Запуск тестов YogaVibe...")
     print("=" * 50)
     
-    # Список тестовых файлов
     test_files = [
         "test_models.py",
         "test_schemas.py", 
@@ -43,7 +38,6 @@ def run_tests():
         "test_api.py"
     ]
     
-    # Проверяем существование файлов
     existing_tests = []
     for test_file in test_files:
         if os.path.exists(test_file):
@@ -57,17 +51,14 @@ def run_tests():
     
     print(f"📁 Найдено тестовых файлов: {len(existing_tests)}")
     
-    # Настраиваем PYTHONPATH
     pythonpath = setup_pythonpath()
     
-    # Запускаем каждый тест напрямую через python
     results = []
     for test_file in existing_tests:
         print(f"\n📋 Запуск {test_file}...")
         print("-" * 40)
         
         try:
-            # Устанавливаем PYTHONPATH для процесса
             env = os.environ.copy()
             env['PYTHONPATH'] = pythonpath + ':' + env.get('PYTHONPATH', '')
             
@@ -82,7 +73,6 @@ def run_tests():
             
             print(result.stdout)
             if result.stderr and "Traceback" in result.stderr:
-                # Показываем только первые 3 строки ошибки
                 error_lines = result.stderr.strip().split('\n')
                 print("STDERR (первые строки):")
                 for line in error_lines[:5]:
@@ -102,7 +92,6 @@ def run_tests():
             print(f"💥 {test_file} - ОШИБКА: {e}")
             results.append(False)
     
-    # Итог
     print("\n" + "=" * 50)
     print("📊 ИТОГИ ТЕСТИРОВАНИЯ:")
     print(f"   Всего тестов: {len(results)}")
@@ -118,7 +107,6 @@ def run_tests():
 
 
 def run_specific_test(test_name):
-    # Запускает конкретный тест
     if not os.path.exists(test_name):
         print(f"❌ Файл {test_name} не найден")
         return False
@@ -126,7 +114,6 @@ def run_specific_test(test_name):
     print(f"🧪 Запуск теста: {test_name}")
     print("=" * 50)
     
-    # Настраиваем PYTHONPATH
     pythonpath = setup_pythonpath()
     env = os.environ.copy()
     env['PYTHONPATH'] = pythonpath + ':' + env.get('PYTHONPATH', '')

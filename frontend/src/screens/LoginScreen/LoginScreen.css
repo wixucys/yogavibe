@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+Pro:ital,wght@0,900;1,900&family=Montserrat:wght@700;900&display=swap');
 
-/* Базовые сбросы */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-/* Контейнер экрана входа */
+
 .login-screen {
   background-image: url('../../../public/assets/images/background_2.png');
   background-size: cover;
@@ -23,7 +23,7 @@
   position: relative;
 }
 
-/* Основной контейнер */
+
 .login-container {
   display: flex;
   flex-direction: column;
@@ -32,7 +32,7 @@
   padding: 1.25rem;
 }
 
-/* Мотивационный текст */
+
 .login-text {
   font-family: 'Montserrat', sans-serif;
   font-weight: 700;
@@ -45,7 +45,7 @@
   line-height: 1.4;
 }
 
-/* Контейнер формы входа */
+
 .login-form {
   width: 100%;
   max-width: 25rem;
@@ -58,7 +58,7 @@
   align-items: center;
 }
 
-/* Заголовок формы */
+
 .entry {
   font-family: 'Montserrat', sans-serif;
   font-weight: 900;
@@ -68,7 +68,7 @@
   color: #ffebdc;
 }
 
-/* Иконка цветка */
+
 .flower-icon {
   margin: 0.625rem 0 1.25rem;
   display: flex;
@@ -83,14 +83,14 @@
   filter: drop-shadow(0 0.25rem 0.5rem rgba(0, 0, 0, 0.1));
 }
 
-/* Группа полей ввода */
+
 .input-group {
   margin-bottom: 0.9375rem;
   width: 100%;
   position: relative;
 }
 
-/* Поле ввода */
+
 .login-input {
   width: 100%;
   padding: 0.75rem 0.9375rem;
@@ -120,7 +120,7 @@
   cursor: not-allowed;
 }
 
-/* Группа для пароля с кнопкой переключения */
+
 .password-group {
   position: relative;
 }
@@ -129,7 +129,7 @@
   padding-right: 2.8125rem;
 }
 
-/* Кнопка переключения видимости пароля */
+
 .password-toggle {
   position: absolute;
   right: 0.75rem;
@@ -157,7 +157,7 @@
   cursor: not-allowed;
 }
 
-/* Иконка пароля */
+
 .password-icon {
   width: 1.125rem;
   height: 1.125rem;
@@ -170,7 +170,7 @@
   filter: brightness(0.5);
 }
 
-/* Основная кнопка входа */
+
 .login-button {
   width: 100%;
   padding: 0.75rem;
@@ -197,7 +197,7 @@
   cursor: not-allowed;
 }
 
-/* Сообщение об ошибке */
+
 .error-message {
   width: 100%;
   margin-bottom: 0.9375rem;
@@ -223,7 +223,7 @@
   line-height: 1;
 }
 
-/* Дополнительные опции */
+
 .login-options {
   margin-top: 0.9375rem;
   display: flex;
@@ -239,7 +239,7 @@
   width: 100%;
 }
 
-/* Ссылка на регистрацию */
+
 .register {
   text-align: center;
   font-family: 'Montserrat', sans-serif;
@@ -255,7 +255,7 @@
   text-decoration: underline;
 }
 
-/* Кнопка возврата на главную */
+
 .welcome-back-container {
   position: fixed;
   left: 1.25rem;
@@ -285,7 +285,7 @@
   box-shadow: 0 0.3125rem 0.9375rem rgba(0, 0, 0, 0.2);
 }
 
-/* Стили валидации */
+
 .input-error {
   border-color: #F44336 !important;
   background: rgba(244, 67, 54, 0.05) !important;
@@ -302,7 +302,7 @@
   font-size: 0.8rem;
 }
 
-/* Фокус для клавиатурной навигации */
+
 .login-button:focus-visible,
 .password-toggle:focus-visible,
 .welcome-back-btn:focus-visible,
@@ -311,7 +311,7 @@
   outline-offset: 0.1875rem;
 }
 
-/* Анимация */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -324,7 +324,7 @@
   }
 }
 
-/* Адаптивность для планшетов */
+
 @media (max-width: 48rem) {
   .login-screen {
     background-attachment: scroll;
@@ -359,7 +359,7 @@
   }
 }
 
-/* Адаптивность для мобильных */
+
 @media (max-width: 30rem) {
   .login-screen {
     padding: 0.625rem;

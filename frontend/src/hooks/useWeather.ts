@@ -16,7 +16,7 @@ export interface WeatherError {
 interface WeatherState {
   data: WeatherForecast | null;
   loading: boolean;
-  /** Non-fatal: service not configured (503) — widget should be hidden silently. */
+  
   silent: boolean;
   error: WeatherError | null;
 }
@@ -47,17 +47,7 @@ function classifyError(err: unknown): WeatherError {
   return { kind: 'unknown', message: 'Прогноз временно недоступен.' };
 }
 
-/**
- * Fetches a weather forecast and tracks loading / error state.
- *
- * Pass `city` (+ optional `date`) **or** `bookingId` — not both.
- *
- * Graceful degradation rules:
- * - `silent=true`  → service not configured (HTTP 503) — hide widget, no error shown.
- * - `error.kind === 'unavailable'` → network / gateway error — show soft banner.
- * - `error.kind === 'not_found'`   → city not in OWM — show user-friendly message.
- * - `error.kind === 'rate_limited'` → throttled — show "try later" message.
- */
+
 export function useWeather(params: WeatherParams): WeatherState {
   const [state, setState] = useState<WeatherState>({
     data: null,
@@ -66,15 +56,12 @@ export function useWeather(params: WeatherParams): WeatherState {
     error: null,
   });
 
-  // Use a ref to cancel stale updates when params change
   const cancelRef = useRef(false);
 
-  // Determine what to fetch
   const city = 'city' in params ? params.city : undefined;
   const date = 'date' in params ? params.date : undefined;
   const bookingId = 'bookingId' in params ? params.bookingId : undefined;
 
-  // Skip the fetch if required data is missing
   const shouldFetch = Boolean(bookingId !== undefined ? bookingId : city);
 
   useEffect(() => {
@@ -100,7 +87,6 @@ export function useWeather(params: WeatherParams): WeatherState {
         if (cancelRef.current) return;
 
         const classified = classifyError(err);
-        // HTTP 503 = service not configured → hide widget silently
         const isSilent =
           classified.kind === 'unavailable' &&
           err !== null &&

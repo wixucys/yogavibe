@@ -16,7 +16,6 @@ class AuthService:
     @staticmethod
     def register(db: Session, user_data: schemas.UserCreate) -> schemas.AuthResponse:
         """Register new user and return auth tokens"""
-        # Check if email already exists
         existing_user = crud.user_crud.get_user_by_email(db, user_data.email)
         if existing_user:
             raise HTTPException(
@@ -24,7 +23,6 @@ class AuthService:
                 detail="Email already registered",
             )
 
-        # Check if username already exists
         existing_username = crud.user_crud.get_user_by_username(db, user_data.username)
         if existing_username:
             raise HTTPException(
@@ -32,14 +30,11 @@ class AuthService:
                 detail="Username already exists",
             )
 
-        # Create new user with default "user" role
         user = crud.user_crud.create_user(db, user_data, role="user")
 
-        # Generate tokens
         access_token = create_access_token(data={"sub": str(user.id)})
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
-        # Store refresh token in database
         crud.refresh_token_crud.create_token(
             db, refresh_token, user.id, timedelta(days=7)
         )
@@ -53,7 +48,6 @@ class AuthService:
     @staticmethod
     def login(db: Session, credentials: schemas.LoginRequest) -> schemas.AuthResponse:
         """Authenticate user and return auth tokens"""
-        # Authenticate user
         user = crud.user_crud.authenticate_user(db, credentials.login, credentials.password)
         if not user:
             raise HTTPException(
@@ -67,14 +61,11 @@ class AuthService:
                 detail="User is not active",
             )
 
-        # Revoke all previous tokens
         crud.refresh_token_crud.clear_all_user_tokens(db, user.id)
 
-        # Generate new tokens
         access_token = create_access_token(data={"sub": str(user.id)})
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
-        # Store refresh token in database
         crud.refresh_token_crud.create_token(
             db, refresh_token, user.id, timedelta(days=7)
         )
@@ -88,7 +79,6 @@ class AuthService:
     @staticmethod
     def refresh_token(db: Session, refresh_token_str: str) -> schemas.Token:
         """Refresh access token using refresh token"""
-        # Verify refresh token
         payload = verify_token(refresh_token_str)
 
         if payload is None or payload.get("type") != "refresh":
@@ -104,7 +94,6 @@ class AuthService:
                 detail="Invalid token payload",
             )
 
-        # Validate refresh token in database
         stored_token = crud.refresh_token_crud.get_token(db, refresh_token_str)
         if not stored_token:
             raise HTTPException(
@@ -112,7 +101,6 @@ class AuthService:
                 detail="Refresh token is revoked or expired",
             )
 
-        # Get user
         try:
             user_id_int = int(user_id)
         except (TypeError, ValueError):
@@ -128,14 +116,11 @@ class AuthService:
                 detail="User not found or is inactive",
             )
 
-        # Deactivate old refresh token
         crud.refresh_token_crud.deactivate_token(db, refresh_token_str)
 
-        # Create new token pair
         new_access_token = create_access_token(data={"sub": str(user.id)})
         new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
-        # Store new refresh token
         crud.refresh_token_crud.create_token(
             db, new_refresh_token, user.id, timedelta(days=7)
         )
@@ -160,7 +145,6 @@ class AuthService:
                 detail="Admin already exists",
             )
 
-        # Check if email already exists
         existing_user = crud.user_crud.get_user_by_email(db, user_data.email)
         if existing_user:
             raise HTTPException(
@@ -168,14 +152,11 @@ class AuthService:
                 detail="Email already registered",
             )
 
-        # Create admin user
         user = crud.user_crud.create_user(db, user_data, role="admin")
 
-        # Generate tokens
         access_token = create_access_token(data={"sub": str(user.id)})
         refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
-        # Store refresh token
         crud.refresh_token_crud.create_token(
             db, refresh_token, user.id, timedelta(days=7)
         )

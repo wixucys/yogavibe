@@ -13,7 +13,6 @@ import type { FileAttachment } from '../../types/file';
 import { formatMoscowDateTime } from '../../utils/dateTime';
 import './ProfileScreen.css';
 
-// Константы для полей профиля
 const BACKEND_FIELDS = ['city', 'yoga_style', 'experience', 'goals'] as const;
 const READONLY_FIELDS = ['username'] as const;
 
@@ -35,7 +34,6 @@ const FIELD_CONFIGS = {
   additionalInfo: { label: 'Дополнительная информация', type: 'local', section: 'ДОПОЛНИТЕЛЬНО', textarea: true },
 } as const;
 
-// Максимальный размер файла фото (5MB)
 const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const;
 

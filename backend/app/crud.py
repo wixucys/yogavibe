@@ -249,6 +249,14 @@ class UserCRUD:
         if mentor_profile:
             db.delete(mentor_profile)
 
+        # Remove files uploaded by this user before deleting the user row.
+        # This keeps behavior consistent even when DB-level FK cascades are not enforced.
+        db.execute(
+            delete(models.FileAttachment).where(
+                models.FileAttachment.uploaded_by_user_id == user.id,
+            )
+        )
+
         db.delete(user)
         db.commit()
         return True

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import Base
 from app import crud
 from app import schemas
+from app import models_db as models
 
 
 def test_user_crud():
@@ -159,6 +160,44 @@ def test_note_crud():
         Base.metadata.drop_all(bind=engine)
 
 
+def test_delete_user_with_uploaded_files():
+    # Регрессия: удаление пользователя не должно пытаться занулить NOT NULL uploaded_by_user_id
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(bind=engine)
+    db_session = Session(engine)
+
+    try:
+        user_data = schemas.UserCreate(
+            username="fileowner",
+            email="fileowner@example.com",
+            password="password123",
+        )
+        user = crud.user_crud.create_user(db_session, user_data)
+
+        attachment = models.FileAttachment(
+            original_filename="test.png",
+            stored_filename="stored-test.png",
+            file_url="/uploads/stored-test.png",
+            mime_type="image/png",
+            size_bytes=128,
+            category="avatar",
+            uploaded_by_user_id=user.id,
+            user_id=user.id,
+        )
+        db_session.add(attachment)
+        db_session.commit()
+
+        delete_result = crud.user_crud.delete_user(db_session, user.id)
+        assert delete_result is True
+        assert crud.user_crud.get_user(db_session, user.id) is None
+        assert db_session.query(models.FileAttachment).count() == 0
+
+        print("✅ test_delete_user_with_uploaded_files: OK")
+    finally:
+        db_session.close()
+        Base.metadata.drop_all(bind=engine)
+
+
 # Запуск без pytest
 if __name__ == "__main__":
     print("Запуск тестов CRUD...")
@@ -166,6 +205,7 @@ if __name__ == "__main__":
         test_user_crud()
         test_mentor_crud()
         test_note_crud()
+        test_delete_user_with_uploaded_files()
         print("✅ Все тесты CRUD пройдены успешно!")
     except AssertionError as e:
         print(f"❌ Ошибка в тесте: {e}")

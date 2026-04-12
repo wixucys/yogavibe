@@ -8,12 +8,15 @@ import MyBookingsScreen from '../MyBookingsScreen/MyBookingsScreen';
 
 import ApiService from '../../services/ApiService';
 import AuthService from '../../services/AuthService';
+import { ROUTES } from '../../constants/routes';
+import { useSeo } from '../../hooks/useSeo';
 
 import type { User } from '../../types/user';
 import type { Mentor, MentorApi } from '../../types/mentor';
 import { mapMentorFromApi } from '../../types/mentor';
 
 import { CITIES, YOGA_STYLES } from '../../constants/filters';
+import { useDebounce } from '../../hooks/useDebounce';
 
 const PAGE_SIZE = 3;
 
@@ -132,7 +135,24 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
 
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
 
+  // 4.2 Debounce text search to avoid a request on every keystroke
+  const debouncedSearch = useDebounce(filters.search, 400);
+
   const notificationsRef = useRef<HTMLDivElement | null>(null);
+
+  const seoTitleByTab: Record<NavItem, string> = {
+    МЕНТОРЫ: 'Личный кабинет - Менторы',
+    'МОИ ЗАПИСИ': 'Личный кабинет - Мои записи',
+    ЗАМЕТКИ: 'Личный кабинет - Заметки',
+    'МОЯ АНКЕТА': 'Личный кабинет - Моя анкета',
+  };
+
+  useSeo({
+    title: seoTitleByTab[activeNav],
+    description: 'Личный кабинет YogaVibe для подбора менторов, управления записями и профилем пользователя.',
+    canonicalPath: ROUTES.user.main,
+    noindex: true,
+  });
 
   useEffect(() => {
     if (user) {
@@ -145,7 +165,7 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
     if (storedUser) {
       setUserInfo(storedUser);
     } else {
-      navigate('/login');
+      navigate(ROUTES.auth.login);
     }
   }, [user, navigate]);
 
@@ -186,8 +206,8 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
           sort_order: filters.sortOrder,
         });
 
-        if (filters.search.trim()) {
-          queryParams.append('search', filters.search.trim());
+        if (debouncedSearch.trim()) {
+          queryParams.append('search', debouncedSearch.trim());
         }
 
         if (filters.gender !== 'all') {
@@ -256,12 +276,12 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
     return () => {
       cancelled = true;
     };
-  }, [activeNav, filters, page]);
+  }, [activeNav, filters, page, debouncedSearch]);
 
   useEffect(() => {
     setPage(1);
   }, [
-    filters.search,
+    debouncedSearch,
     filters.gender,
     filters.city,
     filters.yogaStyle,
@@ -333,7 +353,7 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
       console.error(error);
     }
 
-    navigate('/login');
+    navigate(ROUTES.auth.login);
   };
 
   if (!userInfo) {
@@ -369,12 +389,12 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
             )
           )}
           {userInfo.role === 'mentor' && (
-            <Link className="main-nav-link" to="/mentor/dashboard">
+            <Link className="main-nav-link" to={ROUTES.mentor.dashboard}>
               ПАНЕЛЬ МЕНТОРА
             </Link>
           )}
           {userInfo.role === 'admin' && (
-            <Link className="main-nav-link" to="/admin/dashboard">
+            <Link className="main-nav-link" to={ROUTES.admin.dashboard}>
               ПАНЕЛЬ АДМИНИСТРАТОРА
             </Link>
           )}
@@ -521,10 +541,19 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
 
           {/* mentors */}
           <main className="mentors-main">
-
             {loadingMentors ? (
-              <div className="loading-screen">
-                <div className="loading-spinner"></div>
+              // 4.4 Skeleton cards — fixed height prevents layout shift (CLS)
+              <div className="mentors-area" aria-busy="true" aria-label="Загрузка менторов">
+                {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                  <div className="mentor-card mentor-card--skeleton" key={i}>
+                    <div className="skeleton skeleton--photo" />
+                    <div className="mentor-info">
+                      <div className="skeleton skeleton--title" />
+                      <div className="skeleton skeleton--line" />
+                      <div className="skeleton skeleton--line skeleton--line-short" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="mentors-area">
@@ -547,9 +576,13 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
                         <img
                           src={mentor.photoUrl}
                           alt={`Фото ${mentor.name}`}
+                          loading="lazy"
+                          decoding="async"
+                          width={96}
+                          height={96}
                         />
                       ) : (
-                        <div className="mentor-img-placeholder">
+                        <div className="mentor-img-placeholder" aria-hidden="true">
                           Нет фото
                         </div>
                       )}
@@ -570,8 +603,8 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
 
                     <Link
                       className="more-btn-link"
-                      to={`/mentor/${mentor.id}`}
-                      state={{ returnTo: `/main?${searchParams.toString()}` }}
+                      to={ROUTES.mentor.profile(mentor.id)}
+                      state={{ returnTo: `${ROUTES.user.main}?${searchParams.toString()}` }}
                     >
                       <button type="button" className="more-btn">
                         ПОДРОБНЕЕ

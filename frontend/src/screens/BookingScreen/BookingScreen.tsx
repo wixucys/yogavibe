@@ -5,6 +5,8 @@ import ApiService from '../../services/ApiService';
 import './BookingScreen.css';
 import type { MentorApi, BookingMentor } from '../../types/mentor';
 import { mapMentorToBooking } from '../../types/mentor';
+import { ROUTES } from '../../constants/routes';
+import { useSeo } from '../../hooks/useSeo';
 
 type SessionType = 'individual' | 'group';
 
@@ -38,6 +40,13 @@ const BookingScreen = () => {
     durationMinutes: '60',
     notes: '',
     sessionType: 'individual',
+  });
+
+  useSeo({
+    title: mentor ? `Запись к ${mentor.name}` : 'Запись к ментору',
+    description: 'Оформление записи на индивидуальную или групповую сессию с ментором YogaVibe.',
+    canonicalPath: mentorId ? ROUTES.booking.create(mentorId) : ROUTES.user.main,
+    noindex: true,
   });
 
   const timeSlots = useMemo(() => {
@@ -155,7 +164,7 @@ const BookingScreen = () => {
         mentorName: mentor.name,
       });
 
-      navigate('/booking-confirmation', {
+      navigate(ROUTES.booking.confirmation, {
         state: { bookingData: booking, mentor },
       });
     } catch (err: unknown) {
@@ -167,7 +176,12 @@ const BookingScreen = () => {
   };
 
   const handleBack = (): void => {
-    navigate(`/mentor/${mentorId}`);
+    if (!mentorId) {
+      navigate(ROUTES.user.main);
+      return;
+    }
+
+    navigate(ROUTES.mentor.profile(mentorId));
   };
 
   const minDate = useMemo(() => new Date().toISOString().split('T')[0], []);
@@ -180,7 +194,7 @@ const BookingScreen = () => {
     return (
       <div className="booking-page">
         <h2>{error}</h2>
-        <button onClick={() => navigate('/main')}>Назад</button>
+        <button onClick={() => navigate(ROUTES.user.main)}>Назад</button>
       </div>
     );
   }

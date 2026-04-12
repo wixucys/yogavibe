@@ -5,6 +5,8 @@ import './RegisterScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
+import { ROUTES } from '../../constants/routes';
+import { useSeo } from '../../hooks/useSeo';
 
 interface RegisterFormData {
   username: string;
@@ -24,6 +26,13 @@ interface RegisterFormErrors {
 const RegisterScreen = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+
+  useSeo({
+    title: 'Регистрация',
+    description: 'Создайте аккаунт в YogaVibe, чтобы находить подходящего ментора и записываться на занятия йогой.',
+    canonicalPath: ROUTES.auth.register,
+    noindex: true,
+  });
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
@@ -106,7 +115,7 @@ const RegisterScreen = () => {
   const getRedirectPath = (userRole?: string): string => {
     if (userRole === 'admin') return '/admin/dashboard';
     if (userRole === 'mentor') return '/mentor/dashboard';
-    return '/main';
+    return ROUTES.user.main;
   };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -140,23 +149,23 @@ const RegisterScreen = () => {
   };
 
   const goToWelcome = (): void => {
-    navigate('/');
+    navigate(ROUTES.home);
   };
 
   return (
-    <div className="register-screen">
-      <div className="register-container">
-        <div className="register-text">
+    <main className="register-screen">
+      <section className="register-container" aria-labelledby="register-title">
+        <aside className="register-text">
           <p>Неважно, как медленно ты продвигаешься</p>
           <p>Главное — ты не останавливаешься</p>
           <p>И мы будем с тобой на каждом вдохе</p>
-        </div>
+        </aside>
 
         <form className="register-form" onSubmit={handleRegister} noValidate>
-          <h3 className="entry">РЕГИСТРАЦИЯ</h3>
+          <h1 id="register-title" className="entry">Регистрация</h1>
 
           <div className="flower-icon">
-            <img src={logo} alt="Цветок" />
+            <img src={logo} alt="Логотип YogaVibe" />
           </div>
 
           {errors.general && (
@@ -222,6 +231,7 @@ const RegisterScreen = () => {
                 src={showPassword ? eyeHide : eyeShow}
                 alt=""
                 className="password-icon"
+                aria-hidden="true"
               />
             </button>
 
@@ -252,6 +262,7 @@ const RegisterScreen = () => {
                 src={showConfirmPassword ? eyeHide : eyeShow}
                 alt=""
                 className="password-icon"
+                aria-hidden="true"
               />
             </button>
 
@@ -269,12 +280,12 @@ const RegisterScreen = () => {
           </button>
 
           <div className="register-options">
-            <Link to="/login" className="login-link">
+            <Link to={ROUTES.auth.login} className="login-link">
               Уже есть аккаунт? Войти
             </Link>
           </div>
         </form>
-      </div>
+      </section>
 
       <div className="welcome-back-container">
         <button
@@ -285,7 +296,7 @@ const RegisterScreen = () => {
           ← Вернуться на главную
         </button>
       </div>
-    </div>
+    </main>
   );
 };
 

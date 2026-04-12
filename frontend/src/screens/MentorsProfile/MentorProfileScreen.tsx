@@ -4,6 +4,8 @@ import ApiService from '../../services/ApiService';
 import './MentorProfileScreen.css';
 import type { MentorApi, MentorProfile } from '../../types/mentor';
 import { mapMentorToProfile } from '../../types/mentor';
+import { ROUTES } from '../../constants/routes';
+import { useSeo } from '../../hooks/useSeo';
 
 interface MentorProfileLocationState {
   returnTo?: string;
@@ -30,6 +32,15 @@ const MentorProfileScreen = () => {
   const [mentor, setMentor] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useSeo({
+    title: mentor ? `${mentor.name} - профиль ментора` : 'Профиль ментора',
+    description:
+      'Профиль ментора в YogaVibe: стиль практики, опыт, стоимость и доступность для бронирования.',
+    canonicalPath: mentorId ? ROUTES.mentor.profile(mentorId) : ROUTES.user.main,
+    noindex: true,
+    ogType: 'profile',
+  });
 
   useEffect(() => {
     if (!mentorId) {
@@ -66,13 +77,13 @@ const MentorProfileScreen = () => {
   }, [mentorId]);
 
   const handleBackClick = (): void => {
-    navigate(locationState?.returnTo ?? '/main');
+    navigate(locationState?.returnTo ?? ROUTES.user.main);
   };
 
   const handleBookSession = (): void => {
     if (!mentor || mentor.isAvailable === false) return;
 
-    navigate(`/booking/${mentor.id}`, { state: { mentor } });
+    navigate(ROUTES.booking.create(mentor.id), { state: { mentor } });
   };
 
   if (loading) {
@@ -114,7 +125,14 @@ const MentorProfileScreen = () => {
             <div className="mentor-profile-left">
               <div className="mentor-photo-section">
                 {mentor.photoUrl ? (
-                  <img src={mentor.photoUrl} alt={mentor.name} />
+                  <img
+                    src={mentor.photoUrl}
+                    alt={`Фото ментора ${mentor.name}`}
+                    loading="lazy"
+                    decoding="async"
+                    width={160}
+                    height={160}
+                  />
                 ) : (
                   <div className="mentor-photo-text">
                     {mentor.gender === 'female' ? '👩' : '👨'}

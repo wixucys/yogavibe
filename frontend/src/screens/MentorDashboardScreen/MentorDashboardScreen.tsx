@@ -4,6 +4,7 @@ import ApiService from '../../services/ApiService';
 import type { MentorApi } from '../../types/mentor';
 import type { Booking, BookingResponse } from '../../types/booking';
 import './MentorDashboardScreen.css';
+import { ROUTES } from '../../constants/routes';
 
 const MentorDashboardScreen = () => {
   const [mentor, setMentor] = useState<MentorApi | null>(null);
@@ -66,7 +67,7 @@ const MentorDashboardScreen = () => {
     try {
       await ApiService.logout();
     } finally {
-      window.location.href = '/login';
+      window.location.href = ROUTES.auth.login;
     }
   };
 
@@ -92,7 +93,7 @@ const MentorDashboardScreen = () => {
           <div className="mentor-info-header">
             <div>
               <h2>{mentor.name}</h2>
-              <Link to="/mentor/profile/edit" className="mentor-edit-link">
+              <Link to={ROUTES.mentor.editProfile} className="mentor-edit-link">
                 Редактировать профиль
               </Link>
             </div>

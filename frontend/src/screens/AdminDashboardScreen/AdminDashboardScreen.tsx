@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import type { AdminDashboard, User, UserRole } from '../../types/user';
 import './AdminDashboardScreen.css';
+import { ROUTES } from '../../constants/routes';
 
 const AdminDashboardScreen = () => {
   const [dashboard, setDashboard] = useState<AdminDashboard | null>(null);
@@ -151,7 +152,7 @@ const AdminDashboardScreen = () => {
     try {
       await ApiService.logout();
     } finally {
-      window.location.href = '/login';
+      window.location.href = ROUTES.auth.login;
     }
   };
 

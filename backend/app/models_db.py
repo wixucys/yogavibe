@@ -72,6 +72,8 @@ class User(Base):
     uploaded_files: Mapped[List["FileAttachment"]] = relationship(
         "FileAttachment",
         back_populates="uploaded_by_user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
         foreign_keys="FileAttachment.uploaded_by_user_id",
     )
 

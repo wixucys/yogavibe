@@ -1,19 +1,32 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ROUTES } from './constants/routes';
+
+// Public screens – part of the initial bundle (fast first paint)
 import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen/RegisterScreen';
-import MainScreen from './screens/MainScreen/MainScreen';
-import MentorProfileScreen from './screens/MentorsProfile/MentorProfileScreen';
-import MentorDashboardScreen from './screens/MentorDashboardScreen/MentorDashboardScreen';
-import MentorEditScreen from './screens/MentorEditScreen/MentorEditScreen';
-import AdminDashboardScreen from './screens/AdminDashboardScreen/AdminDashboardScreen';
-import AdminMentorsScreen from './screens/AdminMentorsScreen/AdminMentorsScreen';
-import BookingScreen from './screens/BookingScreen/BookingScreen';
-import BookingConfirmationScreen from './screens/BookingConfirm/BookingConfirmationScreen';
+
+// 4.1 Heavy protected screens – loaded lazily (code splitting)
+const MainScreen = lazy(() => import('./screens/MainScreen/MainScreen'));
+const MentorProfileScreen = lazy(() => import('./screens/MentorsProfile/MentorProfileScreen'));
+const MentorDashboardScreen = lazy(() => import('./screens/MentorDashboardScreen/MentorDashboardScreen'));
+const MentorEditScreen = lazy(() => import('./screens/MentorEditScreen/MentorEditScreen'));
+const AdminDashboardScreen = lazy(() => import('./screens/AdminDashboardScreen/AdminDashboardScreen'));
+const AdminMentorsScreen = lazy(() => import('./screens/AdminMentorsScreen/AdminMentorsScreen'));
+const BookingScreen = lazy(() => import('./screens/BookingScreen/BookingScreen'));
+const BookingConfirmationScreen = lazy(() => import('./screens/BookingConfirm/BookingConfirmationScreen'));
+
 import './App.css';
+
+// Minimal fallback shown while a lazy chunk is downloading
+const PageLoader = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+    <div className="loading-spinner" />
+  </div>
+);
 
 function AppRoutes() {
   const { user, logout } = useAuth();
@@ -23,21 +36,30 @@ function AppRoutes() {
   };
 
   return (
-    <Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
       {/* Public routes */}
-      <Route path="/" element={<WelcomeScreen />} />
-      <Route path="/login" element={<LoginScreen />} />
-      <Route path="/register" element={<RegisterScreen />} />
+      <Route path={ROUTES.home} element={<WelcomeScreen />} />
+      <Route path={ROUTES.auth.login} element={<LoginScreen />} />
+      <Route path={ROUTES.auth.register} element={<RegisterScreen />} />
+
+      {/* Legacy auth aliases */}
+      <Route path={ROUTES.auth.legacyLogin} element={<Navigate to={ROUTES.auth.login} replace />} />
+      <Route
+        path={ROUTES.auth.legacyRegister}
+        element={<Navigate to={ROUTES.auth.register} replace />}
+      />
 
       {/* User routes - role: user */}
       <Route
-        path="/main"
+        path={ROUTES.user.main}
         element={
           <ProtectedRoute allowedRoles={['user']}>
             <MainScreen user={user} onLogout={handleLogout} />
           </ProtectedRoute>
         }
       />
+      <Route path={ROUTES.user.legacyMain} element={<Navigate to={ROUTES.user.main} replace />} />
       <Route
         path="/booking/:mentorId"
         element={
@@ -47,17 +69,21 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/booking-confirmation"
+        path={ROUTES.booking.confirmation}
         element={
           <ProtectedRoute allowedRoles={['user']}>
             <BookingConfirmationScreen />
           </ProtectedRoute>
         }
       />
+      <Route
+        path={ROUTES.booking.legacyConfirmation}
+        element={<Navigate to={ROUTES.booking.confirmation} replace />}
+      />
 
       {/* Mentor routes - role: mentor */}
       <Route
-        path="/mentor/dashboard"
+        path={ROUTES.mentor.dashboard}
         element={
           <ProtectedRoute allowedRoles={['mentor']}>
             <MentorDashboardScreen />
@@ -65,7 +91,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/mentor/profile/edit"
+        path={ROUTES.mentor.editProfile}
         element={
           <ProtectedRoute allowedRoles={['mentor']}>
             <MentorEditScreen />
@@ -75,7 +101,7 @@ function AppRoutes() {
 
       {/* Admin routes - role: admin */}
       <Route
-        path="/admin/dashboard"
+        path={ROUTES.admin.dashboard}
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminDashboardScreen />
@@ -83,7 +109,7 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/admin/mentors"
+        path={ROUTES.admin.mentors}
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AdminMentorsScreen />
@@ -92,6 +118,14 @@ function AppRoutes() {
       />
 
       {/* Multi-role routes */}
+      <Route
+        path="/mentors/:mentorId"
+        element={
+          <ProtectedRoute allowedRoles={['user', 'admin']}>
+            <MentorProfileScreen />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/mentor/:mentorId"
         element={
@@ -104,6 +138,7 @@ function AppRoutes() {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   );
 }
 

@@ -14,6 +14,7 @@ import type {
 } from '../types/mentor';
 import type { NoteData, Note } from '../types/note';
 import type { BookingData, Booking, BookingResponse } from '../types/booking';
+import { ROUTES } from '../constants/routes';
 
 class ApiError extends Error {
   status?: number;
@@ -116,7 +117,7 @@ class ApiService {
         }
 
         this.clearAuth();
-        window.location.href = '/login';
+        window.location.href = ROUTES.auth.login;
         throw new ApiError('Session expired. Please login again.', 401);
       }
 

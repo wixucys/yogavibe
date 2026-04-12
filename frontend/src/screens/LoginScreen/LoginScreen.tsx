@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './LoginScreen.css';
 import logo from './flower.svg';
 import eyeShow from './eye-show.svg';
 import eyeHide from './eye-hide.svg';
+import { ROUTES } from '../../constants/routes';
+import { useSeo } from '../../hooks/useSeo';
 
 interface LoginFormData {
   login: string;
@@ -14,6 +16,13 @@ interface LoginFormData {
 const LoginScreen = ()=> {
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  useSeo({
+    title: 'Вход в аккаунт',
+    description: 'Войдите в YogaVibe, чтобы выбрать ментора по йоге и управлять своими записями.',
+    canonicalPath: ROUTES.auth.login,
+    noindex: true,
+  });
 
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [formData, setFormData] = useState<LoginFormData>({
@@ -65,7 +74,7 @@ const LoginScreen = ()=> {
   const getRedirectPath = (userRole?: string): string => {
     if (userRole === 'admin') return '/admin/dashboard';
     if (userRole === 'mentor') return '/mentor/dashboard';
-    return '/main';
+    return ROUTES.user.main;
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -100,23 +109,23 @@ const LoginScreen = ()=> {
   };
 
   const goToWelcome = (): void => {
-    navigate('/');
+    navigate(ROUTES.home);
   };
 
   return (
-    <div className="login-screen">
-      <div className="login-container">
-        <div className="login-text">
+    <main className="login-screen">
+      <section className="login-container" aria-labelledby="login-title">
+        <aside className="login-text">
           <p>Неважно, как медленно ты продвигаешься</p>
           <p>Главное — ты не останавливаешься</p>
           <p>И мы будем с тобой на каждом вдохе</p>
-        </div>
+        </aside>
 
         <form className="login-form" onSubmit={handleSubmit} noValidate>
-          <h3 className="entry">ВХОД В АККАУНТ</h3>
+          <h1 id="login-title" className="entry">Вход в аккаунт</h1>
 
           <div className="flower-icon">
-            <img src={logo} alt="Цветочек" />
+            <img src={logo} alt="Логотип YogaVibe" />
           </div>
 
           {error && (
@@ -168,6 +177,7 @@ const LoginScreen = ()=> {
                 src={showPassword ? eyeHide : eyeShow}
                 alt=""
                 className="password-icon"
+                aria-hidden="true"
               />
             </button>
           </div>
@@ -183,13 +193,13 @@ const LoginScreen = ()=> {
 
           <div className="login-options">
             <div className="options-left">
-              <a href="/register" className="register">
+              <Link to={ROUTES.auth.register} className="register">
                 Регистрация
-              </a>
+              </Link>
             </div>
           </div>
         </form>
-      </div>
+      </section>
 
       <div className="welcome-back-container">
         <button
@@ -200,7 +210,7 @@ const LoginScreen = ()=> {
           ← Вернуться на главную
         </button>
       </div>
-    </div>
+    </main>
   );
 };
 

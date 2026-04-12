@@ -3,6 +3,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import './BookingConfirmationScreen.css';
 import type { Booking, SessionType, BookingStatus } from '../../types/booking';
 import type { BookingMentor } from '../../types/mentor';
+import { ROUTES } from '../../constants/routes';
+import { useSeo } from '../../hooks/useSeo';
 
 type BookingConfirmationData = Omit<Booking, 'mentorId'>;
 
@@ -21,6 +23,13 @@ const BookingConfirmationScreen = () => {
   const [mentor, setMentor] = useState<BookingMentor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useSeo({
+    title: 'Подтверждение записи',
+    description: 'Страница подтверждения записи на занятие с ментором в YogaVibe.',
+    canonicalPath: ROUTES.booking.confirmation,
+    noindex: true,
+  });
 
   useEffect(() => {
     try {
@@ -45,11 +54,11 @@ const BookingConfirmationScreen = () => {
   }, [locationState]);
 
   const handleGoToMain = () => {
-    navigate('/main');
+    navigate(ROUTES.user.main);
   };
 
   const handleGoToMyBookings = () => {
-    navigate('/main', { state: { activeNav: 'МОИ ЗАПИСИ' } });
+    navigate(ROUTES.user.main, { state: { activeNav: 'МОИ ЗАПИСИ' } });
   };
 
   const extractTime = (dateString: string): string => {
@@ -84,7 +93,7 @@ const BookingConfirmationScreen = () => {
         <div className="confirmation-container confirmation-not-found">
           <h2>Информация о записи не найдена</h2>
           <p>{error || 'Неполные данные бронирования'}</p>
-          <Link className="action-btn secondary" to="/main">
+          <Link className="action-btn secondary" to={ROUTES.user.main}>
             На главную
           </Link>
         </div>

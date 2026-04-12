@@ -4,19 +4,29 @@ import './WelcomeScreen.css';
 import eyeIcon from './eye.svg';
 import talkIcon from './talk.svg';
 import commIcon from './comm.svg';
+import { ROUTES } from '../../constants/routes';
+import { useSeo } from '../../hooks/useSeo';
 
 const WelcomeScreen = () => {
   const navigate = useNavigate();
 
+  useSeo({
+    title: 'YogaVibe - Найдите ментора по йоге',
+    description:
+      'YogaVibe помогает найти наставника по йоге: изучайте профили менторов, выбирайте формат занятий и развивайтесь в практике.',
+    canonicalPath: ROUTES.home,
+    ogType: 'website',
+  });
+
   const handleFindMentor = (): void => {
-    navigate('/login');
+    navigate(ROUTES.auth.login);
   };
 
   return (
-    <div className="welcome-screen">
-      <div className="content">
-        <div className="main-text">
-          <h1>
+    <main className="welcome-screen">
+      <section className="content" aria-labelledby="welcome-title">
+        <header className="main-text">
+          <h1 id="welcome-title">
             Йога — это не только асаны
             <br />
             Найдите того, кто покажет путь
@@ -33,15 +43,15 @@ const WelcomeScreen = () => {
           >
             НАЙТИ МЕНТОРА
           </button>
-        </div>
-      </div>
+        </header>
+      </section>
 
-      <footer className="footer">
-        <div className="how-it-works">
-          <h2>КАК ЭТО РАБОТАЕТ</h2>
+      <section className="footer" aria-labelledby="how-it-works-title">
+        <div className="how-it-works" role="region">
+          <h2 id="how-it-works-title">КАК ЭТО РАБОТАЕТ</h2>
 
           <div className="steps">
-            <div className="step">
+            <article className="step">
               <div className="step-header">
                 <img
                   src={eyeIcon}
@@ -57,9 +67,9 @@ const WelcomeScreen = () => {
                 Просто откройте профили преподавателей, изучите их методику — и выберите того,
                 кому захочется доверить свое развитие.
               </p>
-            </div>
+            </article>
 
-            <div className="step">
+            <article className="step">
               <div className="step-header">
                 <img
                   src={talkIcon}
@@ -73,9 +83,9 @@ const WelcomeScreen = () => {
                 Просто выберите удобный слот в расписании наставника. После подтверждения вы получите
                 все детали в разделе «Мои сессии».
               </p>
-            </div>
+            </article>
 
-            <div className="step">
+            <article className="step">
               <div className="step-header">
                 <img
                   src={commIcon}
@@ -90,11 +100,11 @@ const WelcomeScreen = () => {
                 поддержку и раскрыть свой потенциал. Осталось только сделать первый шаг
                 навстречу изменениям.
               </p>
-            </div>
+            </article>
           </div>
         </div>
-      </footer>
-    </div>
+      </section>
+    </main>
   );
 };
 

@@ -92,6 +92,15 @@
   align-items: center;
 }
 
+/* 4.4 Fix explicit size to prevent CLS when image loads */
+.mentor-photo-section img {
+  width: 160px;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 0.625rem;
+  display: block;
+}
+
 .mentor-photo-placeholder {
   width: 300px;
   height: 300px;

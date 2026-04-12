@@ -88,7 +88,8 @@
 /* Страница менторов с фильтрами слева */
 .mentors-page {
   display: flex;
-  min-height: calc(100vh - 5.625rem);
+  height: calc(100vh - 5.625rem);
+  overflow: hidden;
 }
 
 /* Сайдбар с фильтрами */
@@ -96,6 +97,7 @@
   width: 18.75rem;
   background: rgba(228, 216, 210, 0.6);
   padding: 1.875rem 1.5625rem;
+  overflow-y: auto;
 }
 
 .filters-header {
@@ -173,16 +175,13 @@
   gap: 0.625rem;
 }
 
-.price-input {
-  width: 100%;
-}
-
 .price-input::placeholder {
   color: #999;
 }
 
 .clear-filters-btn,
 .logout-btn {
+  width: 230px;
   border: none;
   border-radius: 0.5rem;
   font-family: 'Montserrat', sans-serif;
@@ -197,7 +196,7 @@
 }
 
 .sort-order-btn {
-  width: 100%;
+  width: 230px;
   margin-top: 0.625rem;
   height: 2.5rem;
   border: none;
@@ -245,6 +244,8 @@
   display: flex;
   flex-direction: column;
   padding: 1.875rem 2.5rem;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .mentors-area {
@@ -253,7 +254,10 @@
   gap: 1.875rem;
   flex: 1;
   justify-content: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1rem;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
 }
 
 .mentor-card {
@@ -268,6 +272,46 @@
   box-shadow: 0 0.3125rem 2rem rgba(194, 169, 169, 0.12);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   flex-shrink: 0;
+}
+
+/* 4.4 Skeleton loading — prevents CLS by reserving fixed card space */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -30rem 0; }
+  100% { background-position:  30rem 0; }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #d4c8c2 25%, #ede5e0 50%, #d4c8c2 75%);
+  background-size: 60rem 100%;
+  animation: skeleton-shimmer 1.4s infinite linear;
+  border-radius: 0.5rem;
+}
+
+.mentor-card--skeleton {
+  pointer-events: none;
+}
+
+.skeleton--photo {
+  width: 100%;
+  height: 21.875rem;
+  border-radius: 1.125rem;
+  margin-bottom: 1.25rem;
+}
+
+.skeleton--title {
+  height: 1.25rem;
+  width: 70%;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton--line {
+  height: 0.875rem;
+  width: 90%;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton--line-short {
+  width: 55%;
 }
 
 .mentor-card:hover {
@@ -691,12 +735,17 @@
 }
 
 .logout-btn {
-  width: 14.375rem;
-  background: transparent;
-  border: 0.125rem solid #69505c;
-  color: #69505c;
+  width: auto;
+  min-width: 10rem;
+  background: #35252c;
+  border: 0.125rem solid #35252c;
+  color: #ffffff;
   padding: 0.75rem 1.25rem;
-  margin-top: 4.375rem;
+  margin-top: 0;
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1200;
 }
 
 .logout-btn:hover {

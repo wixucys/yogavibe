@@ -16,6 +16,7 @@ from services.mentor_service import MentorService
 from services.note_service import NoteService
 from services.booking_service import BookingService
 from services.file_service import FileService
+from services.weather_service import WeatherService
 
 router = APIRouter(prefix="/api/v1")
 security = HTTPBearer()
@@ -604,3 +605,48 @@ async def delete_mentor(
 ):
     MentorService.delete_mentor(db, mentor_id)
     return {"message": "Ментор удален"}
+
+
+# =========================
+# WEATHER
+# =========================
+
+@router.get("/weather/forecast", response_model=schemas.WeatherForecast)
+async def get_weather_forecast(
+    city: str = Query(..., min_length=1, max_length=100, description="Название города"),
+    date: Optional[datetime] = Query(
+        None,
+        description="Дата и время сессии в формате ISO 8601 (по умолчанию — текущий момент)",
+    ),
+    current_user: schemas.UserResponse = Depends(require_roles("user", "mentor", "admin")),
+):
+    """
+    Прогноз погоды для любого города на указанную дату.
+
+    - Дата сегодня или не указана → текущая погода.
+    - Дата в пределах 5 дней → ближайший слот 5-дневного прогноза.
+    - Прошедшие даты или > 5 дней → возвращается текущая погода.
+    """
+    return await WeatherService.get_forecast(city, date)
+
+
+@router.get("/bookings/{booking_id}/weather", response_model=schemas.WeatherForecast)
+async def get_booking_weather(
+    booking_id: int,
+    current_user: schemas.UserResponse = Depends(require_roles("user")),
+    db: Session = Depends(get_db),
+):
+    """
+    Прогноз погоды для конкретного бронирования.
+    Город определяется по профилю ментора, дата — из поля session_date.
+    """
+    booking = BookingService.get_booking(db, booking_id, current_user.id)
+
+    mentor = crud.mentor_crud.get_mentor(db, booking.mentor_id)
+    if not mentor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Ментор бронирования не найден.",
+        )
+
+    return await WeatherService.get_forecast(mentor.city, booking.session_date)

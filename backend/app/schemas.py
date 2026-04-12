@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Generic, Literal, Optional, TypeVar
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 UserRole = Literal["user", "mentor", "admin"]
@@ -27,19 +27,19 @@ FileCategory = Literal[
 T = TypeVar("T")
 
 
+def _serialize_datetime_to_moscow(value: datetime) -> str:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+
+    moscow_tz = timezone(timedelta(hours=3))
+    return value.astimezone(moscow_tz).isoformat()
+
+
 class DateTimeSchema(BaseModel):
-    @field_serializer("*", when_used="json", check_fields=False)
-    def serialize_datetimes(self, value, _info):
-        if not isinstance(value, datetime):
-            return value
-
-        if value.tzinfo is None:
-            value = value.replace(tzinfo=timezone.utc)
-
-        moscow_tz = timezone(timedelta(hours=3))
-        return value.astimezone(moscow_tz).isoformat()
-
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_encoders={datetime: _serialize_datetime_to_moscow},
+    )
 
 
 class PaginationParams(BaseModel):
@@ -698,6 +698,30 @@ class FileAccessUrlResponse(BaseModel):
     expires_in: int
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# =============================================================================
+# WEATHER
+# =============================================================================
+
+class WeatherForecast(DateTimeSchema):
+    """Нормализованный прогноз погоды для города на конкретный момент времени."""
+
+    city: str
+    country: str
+    datetime_utc: datetime
+    temperature_celsius: float
+    feels_like_celsius: float
+    humidity_percent: int
+    wind_speed_ms: float
+    # "Clear", "Clouds", "Rain", "Snow", "Thunderstorm", …
+    condition: str
+    # Локализованное описание на русском языке
+    description: str
+    # Код иконки OpenWeatherMap, например "01d"
+    icon_code: str
+    # True, если погода подходит для занятий йогой на улице
+    is_outdoor_suitable: bool
 
 
 class AdminDashboardResponse(BaseModel):

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import BookingService from '../../services/BookingService';
 import ApiService from '../../services/ApiService';
+import WeatherWidget from '../../components/WeatherWidget/WeatherWidget';
 import './BookingScreen.css';
 import type { MentorApi, BookingMentor } from '../../types/mentor';
 import { mapMentorToBooking } from '../../types/mentor';
@@ -147,8 +148,8 @@ const BookingScreen = () => {
       setError(null);
 
       const [hours, minutes] = bookingData.time.split(':').map(Number);
-      const sessionDate = new Date(bookingData.sessionDate);
-      sessionDate.setHours(hours, minutes, 0, 0);
+      const [year, month, day] = bookingData.sessionDate.split('-').map(Number);
+      const sessionDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
 
       if (sessionDate <= new Date()) {
         setError('Нельзя выбрать прошедшее время');
@@ -185,6 +186,12 @@ const BookingScreen = () => {
   };
 
   const minDate = useMemo(() => new Date().toISOString().split('T')[0], []);
+
+  // ISO datetime for the selected session slot — drives the weather forecast
+  const sessionIso = useMemo(() => {
+    if (!bookingData.sessionDate || !bookingData.time) return undefined;
+    return `${bookingData.sessionDate}T${bookingData.time}:00`;
+  }, [bookingData.sessionDate, bookingData.time]);
 
   if (loading) {
     return <div className="loading-screen">Загрузка...</div>;
@@ -318,6 +325,11 @@ const BookingScreen = () => {
               />
             </div>
           </div>
+
+          {/* ── Прогноз погоды для выбранного города и даты сессии ── */}
+          {mentor.city && (
+            <WeatherWidget city={mentor.city} date={sessionIso} />
+          )}
 
           <div className="price-summary">
             <div className="price-details">

@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     S3_USE_SSL: bool = False
     S3_ADDRESSING_STYLE: str = "path"
 
+    # OpenWeatherMap integration
+    OPENWEATHER_API_KEY: Optional[str] = None
+
     @property
     def moscow_tz(self) -> timedelta:
         return timedelta(hours=3)

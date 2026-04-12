@@ -10,6 +10,7 @@ import AuthService from '../../services/AuthService';
 import FileService from '../../services/FileService';
 import type { User } from '../../services/AuthService';
 import type { FileAttachment } from '../../types/file';
+import { formatMoscowDateTime } from '../../utils/dateTime';
 import './ProfileScreen.css';
 
 // Константы для полей профиля
@@ -452,16 +453,13 @@ const ProfileScreen = ({
   const formatDate = (value: string | null | undefined): string => {
     if (!value) return '—';
 
-    const parsedDate = new Date(value);
-    if (Number.isNaN(parsedDate.getTime())) return value;
-
-    return new Intl.DateTimeFormat('ru-RU', {
+    return formatMoscowDateTime(value, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-    }).format(parsedDate);
+    });
   };
 
   const handleSaveAll = useCallback(async (): Promise<void> => {

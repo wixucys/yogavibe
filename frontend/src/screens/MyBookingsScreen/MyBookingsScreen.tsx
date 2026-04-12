@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import WeatherWidget from '../../components/WeatherWidget/WeatherWidget';
 import { useNavigate } from 'react-router-dom';
 import BookingService from '../../services/BookingService';
+import { formatMoscowDateTime } from '../../utils/dateTime';
 import './MyBookingScreen.css';
 import type { Booking as BookingDto, BookingStatus, SessionType } from '../../types/booking';
 
@@ -189,7 +191,7 @@ const MyBookingsScreen = () => {
                 <div className="booking-details">
                   <div className="detail-row">
                     <div className="detail-label">Дата:</div>
-                    <div className="detail-value">{booking.sessionDate.toLocaleString('ru-RU')}</div>
+                    <div className="detail-value">{formatMoscowDateTime(booking.sessionDate)}</div>
                   </div>
                   {booking.mentorCity && (
                     <div className="detail-row">
@@ -197,6 +199,15 @@ const MyBookingsScreen = () => {
                       <div className="detail-value">{booking.mentorCity}</div>
                     </div>
                   )}
+                    {/* Compact weather forecast — only for active future sessions */}
+                    {booking.status === 'active' && booking.sessionDate > new Date() && (
+                      <div className="detail-row">
+                        <div className="detail-label">Погода:</div>
+                        <div className="detail-value">
+                          <WeatherWidget compact bookingId={booking.id} />
+                        </div>
+                      </div>
+                    )}
                   {booking.mentorYogaStyle && (
                     <div className="detail-row">
                       <div className="detail-label">Стиль:</div>

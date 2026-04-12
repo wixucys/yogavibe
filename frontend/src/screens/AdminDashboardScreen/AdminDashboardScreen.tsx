@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import type { AdminDashboard, User, UserRole } from '../../types/user';
+import { formatMoscowDate } from '../../utils/dateTime';
 import './AdminDashboardScreen.css';
 import { ROUTES } from '../../constants/routes';
 
@@ -141,11 +142,7 @@ const AdminDashboardScreen = () => {
       return 'Не указано';
     }
 
-    const date = new Date(value);
-
-    return Number.isNaN(date.getTime())
-      ? 'Не указано'
-      : date.toLocaleDateString('ru-RU');
+    return formatMoscowDate(value);
   };
 
   const handleLogout = async (): Promise<void> => {

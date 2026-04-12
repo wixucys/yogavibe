@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import type { MentorApi } from '../../types/mentor';
 import type { Booking, BookingResponse } from '../../types/booking';
+import { formatMoscowDateTime } from '../../utils/dateTime';
 import './MentorDashboardScreen.css';
 import { ROUTES } from '../../constants/routes';
 
@@ -56,11 +57,7 @@ const MentorDashboardScreen = () => {
 
   const formatDate = (value: string | undefined): string => {
     if (!value) return 'Не указано';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'Не указано';
-
-    return date.toLocaleString('ru-RU');
+    return formatMoscowDateTime(value);
   };
 
   const handleLogout = async (): Promise<void> => {

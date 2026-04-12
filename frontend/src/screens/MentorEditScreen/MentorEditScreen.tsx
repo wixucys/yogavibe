@@ -5,6 +5,7 @@ import FileService from '../../services/FileService';
 import type { MentorSelfUpdatePayload } from '../../types/mentor';
 import type { FileAttachment } from '../../types/file';
 import { CITIES, YOGA_STYLES } from '../../constants/filters';
+import { formatMoscowDate } from '../../utils/dateTime';
 import './MentorEditScreen.css';
 
 const defaultFormData: MentorSelfUpdatePayload = {
@@ -343,7 +344,7 @@ const MentorEditScreen = () => {
                     <div className="mentor-file-link">{file.originalFilename}</div>
                     <div className="mentor-file-meta">
                       <span>{FileService.formatFileSize(file.sizeBytes)}</span>
-                      <span>{new Date(file.createdAt).toLocaleDateString('ru-RU')}</span>
+                      <span>{formatMoscowDate(file.createdAt)}</span>
                     </div>
                     <div className="mentor-file-actions">
                       <button

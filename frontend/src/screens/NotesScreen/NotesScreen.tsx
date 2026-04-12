@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './NotesScreen.css';
 import NotesService from '../../services/NotesService';
 import type { Note, NoteId } from '../../types/note';
+import { formatMoscowDateTime } from '../../utils/dateTime';
 
 const NotesScreen = () => {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -227,19 +228,13 @@ const NotesScreen = () => {
     if (!dateString) return '—';
 
     try {
-      const date = new Date(dateString);
-
-      if (Number.isNaN(date.getTime())) {
-        return dateString;
-      }
-
-      return new Intl.DateTimeFormat('ru-RU', {
+      return formatMoscowDateTime(dateString, {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
-      }).format(date);
+      });
     } catch (formatError) {
       console.warn('Error formatting date:', dateString, formatError);
       return dateString;

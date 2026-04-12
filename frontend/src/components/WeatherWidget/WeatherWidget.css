@@ -1,0 +1,252 @@
+/* ─── Full-size weather widget ────────────────────────────────────────────── */
+
+.weather-widget {
+  background: #f5f0ec;
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  font-family: 'Montserrat', sans-serif;
+  border: 1px solid #ded8d2;
+  transition: box-shadow 0.2s ease;
+}
+
+.weather-widget:hover {
+  box-shadow: 0 4px 12px rgba(105, 80, 92, 0.1);
+}
+
+/* Header row */
+.weather-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.weather-widget__title {
+  font-weight: 700;
+  color: #69505c;
+  font-size: 1rem;
+}
+
+/* Outdoor suitability badges */
+.weather-widget__badge {
+  padding: 0.2rem 0.65rem;
+  border-radius: 1rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.weather-widget__badge--ok {
+  background: rgba(76, 175, 80, 0.12);
+  color: #388E3C;
+  border: 1px solid #81C784;
+}
+
+.weather-widget__badge--warn {
+  background: rgba(255, 152, 0, 0.12);
+  color: #E65100;
+  border: 1px solid #FFB74D;
+}
+
+/* Body */
+.weather-widget__body {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.weather-widget__icon-temp {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.weather-widget__icon {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.weather-widget__icon-emoji {
+  font-size: 2.2rem;
+  line-height: 1;
+}
+
+.weather-widget__temperature {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #35252c;
+  line-height: 1;
+}
+
+/* Description + stat pills */
+.weather-widget__details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.weather-widget__description {
+  color: #69505c;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: capitalize;
+}
+
+.weather-widget__stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.weather-widget__stats span {
+  color: #35252c;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ─── Loading state ────────────────────────────────────────────────────────── */
+
+.weather-widget--loading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.25rem 1.5rem;
+  min-height: 90px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+
+.weather-widget__skeleton {
+  height: 1rem;
+  border-radius: 0.4rem;
+  background: linear-gradient(90deg, #e2d8d4 25%, #f0e8e4 50%, #e2d8d4 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  width: 80%;
+}
+
+.weather-widget__skeleton--short {
+  width: 50%;
+  height: 0.8rem;
+}
+
+/* ─── Info / error banner ──────────────────────────────────────────────────── */
+
+.weather-widget--banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.25rem;
+  min-height: auto;
+  color: #69505c;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border-style: dashed;
+}
+
+.weather-widget--warn {
+  border-color: #FFB74D;
+  background: rgba(255, 152, 0, 0.06);
+  color: #E65100;
+}
+
+.weather-widget__banner-icon {
+  font-size: 1.2rem;
+}
+
+/* ─── Compact widget (booking cards) ──────────────────────────────────────── */
+
+.weather-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.82rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 1rem;
+  border: 1px solid #ded8d2;
+  background: rgba(245, 240, 236, 0.8);
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.weather-compact--ok {
+  border-color: #81C784;
+  background: rgba(76, 175, 80, 0.06);
+}
+
+.weather-compact--warn {
+  border-color: #FFB74D;
+  background: rgba(255, 152, 0, 0.06);
+}
+
+.weather-compact--unavailable {
+  color: #999;
+  border-style: dashed;
+  font-style: italic;
+}
+
+.weather-compact__emoji {
+  font-size: 1rem;
+}
+
+.weather-compact__temp {
+  font-weight: 700;
+  color: #35252c;
+}
+
+.weather-compact__desc {
+  color: #69505c;
+  font-weight: 500;
+}
+
+.weather-compact__badge {
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 0.75rem;
+}
+
+.weather-compact__badge--ok {
+  color: #388E3C;
+  background: rgba(76, 175, 80, 0.15);
+}
+
+.weather-compact__badge--warn {
+  color: #E65100;
+  background: rgba(255, 152, 0, 0.15);
+}
+
+/* skeleton inside compact */
+.weather-compact--loading {
+  width: 140px;
+  height: 28px;
+}
+
+.weather-compact__skeleton {
+  width: 100%;
+  height: 0.7rem;
+  border-radius: 0.35rem;
+  background: linear-gradient(90deg, #e2d8d4 25%, #f0e8e4 50%, #e2d8d4 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .weather-widget__body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .weather-widget__temperature {
+    font-size: 1.6rem;
+  }
+}

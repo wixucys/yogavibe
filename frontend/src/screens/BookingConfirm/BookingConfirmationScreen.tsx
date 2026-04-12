@@ -5,6 +5,7 @@ import type { Booking, SessionType, BookingStatus } from '../../types/booking';
 import type { BookingMentor } from '../../types/mentor';
 import { ROUTES } from '../../constants/routes';
 import { useSeo } from '../../hooks/useSeo';
+import { formatMoscowDate, formatMoscowTime } from '../../utils/dateTime';
 
 type BookingConfirmationData = Omit<Booking, 'mentorId'>;
 
@@ -62,16 +63,14 @@ const BookingConfirmationScreen = () => {
   };
 
   const extractTime = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('ru-RU', {
+    return formatMoscowTime(dateString, {
       hour: '2-digit',
       minute: '2-digit',
     });
   };
 
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('ru-RU', {
+    return formatMoscowDate(dateString, {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

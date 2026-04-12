@@ -1,3 +1,5 @@
+import { formatMoscowDate } from '../utils/dateTime';
+
 export type MentorId = number | string;
 export type MentorGender = 'male' | 'female' | string;
 
@@ -130,7 +132,7 @@ export const mapMentorToProfile = (mentor: MentorApi | Mentor): MentorProfile =>
         ? `${normalized.experienceYears} лет`
         : 'Не указано',
     registrationDate: normalized.createdAt
-      ? new Date(normalized.createdAt).toLocaleDateString('ru-RU')
+      ? formatMoscowDate(normalized.createdAt)
       : 'Не указано',
   };
 };

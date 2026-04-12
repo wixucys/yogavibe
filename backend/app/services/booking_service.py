@@ -5,9 +5,9 @@ from sqlalchemy import and_, select
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-import crud
-import models_db as models
-import schemas
+from .. import crud
+from .. import models_db as models
+from .. import schemas
 
 
 class BookingService:

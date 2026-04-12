@@ -15,17 +15,14 @@ from fastapi import APIRouter, Depends, HTTPException, Response as FastAPIRespon
 from fastapi.responses import PlainTextResponse, Response
 from sqlalchemy.orm import Session
 
-import crud
-from database import get_db
+from . import crud
+from .database import get_db
+from .config import settings
 
 router = APIRouter(tags=["seo"])
 
-SITE_URL = "https://yogavibe.example.com"
-
 _PUBLIC_ROUTES = [
     "/",
-    "/auth/login",
-    "/auth/register",
 ]
 
 @router.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)
@@ -49,7 +46,7 @@ def robots_txt(response: FastAPIResponse) -> str:
         "Allow: /auth/register\n"
         f"{disallow_lines}\n"
         "\n"
-        f"Sitemap: {SITE_URL}/sitemap.xml\n"
+        f"Sitemap: {settings.SITE_URL}/sitemap.xml\n"
     )
 
 @router.get("/sitemap.xml", response_class=Response, include_in_schema=False)
@@ -74,7 +71,7 @@ def sitemap_xml() -> Response:
         changefreq = changefreq_map.get(route, "monthly")
         url_entries.append(
             f"  <url>\n"
-            f"    <loc>{SITE_URL}{route}</loc>\n"
+            f"    <loc>{settings.SITE_URL}{route}</loc>\n"
             f"    <lastmod>{lastmod}</lastmod>\n"
             f"    <changefreq>{changefreq}</changefreq>\n"
             f"    <priority>{priority}</priority>\n"
@@ -122,7 +119,7 @@ def mentor_jsonld(
             detail=f"Ментор с id={mentor_id} больше не доступен",
         )
 
-    profile_url = f"{SITE_URL}/mentors/{mentor_id}"
+    profile_url = f"{settings.SITE_URL}/mentors/{mentor_id}"
     photo: Optional[str] = mentor.photo_url
 
     jsonld: dict = {

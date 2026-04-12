@@ -4,10 +4,10 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
-import crud
-import schemas
-from utils import create_access_token, create_refresh_token, verify_token
-from config import settings
+from .. import crud
+from .. import schemas
+from ..utils import create_access_token, create_refresh_token, verify_token
+from ..config import settings
 
 
 class AuthService:

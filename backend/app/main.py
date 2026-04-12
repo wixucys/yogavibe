@@ -4,9 +4,9 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from api import router as api_router
-from seo import router as seo_router
-from init_data import init_db
+from .api import router as api_router
+from .seo import router as seo_router
+from .init_data import init_db
 
 
 app = FastAPI(

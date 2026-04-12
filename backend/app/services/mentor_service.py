@@ -1,8 +1,8 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-import crud
-import schemas
+from .. import crud
+from .. import schemas
 
 
 class MentorService:

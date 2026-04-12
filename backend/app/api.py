@@ -6,17 +6,17 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
-import crud
-import schemas
-from database import get_db
-from utils import verify_token
-from services.auth_service import AuthService
-from services.user_service import UserService
-from services.mentor_service import MentorService
-from services.note_service import NoteService
-from services.booking_service import BookingService
-from services.file_service import FileService
-from services.weather_service import WeatherService
+from . import crud
+from . import schemas
+from .database import get_db
+from .utils import verify_token
+from .services.auth_service import AuthService
+from .services.user_service import UserService
+from .services.mentor_service import MentorService
+from .services.note_service import NoteService
+from .services.booking_service import BookingService
+from .services.file_service import FileService
+from .services.weather_service import WeatherService
 
 router = APIRouter(prefix="/api/v1")
 security = HTTPBearer()

@@ -4,7 +4,7 @@ import logging
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 import os
-from config import settings
+from .config import settings
 
 logger = logging.getLogger(__name__)
 

@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     S3_ADDRESSING_STYLE: str = "path"
 
     OPENWEATHER_API_KEY: Optional[str] = None
+    
+    SITE_URL: str = "http://localhost:8000"
 
     @property
     def moscow_tz(self) -> timedelta:

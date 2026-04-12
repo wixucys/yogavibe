@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional
 import jwt
 from passlib.context import CryptContext
-from config import settings
+from .config import settings
 
 
 

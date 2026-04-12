@@ -9,10 +9,10 @@ from fastapi import HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-import crud
-import schemas
-from config import settings
-from services.object_storage_service import ObjectStorageService
+from .. import crud
+from .. import schemas
+from ..config import settings
+from .object_storage_service import ObjectStorageService
 
 
 class FileService:

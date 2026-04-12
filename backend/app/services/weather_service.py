@@ -26,7 +26,7 @@ from tenacity import (
     wait_exponential,
 )
 
-import schemas
+from .. import schemas
 
 logger = logging.getLogger(__name__)
 

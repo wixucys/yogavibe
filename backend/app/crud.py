@@ -5,9 +5,9 @@ from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 import math
-import models_db as models
-import schemas
-from utils import get_password_hash, verify_password
+from . import models_db as models
+from . import schemas
+from .utils import get_password_hash, verify_password
 
 
 def build_page_meta(page: int, page_size: int, total: int) -> schemas.PageMeta:

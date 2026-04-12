@@ -1,6 +1,6 @@
 import logging
 
-from database import Base, engine
+from .database import Base, engine
 
 
 logger = logging.getLogger(__name__)

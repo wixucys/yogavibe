@@ -8,7 +8,7 @@ from typing import Optional
 from fastapi import HTTPException, status
 from fastapi.responses import FileResponse
 
-from config import settings
+from ..config import settings
 
 try:
     import boto3

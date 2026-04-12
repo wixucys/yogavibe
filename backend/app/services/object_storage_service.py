@@ -13,7 +13,7 @@ from config import settings
 try:
     import boto3
     from botocore.client import Config as BotoConfig
-except ImportError:  # pragma: no cover - optional dependency for local mode
+except ImportError: 
     boto3 = None
     BotoConfig = None
 
@@ -72,7 +72,7 @@ class ObjectStorageService:
             client = cls._get_s3_client()
             try:
                 client.delete_object(Bucket=settings.S3_BUCKET_NAME, Key=object_key)
-            except Exception as exc:  # pragma: no cover - depends on external S3
+            except Exception as exc:
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
                     detail="Не удалось удалить файл из объектного хранилища",

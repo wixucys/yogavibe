@@ -1,6 +1,6 @@
 # Multi-stage build for optimized backend image
 # Stage 1: Builder
-FROM python:3.9-slim as builder
+FROM python:3.9-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -40,10 +40,6 @@ COPY backend /app
 
 # Create data directory for database and uploads
 RUN mkdir -p /app/data && chmod 755 /app/data
-
-# Non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
-USER appuser
 
 EXPOSE 8000
 

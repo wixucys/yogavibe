@@ -31,10 +31,10 @@ cp .env.example .env
 
 ```bash
 # Build and start all services
-docker-compose up -d
+docker compose up -d
 
 # Check status
-docker-compose ps
+docker compose ps
 ```
 
 ### 4. Access Application
@@ -56,27 +56,27 @@ curl http://localhost/api/health
 curl http://localhost/
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 ```
 
 ## 🧪 Run Tests
 
 ```bash
 # Backend tests
-docker-compose exec backend pytest test -v
+docker compose exec backend pytest test -v
 
 # Frontend tests
-docker-compose exec frontend npm test
+docker compose exec frontend npm test
 ```
 
 ## 🛑 Stop Services
 
 ```bash
 # Stop all services
-docker-compose down
+docker compose down
 
 # Stop and remove data volumes
-docker-compose down -v
+docker compose down -v
 ```
 
 ## 📚 Documentation
@@ -91,22 +91,22 @@ For more detailed information:
 
 ```bash
 # View logs
-docker-compose logs -f <service>
+docker compose logs -f <service>
 
 # Execute command
-docker-compose exec <service> <command>
+docker compose exec <service> <command>
 
 # Restart service
-docker-compose restart <service>
+docker compose restart <service>
 
 # Rebuild images
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Access database
-docker-compose exec backend sqlite3 data/yogavibe.db
+docker compose exec backend sqlite3 data/yogavibe.db
 
 # Run migrations
-docker-compose exec backend python -m app.init_data
+docker compose exec backend python -m app.init_data
 ```
 
 ## 🆘 Troubleshooting
@@ -125,23 +125,23 @@ kill -9 <PID>
 ### Services won't start
 ```bash
 # Check logs
-docker-compose logs
+docker compose logs
 
 # Verify composition file
-docker-compose config
+docker compose config
 
 # Rebuild everything
-docker-compose build --no-cache
-docker-compose up -d
+docker compose build --no-cache
+docker compose up -d
 ```
 
 ### Database issues
 ```bash
 # Reset database
-docker-compose exec backend rm data/yogavibe.db
+docker compose exec backend rm data/yogavibe.db
 
 # Reinitialize
-docker-compose exec backend python -m app.init_data
+docker compose exec backend python -m app.init_data
 ```
 
 ## 📝 Default Credentials
@@ -198,7 +198,7 @@ Changes in `backend/` and `frontend/` automatically reload
 
 ## 💡 Tips
 
-- Use `docker-compose logs -f <service>` to debug issues
+- Use `docker compose logs -f <service>` to debug issues
 - Backend API documentation at `/api/docs`
 - Check `.env.example` for all configuration options
 - See individual documentation files for advanced topics

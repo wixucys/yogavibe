@@ -1,6 +1,6 @@
 # Multi-stage build for optimized frontend image
 # Stage 1: Builder
-FROM node:20-alpine as builder
+FROM node:20-alpine AS builder
 
 WORKDIR /build
 
@@ -9,7 +9,7 @@ COPY package*.json ./
 RUN npm config set fetch-retries 5 \
     && npm config set fetch-retry-mintimeout 20000 \
     && npm config set fetch-retry-maxtimeout 120000 \
-    && npm ci --no-audit --no-fund
+    && npm install --no-audit --no-fund
 
 # Copy source code
 COPY . .
@@ -25,14 +25,6 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built application from builder
 COPY --from=builder /build/build /usr/share/nginx/html
-
-# Create non-root user
-RUN addgroup -g 1000 nginx && adduser -u 1000 -G nginx -s /sbin/nologin nginx || true
-
-# Permissions
-RUN chown -R 1000:1000 /usr/share/nginx/html /var/cache/nginx /var/log/nginx
-
-USER 1000
 
 EXPOSE 8080
 

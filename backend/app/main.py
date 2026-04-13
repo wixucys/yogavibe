@@ -13,6 +13,7 @@ from .init_data import init_db
 app = FastAPI(
     title="YogaVibe API",
     version="1.0.0",
+    openapi_url="/api/openapi.json",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
@@ -74,3 +75,15 @@ def read_root():
 @app.get("/api/health")
 def health_check():
     return {"status": "ok"}
+
+
+@app.get("/api", include_in_schema=False)
+@app.get("/api/", include_in_schema=False)
+def api_root():
+    return {
+        "service": "YogaVibe API",
+        "status": "ok",
+        "health": "/api/health",
+        "docs": "/api/docs",
+        "version": "/api/v1",
+    }

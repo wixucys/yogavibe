@@ -18,25 +18,18 @@ class AuthService {
       const refreshToken = localStorage.getItem('yogavibe_refresh_token');
 
       if (token && token.includes('mock_')) {
-        console.log('Mock access token found, clearing auth');
         this.clearAuth();
         return { isAuthenticated: false };
       }
 
       if (refreshToken && refreshToken.includes('mock_')) {
-        console.log('Mock refresh token found, clearing auth');
         this.clearAuth();
         return { isAuthenticated: false };
       }
 
-      console.log('AuthService: Checking authentication...');
-
       if (!ApiService.isAuthenticated()) {
-        console.log('AuthService: No token found');
         return { isAuthenticated: false };
       }
-
-      console.log('AuthService: Getting current user from API...');
 
       let userData: User | null = null;
 
@@ -47,7 +40,6 @@ class AuthService {
       }
 
       if (userData) {
-        console.log('AuthService: User data received:', userData);
         ApiService.setUserData(userData);
 
         return {
@@ -56,7 +48,6 @@ class AuthService {
         };
       }
 
-      console.log('AuthService: No user data received, clearing auth');
       ApiService.clearAuth();
       return { isAuthenticated: false };
     } catch (error) {
@@ -67,23 +58,15 @@ class AuthService {
 
   static async login(credentials: LoginCredentials): Promise<AuthActionResult> {
     try {
-      console.log('AuthService: Logging in with:', {
-        login: credentials.login,
-        password: '***',
-      });
-
       const response: AuthResponse = await ApiService.login(credentials);
-      console.log('AuthService: Login response:', response);
 
       if (response.access_token && response.refresh_token && response.user) {
-        console.log('AuthService: Login successful');
         return {
           success: true,
           user: response.user,
         };
       }
 
-      console.log('AuthService: Login response missing required data');
       return {
         success: false,
         message: 'Некорректный ответ от сервера',
@@ -118,12 +101,6 @@ class AuthService {
 
   static async register(userData: RegisterData): Promise<AuthActionResult> {
     try {
-      console.log('AuthService: Registering user:', {
-        username: userData.username,
-        email: userData.email,
-        password: '***',
-      });
-
       const registrationData: RegisterData = {
         username: userData.username,
         email: userData.email,
@@ -131,17 +108,14 @@ class AuthService {
       };
 
       const response: AuthResponse = await ApiService.register(registrationData);
-      console.log('AuthService: Registration response:', response);
 
       if (response.access_token && response.refresh_token && response.user) {
-        console.log('AuthService: Registration successful');
         return {
           success: true,
           user: response.user,
         };
       }
 
-      console.log('AuthService: Registration response missing required data');
       return {
         success: false,
         message: 'Некорректный ответ от сервера',
@@ -169,9 +143,7 @@ class AuthService {
 
   static async logout(): Promise<{ success: true }> {
     try {
-      console.log('AuthService: Logging out...');
       await ApiService.logout();
-      console.log('AuthService: Logout successful');
       return { success: true };
     } catch (error) {
       console.error('AuthService: Logout error:', error);
@@ -181,27 +153,19 @@ class AuthService {
   }
 
   static getCurrentUser(): User | null {
-    const user = ApiService.getUserData();
-    console.log('AuthService: Getting current user from localStorage:', user);
-    return user;
+    return ApiService.getUserData();
   }
 
   static isAuthenticated(): boolean {
-    const isAuth = ApiService.isAuthenticated();
-    console.log('AuthService: Is authenticated?', isAuth);
-    return isAuth;
+    return ApiService.isAuthenticated();
   }
 
   static async updateProfile(
     profileData: Partial<User>
   ): Promise<UpdateProfileResult> {
     try {
-      console.log('AuthService: Updating profile:', profileData);
-
       const updatedUser = await ApiService.updateUserProfile(profileData);
       ApiService.setUserData(updatedUser);
-
-      console.log('AuthService: Profile updated successfully');
       return {
         success: true,
         user: updatedUser,

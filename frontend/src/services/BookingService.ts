@@ -31,12 +31,9 @@ class BookingService {
 
   static async getBookings(): Promise<Booking[]> {
     try {
-      console.log('BookingService: Getting bookings...');
-
       const response = await ApiService.request<BookingResponse[] | PaginatedResponse<BookingResponse>>('/bookings', {
         method: 'GET',
       });
-      console.log('BookingService: Bookings received:', response);
 
       const bookingItems = this.extractItems(response);
 
@@ -62,18 +59,12 @@ class BookingService {
 
   static async createBooking(bookingData: CreateBookingInput): Promise<Booking> {
     try {
-      console.log('BookingService: Creating booking:', bookingData);
-
       this.validateBookingData(bookingData);
-
-      console.log('BookingService: Sending to backend:', bookingData);
 
       const response = await ApiService.request<BookingResponse>('/bookings', {
         method: 'POST',
         body: bookingData,
       });
-
-      console.log('BookingService: Booking created successfully:', response);
 
       const formattedResponse = this.mapBookingResponseToBooking(
         response,
@@ -146,16 +137,12 @@ class BookingService {
 
   static async cancelBooking(bookingId: BookingId): Promise<BookingResponse> {
     try {
-      console.log('BookingService: Cancelling booking:', bookingId);
-
       const response = await ApiService.request<BookingResponse>(
         `/bookings/${bookingId}/cancel`,
         {
           method: 'PUT',
         }
       );
-
-      console.log('BookingService: Booking cancelled successfully:', response);
 
       this.updateLocalBookingStatus(bookingId, 'cancelled');
 
@@ -168,8 +155,6 @@ class BookingService {
 
   static async completeBooking(bookingId: BookingId): Promise<BookingResponse | null> {
     try {
-      console.log('BookingService: Completing booking:', bookingId);
-
       const response = await ApiService.request<BookingResponse>(
         `/mentor/bookings/${bookingId}/complete`,
         {

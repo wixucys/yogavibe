@@ -26,7 +26,12 @@ class Settings(BaseSettings):
     TIMEZONE: str = "Europe/Moscow"
 
     DATABASE_URL: str = "sqlite:///./data/yogavibe.db"
-    DEBUG: bool = True
+    DEBUG: bool = False
+
+    ENABLE_BOOTSTRAP_ADMIN: bool = False
+    BOOTSTRAP_ADMIN_TOKEN: Optional[str] = None
+
+    CORS_ORIGINS: str = "http://localhost:3000"
 
     FILE_STORAGE_PROVIDER: str = "local"
     STORAGE_PUBLIC_BASE_URL: str = "http://localhost:8000"
@@ -44,6 +49,11 @@ class Settings(BaseSettings):
     OPENWEATHER_API_KEY: Optional[str] = None
     
     SITE_URL: str = "http://localhost:8000"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        origins = [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        return [origin for origin in origins if origin]
 
     @property
     def moscow_tz(self) -> timedelta:

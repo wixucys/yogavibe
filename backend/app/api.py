@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
@@ -213,9 +213,10 @@ def build_file_list_query(
 @router.post("/setup/bootstrap-admin", response_model=schemas.AuthResponse)
 async def bootstrap_admin(
     request: schemas.BootstrapAdminCreate,
+    x_setup_token: Optional[str] = Header(default=None, alias="X-Setup-Token"),
     db: Session = Depends(get_db),
 ):
-    return AuthService.bootstrap_admin(db, request)
+    return AuthService.bootstrap_admin(db, request, x_setup_token)
 
 
 @router.post("/auth/register", response_model=schemas.AuthResponse)

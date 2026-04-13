@@ -82,3 +82,14 @@ Frontend (по шаблону имени файла):
   - screens/**/*.integration.test.tsx
 
 Каждый новый тест должен быть классифицирован по типу (unit/integration/e2e) через marker (backend) или суффикс имени файла (frontend).
+
+## Безопасные настройки backend
+
+Для production/dev-стендов задавайте переменные окружения:
+
+- DEBUG=false
+- CORS_ORIGINS=http://localhost:3000 (или список через запятую)
+- ENABLE_BOOTSTRAP_ADMIN=false
+- BOOTSTRAP_ADMIN_TOKEN=<сложный одноразовый токен>
+
+Если включаете bootstrap admin, endpoint /api/v1/setup/bootstrap-admin принимает заголовок X-Setup-Token.

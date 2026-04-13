@@ -136,8 +136,30 @@ class AuthService:
         crud.refresh_token_crud.deactivate_token(db, refresh_token_str)
 
     @staticmethod
-    def bootstrap_admin(db: Session, user_data: schemas.UserCreate) -> schemas.AuthResponse:
+    def bootstrap_admin(
+        db: Session,
+        user_data: schemas.UserCreate,
+        setup_token: Optional[str],
+    ) -> schemas.AuthResponse:
         """Create first admin user (only if no admins exist)"""
+        if not settings.ENABLE_BOOTSTRAP_ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bootstrap admin is disabled",
+            )
+
+        if not settings.BOOTSTRAP_ADMIN_TOKEN:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Bootstrap admin token is not configured",
+            )
+
+        if setup_token != settings.BOOTSTRAP_ADMIN_TOKEN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid setup token",
+            )
+
         admin_count = crud.user_crud.count_users_by_role(db, "admin")
         if admin_count > 0:
             raise HTTPException(

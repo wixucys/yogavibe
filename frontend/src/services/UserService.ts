@@ -11,9 +11,7 @@ type StoredProfilesMap = Record<string, LocalProfileData>;
 class UserService {
   static async getProfile(): Promise<User> {
     try {
-      console.log('UserService: Getting user profile from server...');
       const userData = await ApiService.getCurrentUser();
-      console.log('UserService: Profile received:', userData);
       return userData;
     } catch (error) {
       console.error('UserService: Error fetching profile:', error);
@@ -23,8 +21,6 @@ class UserService {
 
   static async updateProfile(profileData: UpdateProfileInput): Promise<User> {
     try {
-      console.log('UserService: Updating profile with:', profileData);
-
       const backendData: Partial<User> = {
         city: profileData.city || null,
         yoga_style: profileData.yoga_style || profileData.knownStyles || null,
@@ -32,10 +28,7 @@ class UserService {
         goals: profileData.goals || null,
       };
 
-      console.log('UserService: Sending to backend:', backendData);
-
       const response = await ApiService.updateUserProfile(backendData);
-      console.log('UserService: Profile updated successfully:', response);
 
       ApiService.setUserData(response);
 

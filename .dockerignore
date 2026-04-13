@@ -1,15 +1,67 @@
+# Git
 .git
 .gitignore
+.gitattributes
+
+# IDEs
 .vscode
+.idea
+*.swp
+*.swo
+*~
+.env
+
+# Python
 venv
 .venv
+env
+ENV
 __pycache__
 **/__pycache__
-frontend/node_modules
-frontend/build
-backend/app/data
 *.pyc
 *.pyo
 *.pyd
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
+htmlcov
 *.log
+
+# Node/npm
+frontend/node_modules
+frontend/build
+frontend/coverage
+yarn.lock
+npm-debug.log
+npm-error.log
+
+# OS
 .DS_Store
+Thumbs.db
+*.tmp
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Backend
+backend/app/data
+backend/.coverage
+backend/.pytest_cache
+
+# Frontend
+public/uploads
+.env.local
+.env.*.local
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.circleci
+
+# Documentation
+docs
+*.md

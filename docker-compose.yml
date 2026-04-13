@@ -1,95 +1,169 @@
+# Network for service communication
+networks:
+  yogavibe-network:
+    driver: bridge
+    name: yogavibe-network
+
+# Services definition
 services:
+  # MinIO S3-compatible object storage
   minio:
     image: quay.io/minio/minio:latest
     container_name: yogavibe-minio
     restart: unless-stopped
+    networks:
+      - yogavibe-network
     ports:
       - "9000:9000"
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
     command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 10
-    volumes:
-      - minio_data:/data
+      start_period: 10s
 
+  # MinIO initialization - creates buckets and sets policies
   minio-init:
     image: quay.io/minio/mc:latest
     container_name: yogavibe-minio-init
+    restart: "no"
+    networks:
+      - yogavibe-network
     depends_on:
       minio:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
       until mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}; do
-        echo 'waiting for minio';
+        echo 'Waiting for MinIO to be ready...';
         sleep 1;
       done &&
+      echo 'Creating yogavibe-files bucket...' &&
       mc mb --ignore-existing local/yogavibe-files &&
-      mc anonymous set none local/yogavibe-files
+      echo 'Setting bucket policy...' &&
+      mc anonymous set none local/yogavibe-files &&
+      echo 'MinIO initialization complete!'
       "
-    restart: "no"
 
+  # FastAPI Backend
   backend:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     container_name: yogavibe-backend
     restart: unless-stopped
-    env_file:
-      - ./backend/app/.env
+    networks:
+      - yogavibe-network
     environment:
-      DATABASE_URL: sqlite:///./data/yogavibe.db
-      FILE_STORAGE_PROVIDER: s3
+      # Database
+      DATABASE_URL: ${DATABASE_URL:-sqlite:///./data/yogavibe.db}
+      # S3 Storage
+      FILE_STORAGE_PROVIDER: ${FILE_STORAGE_PROVIDER:-s3}
       S3_ENDPOINT_URL: http://minio:9000
-      S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
-      STORAGE_PUBLIC_BASE_URL: http://localhost:8000
+      S3_PUBLIC_ENDPOINT_URL: ${S3_PUBLIC_ENDPOINT_URL:-http://localhost:9000}
+      STORAGE_PUBLIC_BASE_URL: ${STORAGE_PUBLIC_BASE_URL:-http://localhost:8000}
+      # CORS
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost}
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
     working_dir: /app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: >
+      sh -c "
+      echo 'Waiting for MinIO to be healthy...' &&
+      curl -f http://minio:9000/minio/health/live &&
+      echo 'Starting Uvicorn server...' &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-2} --log-level info
+      "
     volumes:
-      - ./backend:/app
       - backend_data:/app/data
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       minio:
         condition: service_healthy
       minio-init:
-        condition: service_started
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 15s
 
+  # React Frontend
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
     container_name: yogavibe-frontend
     restart: unless-stopped
-    working_dir: /app
+    networks:
+      - yogavibe-network
     environment:
-      HOST: 0.0.0.0
-      PORT: 3000
-      CHOKIDAR_USEPOLLING: "true"
-      WATCHPACK_POLLING: "true"
-    command: npm start
-    volumes:
-      - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
-    ports:
-      - "3000:3000"
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost/api}
+      REACT_APP_ENV: ${REACT_APP_ENV:-production}
+    expose:
+      - "8080"
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: yogavibe-nginx
+    restart: unless-stopped
+    networks:
+      - yogavibe-network
+    ports:
+      - "80:80"
+      # For HTTPS, uncomment and provide certificates:
+      # - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_cache:/var/cache/nginx
+    environment:
+      # For debugging, set to 'info' or 'error'
+      NGINX_LOG_LEVEL: ${NGINX_LOG_LEVEL:-warn}
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+# Volumes for persistent data
 volumes:
   minio_data:
+    driver: local
   backend_data:
-  frontend_node_modules:
+    driver: local
+  nginx_cache:
+    driver: local
+
+# Environment file
+# This file should be created from .env.example
+# Copy .env.example to .env and update values for your environment

@@ -1,95 +1,69 @@
 # YogaVibe
 
-<div align="center">
-  <img src="public/assets/images/background_img.jpg" alt="YogaVibe Banner" width="800" />
-  
-  <p><strong>Платформа для поиска менторов по йоге</strong></p>
-  <p>Соединяем искателей с опытными наставниками для персонального роста</p>
-  
-  [![React](https://img.shields.io/badge/React-18.2.0-blue)](https://reactjs.org/)
-  [![React Router](https://img.shields.io/badge/React_Router-7.9.5-orange)](https://reactrouter.com/)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
-</div>
+Платформа для поиска менторов по йоге: frontend на React, backend на FastAPI, reverse proxy на Nginx и файловое хранилище на MinIO.
 
-## 🧘‍♀️ О проекте
+## Стек
 
-YogaVibe — это современная веб-платформа, которая помогает людям найти идеального наставника по йоге. Мы верим, что каждый заслуживает индивидуального подхода в своем духовном и физическом развитии.
+- Frontend: React + TypeScript
+- Backend: FastAPI + SQLAlchemy
+- Infra: Docker Compose, Nginx, MinIO
 
-### 🌟 Основные возможности
+## Быстрый старт
 
-- **📱 Полностью адаптивный дизайн** — работает на всех устройствах
-- **🔐 Система аутентификации** — регистрация и вход с сохранением в localStorage
-- **👥 Каталог менторов** — фильтрация по полу, городу, стилю йоги и цене
-- **📝 Персональные заметки** — сохраняйте свои мысли и наблюдения о практике
-- **🔔 Система уведомлений** — не пропускайте важные события
+### Требования
 
-## 🚀 Быстрый старт
+- Docker
+- Docker Compose
 
-### Предварительные требования
+### Запуск
 
-- Node.js 16.0.0 или выше
-- npm 8.0.0 или выше
+```bash
+cp .env.example .env
+docker-compose up -d --build
+```
 
-## Тестовая инфраструктура и метрики
+### Проверка
 
-### 6.1 Минимально контролируемое покрытие
+```bash
+docker-compose ps
+curl -f http://localhost/health
+curl -f http://localhost/api/health
+```
 
-- Backend: минимальный порог покрытия 65% (настроено в pytest через --cov-fail-under=65).
-- Frontend: минимальный глобальный порог покрытия Jest:
-  - Statements: 15%
-  - Branches: 10%
-  - Functions: 10%
-  - Lines: 15%
+### Доступ
 
-Команды проверки покрытия:
+- Frontend: http://localhost
+- Backend API: http://localhost/api
+- Swagger: http://localhost/api/docs
+- MinIO Console: http://localhost:9001
 
-- Backend: /Users/sleepy13/Desktop/projects/yogavibe-ts/venv/bin/python -m pytest
-- Frontend: cd frontend && npm run test:ci
+## Тесты
 
-### 6.2 Разделение быстрых и длительных тестов
+### Backend
 
-Backend (pytest markers):
+```bash
+docker-compose exec backend pytest test -v
+```
 
-- Быстрые: /Users/sleepy13/Desktop/projects/yogavibe-ts/venv/bin/python -m pytest -m "unit or integration"
-- Длительные: /Users/sleepy13/Desktop/projects/yogavibe-ts/venv/bin/python -m pytest -m e2e
+### Frontend
 
-Frontend (по шаблону имени файла):
+```bash
+docker-compose exec frontend npm run test:ci
+```
 
-- Быстрые unit: cd frontend && npm run test:unit
-- Средние integration: cd frontend && npm run test:integration
-- Длительные e2e: cd frontend && npm run test:e2e
+## Полезные команды
 
-### 6.3 Единые правила именования и структуры тестов
+```bash
+docker-compose logs -f
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose down
+```
 
-Правила именования:
+## Документация
 
-- Backend: test_<feature>.py
-- Frontend unit: <Feature>.unit.test.ts или <Feature>.unit.test.tsx
-- Frontend integration: <Feature>.integration.test.ts или <Feature>.integration.test.tsx
-- Frontend e2e: <Feature>.e2e.test.ts или <Feature>.e2e.test.tsx
+- [QUICKSTART.md](QUICKSTART.md)
 
-Структура:
+## Примечание
 
-- Backend: backend/test/
-  - test_service_layer.py (unit)
-  - test_api_integration.py (integration)
-  - test_e2e_business_scenarios.py (e2e)
-- Frontend: frontend/src/
-  - components/*.unit.test.tsx
-  - hooks/*.unit.test.tsx
-  - utils/*.unit.test.ts
-  - services/*.integration.test.ts
-  - screens/**/*.integration.test.tsx
-
-Каждый новый тест должен быть классифицирован по типу (unit/integration/e2e) через marker (backend) или суффикс имени файла (frontend).
-
-## Безопасные настройки backend
-
-Для production/dev-стендов задавайте переменные окружения:
-
-- DEBUG=false
-- CORS_ORIGINS=http://localhost:3000 (или список через запятую)
-- ENABLE_BOOTSTRAP_ADMIN=false
-- BOOTSTRAP_ADMIN_TOKEN=<сложный одноразовый токен>
-
-Если включаете bootstrap admin, endpoint /api/v1/setup/bootstrap-admin принимает заголовок X-Setup-Token.
+Проект использует единый подход: один compose-файл и один набор контейнеров для локального и серверного запуска. Публикация образов и автодеплой намеренно отключены, чтобы не усложнять лабораторную.

@@ -13,20 +13,19 @@ BACKEND_DIR = Path(__file__).resolve().parents[1]
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-# Force dedicated test environment before app modules are imported.
 os.environ.setdefault("TESTING", "1")
 os.environ.setdefault("SECRET_KEY", "test-secret-key-at-least-32-bytes-long")
 os.environ.setdefault("DATABASE_URL", "sqlite:///./data/yogavibe-test-bootstrap.db")
 os.environ.setdefault("FILE_STORAGE_PROVIDER", "local")
 os.environ.setdefault("STORAGE_PUBLIC_BASE_URL", "http://testserver")
 
-from app import crud, schemas  # noqa: E402
-from app.config import settings  # noqa: E402
-from app.database import Base, get_db  # noqa: E402
-from app.main import app  # noqa: E402
-import app.main as main_module  # noqa: E402
-from app.services import weather_service  # noqa: E402
-from app.services.object_storage_service import LOCAL_UPLOADS_DIR, ObjectStorageService  # noqa: E402
+from app import crud, schemas
+from app.config import settings
+from app.database import Base, get_db 
+from app.main import app  
+import app.main as main_module 
+from app.services import weather_service  
+from app.services.object_storage_service import LOCAL_UPLOADS_DIR, ObjectStorageService 
 
 
 @pytest.fixture(scope="function")

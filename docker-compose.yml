@@ -50,9 +50,9 @@ services:
       S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
       STORAGE_PUBLIC_BASE_URL: http://localhost:8000
     working_dir: /app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./backend/app:/app
+      - ./backend:/app
       - backend_data:/app/data
     ports:
       - "8000:8000"

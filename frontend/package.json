@@ -20,6 +20,10 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ci": "react-scripts test --watchAll=false --coverage",
+    "test:unit": "react-scripts test --watchAll=false --testPathPattern=\\.unit\\.test\\.",
+    "test:integration": "react-scripts test --watchAll=false --testPathPattern=\\.integration\\.test\\.",
+    "test:e2e": "react-scripts test --watchAll=false --testPathPattern=\\.e2e\\.test\\. --passWithNoTests",
     "eject": "react-scripts eject",
     "lint": "eslint src --ext .js,.jsx",
     "format": "prettier --write \"src/**/*.{js,jsx,css,json}\"",
@@ -33,6 +37,9 @@
     "react-toastify": "^11.0.5"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^25.3.5",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
@@ -60,5 +67,18 @@
     "node": ">=16.0.0",
     "npm": ">=8.0.0"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "moduleNameMapper": {
+      "^react-router-dom$": "<rootDir>/src/test/reactRouterDomMock.tsx"
+    },
+    "coverageThreshold": {
+      "global": {
+        "statements": 15,
+        "branches": 10,
+        "functions": 10,
+        "lines": 15
+      }
+    }
+  }
 }

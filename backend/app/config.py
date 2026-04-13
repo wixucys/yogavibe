@@ -1,4 +1,5 @@
 from datetime import timedelta
+import os
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -7,11 +8,17 @@ from pydantic_settings import BaseSettings
 
 BACKEND_ENV_PATH = Path(__file__).parent.parent / ".env"
 APP_ENV_PATH = Path(__file__).parent / ".env"
+TEST_ENV_PATH = Path(__file__).parent.parent / ".env.test"
+
+IS_TESTING = os.getenv("TESTING", "").strip().lower() in {"1", "true", "yes", "on"}
 
 load_dotenv(dotenv_path=BACKEND_ENV_PATH, override=False)
 load_dotenv(dotenv_path=APP_ENV_PATH, override=False)
+if IS_TESTING:
+    load_dotenv(dotenv_path=TEST_ENV_PATH, override=True)
 
 class Settings(BaseSettings):
+    TESTING: bool = False
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15

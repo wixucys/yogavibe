@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import './MentorProfileScreen.css';
@@ -32,6 +32,37 @@ const MentorProfileScreen = () => {
   const [mentor, setMentor] = useState<MentorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const mentorJsonLd = useMemo(() => {
+    if (!mentor) return null;
+
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'Person',
+      name: mentor.name,
+      description: mentor.description || undefined,
+      image: mentor.photoUrl || undefined,
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: mentor.city,
+        addressCountry: 'RU',
+      },
+      hasOccupation: {
+        '@type': 'Occupation',
+        name: 'Инструктор по йоге',
+        description: mentor.yogaStyle || undefined,
+      },
+      makesOffer: {
+        '@type': 'Offer',
+        name: `Индивидуальные занятия йогой — ${mentor.yogaStyle || 'персональная практика'}`,
+        price: String(mentor.price),
+        priceCurrency: 'RUB',
+        availability: mentor.isAvailable
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+      },
+    };
+  }, [mentor]);
 
   useSeo({
     title: mentor ? `${mentor.name} - профиль ментора` : 'Профиль ментора',
@@ -67,7 +98,20 @@ const MentorProfileScreen = () => {
         setMentor(mapMentorToProfile(response));
       } catch (err) {
         console.error(err);
-        setError('Не удалось загрузить профиль ментора');
+        const statusCode =
+          typeof err === 'object' && err !== null && 'status' in err
+            ? Number((err as { status?: number }).status)
+            : undefined;
+
+        if (statusCode === 404) {
+          setError('Профиль ментора не найден (404)');
+        } else if (statusCode === 403) {
+          setError('Доступ к профилю ограничен (403)');
+        } else if (statusCode === 410) {
+          setError('Профиль больше недоступен (410)');
+        } else {
+          setError('Не удалось загрузить профиль ментора');
+        }
       } finally {
         setLoading(false);
       }
@@ -111,19 +155,26 @@ const MentorProfileScreen = () => {
   }
 
   return (
-    <div className="mentor-profile-page">
+    <main className="mentor-profile-page">
       <div className="mentor-profile-content">
-        <div className="mentor-profile-card">
-          <div className="mentor-profile-header">
+        <article className="mentor-profile-card">
+          <header className="mentor-profile-header">
             <button onClick={handleBackClick} className="back-btn">
               ← Назад
             </button>
             <h1>Профиль ментора</h1>
-          </div>
+          </header>
+
+          {mentorJsonLd && (
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(mentorJsonLd) }}
+            />
+          )}
 
           <div className="mentor-profile-layout">
-            <div className="mentor-profile-left">
-              <div className="mentor-photo-section">
+            <section className="mentor-profile-left" aria-labelledby="mentor-name-title">
+              <figure className="mentor-photo-section">
                 {mentor.photoUrl ? (
                   <img
                     src={mentor.photoUrl}
@@ -138,9 +189,9 @@ const MentorProfileScreen = () => {
                     {mentor.gender === 'female' ? '👩' : '👨'}
                   </div>
                 )}
-              </div>
+              </figure>
 
-              <h2>{mentor.name}</h2>
+              <h2 id="mentor-name-title">{mentor.name}</h2>
 
               <div>⭐ {mentor.rating ?? '—'}</div>
               <div>{mentor.city}</div>
@@ -153,27 +204,27 @@ const MentorProfileScreen = () => {
               >
                 {mentor.isAvailable === false ? 'НЕДОСТУПЕН' : 'ЗАПИСАТЬСЯ'}
               </button>
-            </div>
+            </section>
 
-            <div className="mentor-profile-right">
-              <div className="mentor-section">
+            <section className="mentor-profile-right">
+              <section className="mentor-section" aria-label="Основная информация о менторе">
                 <h3>О МЕНТОРЕ</h3>
                 <InfoField label="Стиль йоги" value={mentor.yogaStyle} />
                 <InfoField label="Опыт" value={mentor.experience} />
                 <InfoField label="Дата регистрации" value={mentor.registrationDate} />
-              </div>
+              </section>
 
               {mentor.description && (
-                <div className="mentor-section">
+                <section className="mentor-section" aria-label="Описание ментора">
                   <h3>Описание</h3>
                   <p>{mentor.description}</p>
-                </div>
+                </section>
               )}
-            </div>
+            </section>
           </div>
-        </div>
+        </article>
       </div>
-    </div>
+    </main>
   );
 };
 

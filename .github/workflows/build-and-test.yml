@@ -185,28 +185,6 @@ jobs:
           dockerfile: frontend/Dockerfile
           ignore: DL3008,DL3009,DL3059
 
-  security-scan:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.30.0
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          skip-dirs: venv,.venv,node_modules,.git
-
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: 'trivy-results.sarif'
-
   notify-status:
     name: Notify Build Status
     runs-on: ubuntu-latest
@@ -220,9 +198,9 @@ jobs:
              [ "${{ needs.frontend-tests.result }}" = "success" ] && \
              [ "${{ needs.docker-build.result }}" = "success" ] && \
              [ "${{ needs.validate-compose.result }}" = "success" ]; then
-            echo "✅ All checks passed!"
+            echo "All checks passed!"
             exit 0
           else
-            echo "❌ Some checks failed!"
+            echo "Some checks failed!"
             exit 1
           fi

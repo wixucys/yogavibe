@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import { ROUTES } from './constants/routes';
@@ -7,6 +7,7 @@ import { ROUTES } from './constants/routes';
 import WelcomeScreen from './screens/WelcomeScreen/WelcomeScreen';
 import LoginScreen from './screens/LoginScreen/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen/RegisterScreen';
+import NotFoundScreen from './screens/NotFoundScreen/NotFoundScreen';
 
 const MainScreen = lazy(() => import('./screens/MainScreen/MainScreen'));
 const MentorProfileScreen = lazy(() => import('./screens/MentorsProfile/MentorProfileScreen'));
@@ -24,6 +25,16 @@ const PageLoader = () => (
     <div className="loading-spinner" />
   </div>
 );
+
+const LegacyMentorProfileRedirect = (): JSX.Element => {
+  const { mentorId } = useParams<{ mentorId: string }>();
+
+  if (!mentorId) {
+    return <Navigate to={ROUTES.system.notFound} replace />;
+  }
+
+  return <Navigate to={ROUTES.mentor.profile(mentorId)} replace />;
+};
 
 function AppRoutes() {
   const { user, logout } = useAuth();
@@ -58,7 +69,7 @@ function AppRoutes() {
       />
       <Route path={ROUTES.user.legacyMain} element={<Navigate to={ROUTES.user.main} replace />} />
       <Route
-        path="/booking/:mentorId"
+        path={ROUTES.booking.createPattern}
         element={
           <ProtectedRoute allowedRoles={['user']}>
             <BookingScreen />
@@ -116,24 +127,17 @@ function AppRoutes() {
 
       
       <Route
-        path="/mentors/:mentorId"
+        path={ROUTES.mentor.profilePattern}
         element={
           <ProtectedRoute allowedRoles={['user', 'admin']}>
             <MentorProfileScreen />
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/mentor/:mentorId"
-        element={
-          <ProtectedRoute allowedRoles={['user', 'admin']}>
-            <MentorProfileScreen />
-          </ProtectedRoute>
-        }
-      />
+      <Route path={ROUTES.mentor.legacyProfilePattern} element={<LegacyMentorProfileRedirect />} />
 
-      
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path={ROUTES.system.notFound} element={<NotFoundScreen />} />
+      <Route path="*" element={<Navigate to={ROUTES.system.notFound} replace />} />
     </Routes>
     </Suspense>
   );

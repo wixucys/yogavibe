@@ -23,6 +23,8 @@ router = APIRouter(tags=["seo"])
 
 _PUBLIC_ROUTES = [
     "/",
+    "/auth/login",
+    "/auth/register",
 ]
 
 @router.get("/robots.txt", response_class=PlainTextResponse, include_in_schema=False)

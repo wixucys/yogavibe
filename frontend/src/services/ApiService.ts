@@ -47,8 +47,16 @@ interface PaginatedResponse<T> {
 }
 
 class ApiService {
-  static BASE_URL = 'http://localhost:8000/api/v1';
+  static BASE_URL = `${ApiService.resolveApiBaseUrl()}/v1`;
   static REFRESH_ENDPOINT = '/auth/refresh';
+
+  private static resolveApiBaseUrl(): string {
+    const configuredBase = process.env.REACT_APP_API_URL?.trim();
+    const fallbackBase = '/api';
+    const base = configuredBase && configuredBase.length > 0 ? configuredBase : fallbackBase;
+
+    return base.endsWith('/') ? base.slice(0, -1) : base;
+  }
 
   static async request<T = unknown>(
     endpoint: string,

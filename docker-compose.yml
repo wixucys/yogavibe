@@ -135,13 +135,10 @@ services:
       - yogavibe-network
     ports:
       - "80:80"
-      # For HTTPS, uncomment and provide certificates:
-      # - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - nginx_cache:/var/cache/nginx
     environment:
-      # For debugging, set to 'info' or 'error'
       NGINX_LOG_LEVEL: ${NGINX_LOG_LEVEL:-warn}
     depends_on:
       backend:

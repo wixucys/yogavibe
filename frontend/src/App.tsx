@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from 'react';
+import './App.css';
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -18,7 +19,6 @@ const AdminMentorsScreen = lazy(() => import('./screens/AdminMentorsScreen/Admin
 const BookingScreen = lazy(() => import('./screens/BookingScreen/BookingScreen'));
 const BookingConfirmationScreen = lazy(() => import('./screens/BookingConfirm/BookingConfirmationScreen'));
 
-import './App.css';
 
 const PageLoader = () => (
   <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>

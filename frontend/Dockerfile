@@ -1,6 +1,6 @@
 # Multi-stage build for optimized frontend image
 # Stage 1: Builder
-FROM node:20-alpine AS builder
+FROM node:20.19.0-alpine AS builder
 
 WORKDIR /build
 
@@ -9,7 +9,7 @@ COPY package*.json ./
 RUN npm config set fetch-retries 5 \
     && npm config set fetch-retry-mintimeout 20000 \
     && npm config set fetch-retry-maxtimeout 120000 \
-    && npm install --no-audit --no-fund
+    && npm ci --no-audit --no-fund
 
 # Copy source code
 COPY . .
@@ -18,7 +18,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Runtime - Nginx server for production-like serving
-FROM nginx:alpine
+FROM nginx:1.28.0-alpine
 
 # Copy Nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf

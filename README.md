@@ -1,68 +1,153 @@
-# YogaVibe
+# YogaVibe — отчёт по лабораторной работе №1 «Запуск проекта»
 
-Платформа для поиска менторов по йоге: frontend на React, backend на FastAPI, reverse proxy на Nginx и файловое хранилище на MinIO.
+**Автор:** Шурман А. Р.
 
-## Стек
+**Дата проверки:** 20.10.2026.
 
-- Frontend: React + TypeScript
-- Backend: FastAPI + SQLAlchemy
-- Infra: Docker Compose, Nginx, MinIO
+**Происхождение:** собственный проект, платформа поиска менторов по йоге и записи на занятия.
 
-## Быстрый старт
+**Репозиторий:** https://github.com/wixucys/yogavibe
 
-### Требования
+**Ветка:** `lab-1`.
 
-- Docker
-- Docker Compose
+**Паспорт:** [docs/00-project.md](docs/00-project.md).
 
-### Запуск
+Проект соответствует содержательным ограничениям: три роли (`user`, `mentor`, `admin`), пять предметных сущностей и десять пользовательских функций в выбранном объёме. Основной запуск и тесты проверены. Полное формальное завершение ЛР1 пока не заявляется: нужны одобрение преподавателя, решение по отсутствию LICENSE, слияние PR и тег на итоговом коммите.
 
-```bash
-docker-compose up -d --build
-```
+## Результаты выполнения заданий
 
-### Проверка
+| Задача | Результат | Статус |
+| --- | --- | --- |
+| 1. Выбор проекта | Паспорт: назначение, происхождение, роли, сущности, основные функции, стек, автор; [product №1](https://github.com/wixucys/yogavibe/issues/1) | Готово к согласованию |
+| 2. Репозиторий | Структура docs/adr/diagrams, src/tests со ссылками на существующий код, CHANGELOG, .gitignore; метки review, bug, change-request, question | main защищена: обязательный PR, обход администраторами запрещён |
+| 3. Сборка и запуск | Зафиксированы runtime и зависимости, добавлен пример окружения, исправлен Compose, подготовлен smoke-скрипт | Основной local-провайдер проверен; S3 отдельно не подтверждён |
+| 4. Разбор структуры | Структура, точки входа, карта десяти функций, конфигурация и таблица практик в паспорте; четыре наблюдения оформлены issues | Выполнено |
+| 5. Выполнимость | Риски, границы и план ЛР2–ЛР6 на 44 часа + 8 часов резерва | Согласование ожидается |
 
-```bash
-docker-compose ps
-curl -f http://localhost/health
-curl -f http://localhost/api/health
-```
+Репозиторий публичный: преподавателю доступны исходники, issues и PR. Для собственного проекта требования о форке и синхронизации upstream не применяются.
 
-### Доступ
+## Запуск
 
-- Frontend: http://localhost
-- Backend API: http://localhost/api
-- Swagger: http://localhost/api/docs
-- MinIO Console: http://localhost:9001
+### Предварительные требования
 
-## Тесты
+- Git, запущенный Docker Engine/Desktop и Docker Compose с поддержкой `up --wait` (проверено на Engine 29.8.0 и Compose 5.5.1).
+- Интернет для первой загрузки образов и зависимостей; свободный порт 80.
+- Локальная установка Python и Node.js не требуется.
 
-### Backend
+В Dockerfile закреплены Python **3.11.9**, Node.js **20.19.0** и Nginx **1.28.0**. Python-пакеты заданы точными версиями в `requirements.txt`, npm-пакеты — в `frontend/package-lock.json`. Установка выполняется при сборке: `pip install -r requirements.txt` и `npm ci`; сборщик frontend — react-scripts 5.0.1. Версии языков также записаны в `.python-version` и `frontend/.nvmrc`.
+
+### Пять команд от чистого клона до проверки
 
 ```bash
-docker-compose exec backend pytest test -v
+git clone --branch main https://github.com/wixucys/yogavibe.git
+cd yogavibe
+cp .env.example .env
+docker compose up -d --build --wait --wait-timeout 180
+docker compose exec -T backend python - http://nginx < scripts/smoke.py
 ```
 
-### Frontend
+Пример окружения предназначен для локальной лабораторной проверки; перед внешним развёртыванием замените секреты. Существующий личный `.env` не перезаписывайте: сравните его с примером, особенно `FILE_STORAGE_PROVIDER=local`, `STORAGE_PUBLIC_BASE_URL=http://localhost`, `UVICORN_WORKERS=1`.
+
+Smoke-скрипт завершается с ненулевым кодом при ошибке. Он оставляет одну тестовую учётную запись `smoke_*` с уникальным именем, а созданную заметку удаляет. Сценарий состоит из трёх шагов:
+
+1. Получить HTML интерфейса, `/health` reverse proxy и `/api/health`.
+2. Зарегистрировать пользователя и прочитать его профиль с JWT.
+3. Прочитать каталог менторов, создать, прочитать и удалить личную заметку.
+
+Ожидаемый вывод: `1/3 OK`, `2/3 OK`, `3/3 OK`. На новой базе менторов нет: демонстрационные данные не создаются. Сценарии бронирования с подготовкой ментора проверяются backend-тестами.
+
+### Адреса и управление
+
+| Назначение | Адрес |
+| --- | --- |
+| Интерфейс | http://localhost |
+| API | http://localhost/api |
+| Swagger | http://localhost/api/docs |
+| Проверка API | http://localhost/api/health |
 
 ```bash
-docker-compose exec frontend npm run test:ci
+docker compose ps
+docker compose logs -f backend
+docker compose down
 ```
 
-## Полезные команды
+SQLite сохраняется в `backend_data`, вложения — в `backend_uploads`. Обычный `down` сохраняет тома. Не удаляйте тома, если нужны данные.
+
+### Первый администратор
+
+Для ручной проверки всех ролей временно установите в `.env` `ENABLE_BOOTSTRAP_ADMIN=true` и собственный `BOOTSTRAP_ADMIN_TOKEN`, затем выполните `docker compose up -d backend`. В Swagger вызовите `POST /api/v1/setup/bootstrap-admin`, передав `X-Setup-Token` и JSON с `username`, `email`, `password`. Endpoint работает только пока администраторов нет. Затем отключите bootstrap и пересоздайте backend.
+
+Зарегистрируйте отдельного пользователя для ментора; администратор назначает роль и создаёт профиль через кабинет или API. После этого обычный пользователь сможет найти ментора и записаться.
+
+### Необязательные интеграции
+
+MinIO вынесен в профиль `s3`. До его использования требуется решить [проблему доступности образов №5](https://github.com/wixucys/yogavibe/issues/5). Затем запустите `docker compose --profile s3 up -d minio minio-init`, дождитесь успешной инициализации bucket, установите `FILE_STORAGE_PROVIDER=s3` и пересоздайте backend. Консоль MinIO — http://localhost:9001. Смена провайдера не переносит существующие вложения автоматически.
+
+`docker-compose.minio.yml` — прежний отдельный вариант запуска MinIO; одновременно с профилем его использовать не нужно. Основной запуск от него не зависит. Погода требует `OPENWEATHER_API_KEY` и не входит в приёмочный сценарий ЛР1.
+
+## Тестирование
+
+Backend в отдельном контейнере без подключения рабочих томов:
 
 ```bash
-docker-compose logs -f
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose down
+docker build -t yogavibe-backend-test -f backend/Dockerfile .
+docker run --rm -e SECRET_KEY=lab-test-only -e FILE_STORAGE_PROVIDER=local yogavibe-backend-test pytest test -q --cov=app --cov-report=term --cov-fail-under=65
 ```
 
-## Документация
+Frontend проверяется в стадии **builder**, содержащей Node/npm:
 
-- [QUICKSTART.md](QUICKSTART.md)
+```bash
+docker build --target builder -t yogavibe-frontend-test frontend
+docker run --rm -e CI=true yogavibe-frontend-test npm run test:ci -- --runInBand
+docker run --rm yogavibe-frontend-test npm run lint
+```
 
-## Примечание
+Итоговый frontend-контейнер содержит Nginx и статику: выполнять в нём npm нельзя. Для локальной разработки после установки Node из `.nvmrc`: в `frontend` выполнить `npm ci`, `npm run lint`, `npm run test:ci`, `npm run build`.
 
-Проект использует единый подход: один compose-файл и один набор контейнеров для локального и серверного запуска.
+## Протокол проверки
+
+Проверку выполнил Codex в рабочей среде автора Шурман А. Р. **20.10.2026**. Хост — macOS/Apple Silicon; контейнеры — Linux arm64; Docker Engine 29.8.0, Compose 5.5.1. Использованы новые контейнеры и тома отдельного проекта `yogavibe-lab1` и публичный `.env.example`. Проверка другим человеком не заявляется.
+
+| Проверка | Фактический результат |
+| --- | --- |
+| Сборка backend | Успешно, Python 3.11.9 |
+| Сборка frontend | Успешно, Node 20.19.0 и npm ci |
+| Compose up --wait | backend, frontend, nginx — healthy |
+| HTTP smoke | Все три шага пройдены |
+| Backend pytest | 21 тест пройден, покрытие 68,48% при пороге 65%; 32 предупреждения библиотек |
+| Frontend Jest | 7 наборов, 21 тест пройден |
+| Frontend ESLint | Ошибок и предупреждений нет, проверено в Node 20.19.0 контейнере |
+| Backend flake8 | Блокирующие правила E9/F63/F7/F82 пройдены |
+| Frontend production в CI=true | Сборка прошла в Node-контейнере |
+| Реальный S3/MinIO | Не подтверждён; ошибки доступа к реестрам, issue №5 |
+| OpenWeather с реальным ключом | Не проверялся; тесты используют подмену |
+| CI на GitHub | Проверяется отдельно в PR; локальный успех не равен удалённому CI |
+
+Для повторения тестовой конфигурации в текущем рабочем каталоге используйте `docker compose --env-file .env.example -p yogavibe-lab1 ...`. Пять команд выше рассчитаны на чистый клон с `.env` из примера.
+
+Дополнительно проверен чистый снимок исходников в отдельном временном каталоге: без node_modules, venv, личных env-файлов и баз, с новыми томами `yogavibe-lab1-clean`. Сборка и три шага smoke прошли. ОС контейнера — Linux 7.0.12-linuxkit aarch64. Это проверка чистого снимка в контейнерах; клонирование опубликованной ветки другим участником не заявляется.
+
+## Изменения по результатам аудита
+
+- Исправлены передача обязательного секрета и конфигурации, сохранение локальных вложений; для создания новой SQLite используется один worker.
+- Секреты и базы исключены из Docker-контекста, личные env-файлы — из Git.
+- Закреплены версии runtime, используется `npm ci`; удалено правило игнорирования уже отслеживаемого lock-файла.
+- Настроен ESLint для TS/TSX; устранены замечания, навигация вкладок использует кнопки, обработчик заметок стабилизирован через useCallback.
+- Исправлен CI: убран некорректный сервис MinIO, ошибки тестов и Compose не маскируются.
+- Добавлены паспорт, риски, план, журнал изменений и issues: [миграции №2](https://github.com/wixucys/yogavibe/issues/2), [конкурентность №3](https://github.com/wixucys/yogavibe/issues/3), [восстановление №4](https://github.com/wixucys/yogavibe/issues/4), [MinIO №5](https://github.com/wixucys/yogavibe/issues/5).
+
+## Статус требований и завершение работы
+
+Идентификаторы `UR-n`, `FR-n`, `NFR-n`, `CR-n`, `T-n` вводятся с ЛР2. Сейчас подготовлена предварительная карта функций; спецификация ещё не согласована.
+
+- [ ] Получить одобрение выбора и плана преподавателем в [product №1](https://github.com/wixucys/yogavibe/issues/1).
+- [x] Защита main настроена: обязательный PR и запрет обхода правила администраторами.
+- [ ] После одобрения закрыть product и слить `lab-1` в `main`.
+- [ ] Поставить тег `lab-1` на итоговый коммит `main` и отправить его в GitHub.
+
+## Материалы
+
+- [Паспорт, структура, карта функций, практики и план](docs/00-project.md)
+- [История изменений](CHANGELOG.md)
+- [Требования](docs/01-requirements.md), [валидация](docs/02-validation.md), [архитектура](docs/03-architecture.md), [тестирование](docs/04-testing.md), [выпуск](docs/05-deployment.md) — заготовки будущих работ
+- [HTTP smoke-скрипт](scripts/smoke.py)

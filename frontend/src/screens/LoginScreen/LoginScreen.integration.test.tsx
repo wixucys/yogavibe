@@ -88,6 +88,8 @@ describe('LoginScreen', () => {
         login: 'mentor@example.com',
         password: 'pass123',
       });
+    });
+    await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/mentor/dashboard');
     });
   });

@@ -6,16 +6,8 @@ import type {
   NoteId,
   NotePayload,
   NoteResult,
-  NotesErrorResult,
   NotesListResult,
 } from '../types/note';
-
-type NotesSuccessResult<T> = {
-  success: true;
-  data: T;
-};
-
-type NotesResult<T> = NotesSuccessResult<T> | NotesErrorResult;
 
 interface DeleteApiResponse {
   message?: string;
@@ -175,4 +167,5 @@ class NotesService {
   }
 }
 
-export default new NotesService();
+const notesService = new NotesService();
+export default notesService;

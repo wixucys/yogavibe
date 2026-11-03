@@ -372,9 +372,9 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
         <nav className="main-nav">
           {(['МЕНТОРЫ', 'МОИ ЗАПИСИ', 'ЗАМЕТКИ', 'МОЯ АНКЕТА'] as NavItem[]).map(
             (item) => (
-              <a
+              <button
                 key={item}
-                href="#"
+                type="button"
                 className={`main-nav-link ${
                   activeNav === item ? 'active' : ''
                 }`}
@@ -384,7 +384,7 @@ const MainScreen = ({ user, onLogout }: MainScreenProps) => {
                 }}
               >
                 {item}
-              </a>
+              </button>
             )
           )}
           {userInfo.role === 'mentor' && (

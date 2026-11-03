@@ -1,6 +1,6 @@
 # Multi-stage build for optimized backend image
 # Stage 1: Builder
-FROM python:3.9-slim AS builder
+FROM python:3.11.9-slim AS builder
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -19,7 +19,7 @@ COPY requirements.txt .
 RUN pip install --user --no-warn-script-location -r requirements.txt
 
 # Stage 2: Runtime
-FROM python:3.9-slim
+FROM python:3.11.9-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './NotesScreen.css';
 import NotesService from '../../services/NotesService';
 import type { Note, NoteId } from '../../types/note';
@@ -83,7 +83,7 @@ const NotesScreen = () => {
     }
   };
 
-  const updateNote = async (id: NoteId, text: string): Promise<boolean> => {
+  const updateNote = useCallback(async (id: NoteId, text: string): Promise<boolean> => {
     const validationError = validateNoteText(text);
     if (validationError) {
       setError(validationError);
@@ -114,7 +114,7 @@ const NotesScreen = () => {
       setError('Ошибка при сохранении заметки');
       return false;
     }
-  };
+  }, [editingOriginalUpdatedAt]);
 
   const deleteNote = async (id: NoteId): Promise<void> => {
     if (!window.confirm('Вы уверены, что хотите удалить эту заметку?')) return;
@@ -148,7 +148,7 @@ const NotesScreen = () => {
     setEditingOriginalUpdatedAt(note.updatedAt ?? note.createdAt);
   };
 
-  const saveEditing = async (id: NoteId): Promise<void> => {
+  const saveEditing = useCallback(async (id: NoteId): Promise<void> => {
     const success = await updateNote(id, editingText);
 
     if (success) {
@@ -156,7 +156,7 @@ const NotesScreen = () => {
       setEditingText('');
       setEditingOriginalUpdatedAt(null);
     }
-  };
+  }, [editingText, updateNote]);
 
   const cancelEditing = (): void => {
     setEditingNoteId(null);
@@ -209,7 +209,7 @@ const NotesScreen = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [editingNoteId, editingText]);
+  }, [editingNoteId, editingText, saveEditing]);
 
   useEffect(() => {
     if (editingNoteId !== null && editModeRef.current) {

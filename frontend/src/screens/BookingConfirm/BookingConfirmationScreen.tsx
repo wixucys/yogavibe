@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import './BookingConfirmationScreen.css';
-import type { Booking, SessionType, BookingStatus } from '../../types/booking';
+import type { Booking } from '../../types/booking';
 import type { BookingMentor } from '../../types/mentor';
 import { ROUTES } from '../../constants/routes';
 import { useSeo } from '../../hooks/useSeo';

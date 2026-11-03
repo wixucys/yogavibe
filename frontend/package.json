@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Платформа для поиска менторов по йоге - соединяем искателей с опытными наставниками",
   "author": "YogaVibe Team",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "keywords": [
     "yoga",
     "mentor",
@@ -25,7 +25,7 @@
     "test:integration": "react-scripts test --watchAll=false --testPathPattern=\\.integration\\.test\\.",
     "test:e2e": "react-scripts test --watchAll=false --testPathPattern=\\.e2e\\.test\\. --passWithNoTests",
     "eject": "react-scripts eject",
-    "lint": "eslint src --ext .js,.jsx",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "format": "prettier --write \"src/**/*.{js,jsx,css,json}\"",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"

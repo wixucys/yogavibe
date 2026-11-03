@@ -43,6 +43,9 @@
 }
 
 .main-nav-link {
+  background: none;
+  border: 0;
+  cursor: pointer;
   font-size: 1.1rem;
   font-family: 'Montserrat', sans-serif;
   font-weight: 900;

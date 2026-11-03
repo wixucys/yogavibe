@@ -1,0 +1,19 @@
+---
+title: Запись на занятие — целевой процесс (FR-4, US-4)
+---
+flowchart TB
+    Start((Начало)) --> Search["Пользователь: найти ментора<br/>и открыть профиль (US-2, US-3)"]
+    Search --> Input["Пользователь: выбрать время,<br/>длительность и подтвердить (US-4)"]
+    Input --> Check{"Система: данные и<br/>интервал допустимы?"}
+    Check -->|"Нет"| Error["Система: показать причину,<br/>не создавать запись"]
+    Error --> Input
+    Check -->|"Да"| Create["Система: атомарно сохранить active,<br/>показать запись и цену"]
+    Create --> Choice{"Пользователь:<br/>отменить запись?"}
+    Choice -->|"Да"| Cancel{"Система: запись<br/>своя и active?"}
+    Cancel -->|"Да"| Cancelled["Система: статус cancelled"]
+    Cancel -->|"Нет"| Denied["Система: отказ,<br/>статус не менять"]
+    Choice -->|"Нет"| Session["Ментор: провести занятие<br/>и завершить свою active-запись (US-8)"]
+    Session --> Completed["Система: статус completed"]
+    Cancelled --> Finish((Конец))
+    Denied --> Finish
+    Completed --> Finish

@@ -1,0 +1,63 @@
+---
+title: YogaVibe — предметные данные (FR-1–FR-10)
+---
+erDiagram
+    User {
+      int id PK
+      string username UK
+      string email UK
+      string hashed_password
+      string role
+      boolean is_active
+      string city
+    }
+    Mentor {
+      int id PK
+      int user_id FK,UK
+      string name
+      string description
+      string city
+      string yoga_style
+      int price
+      int experience_years
+      boolean is_available
+    }
+    Booking {
+      int id PK
+      int user_id FK
+      int mentor_id FK
+      datetime session_date
+      int duration_minutes
+      int price
+      string status
+      string session_type
+    }
+    Note {
+      int id PK
+      int user_id FK
+      string text
+      datetime created_at
+      datetime updated_at
+    }
+    FileAttachment {
+      int id PK
+      int uploaded_by_user_id FK
+      int user_id FK "nullable"
+      int mentor_id FK "nullable"
+      int booking_id FK "nullable"
+      int note_id FK "nullable"
+      string original_filename
+      string stored_filename UK
+      string mime_type
+      int size_bytes
+      string category
+    }
+    User ||--o| Mentor : "имеет профиль"
+    User ||--o{ Booking : "записывается"
+    Mentor ||--o{ Booking : "принимает"
+    User ||--o{ Note : "ведёт"
+    User ||--o{ FileAttachment : "загрузил"
+    User o|--o{ FileAttachment : "владелец профиля"
+    Mentor o|--o{ FileAttachment : "владелец"
+    Booking o|--o{ FileAttachment : "связь в модели"
+    Note o|--o{ FileAttachment : "связь в модели"

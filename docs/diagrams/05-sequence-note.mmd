@@ -1,0 +1,24 @@
+---
+title: US-5 / FR-5 — существующее успешное создание заметки
+---
+sequenceDiagram
+    actor U as Пользователь
+    participant UI as NotesScreen
+    participant API as API / NoteService
+    participant DB as SQLite
+    Note over U,DB: Активная роль user, допустимый непустой текст
+    U->>UI: Ввести текст и сохранить
+    UI->>UI: Проверить длину 1–1000, убрать крайние пробелы
+    UI->>API: POST /api/v1/notes, text + JWT
+    API->>API: Проверить JWT, роль user и NoteCreate
+    API->>DB: INSERT Note(text, user_id из JWT)
+    API->>DB: COMMIT и чтение сохранённой Note
+    DB-->>API: id, text, user_id, created_at
+    API-->>UI: 200: NoteResponse
+    UI-->>U: Заметка в личном списке
+    U->>UI: Обновить страницу
+    UI->>API: GET /api/v1/notes + JWT
+    API->>DB: SELECT заметок текущей User
+    DB-->>API: Свои заметки
+    API-->>UI: items и meta
+    UI-->>U: Сохранённый текст

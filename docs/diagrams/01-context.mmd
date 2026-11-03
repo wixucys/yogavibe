@@ -1,0 +1,23 @@
+---
+title: YogaVibe — контекст системы (v1.0)
+---
+flowchart LR
+    Guest["Гость"]
+    User["Пользователь"]
+    Mentor["Ментор"]
+    Admin["Администратор"]
+    subgraph YV["Граница YogaVibe"]
+      UI["Веб-интерфейс"]
+      API["API и бизнес-правила"]
+      DB[("SQLite")]
+      Files[("Локальные файлы")]
+      UI <-->|"Запросы / результаты"| API
+      API <--> DB
+      API <--> Files
+    end
+    Guest -->|"FR-1: регистрация, вход"| UI
+    User -->|"FR-2–FR-7: поиск, запись, профиль"| UI
+    Mentor -->|"FR-7, FR-8: профиль и занятия"| UI
+    Admin -->|"FR-2, FR-3, FR-9, FR-10"| UI
+    API -.->|"Необязательный прогноз, вне объёма FR"| Weather["OpenWeather"]
+    API -.->|"Альтернатива local; не проверена"| S3["S3 / MinIO"]

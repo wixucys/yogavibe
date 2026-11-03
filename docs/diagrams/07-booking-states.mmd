@@ -1,0 +1,21 @@
+---
+title: Booking — целевой жизненный цикл (FR-4, FR-8; US-4, US-8)
+---
+stateDiagram-v2
+    state "Активна / active" as Active
+    state "Отменена / cancelled" as Cancelled
+    state "Завершена / completed" as Completed
+    [*] --> Active: Допустимая запись сохранена
+    Active --> Cancelled: Пользователь отменяет свою active-запись
+    Active --> Completed: Ментор завершает запись к себе
+    Cancelled --> [*]
+    Completed --> [*]
+    note right of Active
+      Неверный запрос не меняет состояние.
+      Пересечения и конкуренция — доработка FR-4.
+    end note
+    note right of Completed
+      Терминальные статусы остаются в истории.
+      completed → cancelled в текущем коде
+      возможен, но целевой моделью запрещён.
+    end note

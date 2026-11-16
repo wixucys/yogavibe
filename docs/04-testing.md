@@ -23,7 +23,7 @@
 ```bash
 python3.11 -m venv .venv-lab4
 .venv-lab4/bin/python -m pip install -r requirements.txt flake8==7.2.0
-TESTING=1 SECRET_KEY=lab4-test-secret-not-for-production FILE_STORAGE_PROVIDER=local .venv-lab4/bin/python -m pytest backend/test/test_interface_contract.py -v
+TESTING=1 SECRET_KEY=lab4-test-secret-not-for-production FILE_STORAGE_PROVIDER=local .venv-lab4/bin/python -m pytest backend/test/test_interface_contract.py -v -o addopts=-ra
 .venv-lab4/bin/python -m flake8 backend/app backend/test/test_interface_contract.py --select=E9,F63,F7,F82 --show-source --statistics
 ```
 
@@ -31,7 +31,7 @@ TESTING=1 SECRET_KEY=lab4-test-secret-not-for-production FILE_STORAGE_PROVIDER=l
 
 ```bash
 docker build -f backend/Dockerfile -t yogavibe-lab4-test .
-docker run --rm -e SECRET_KEY=lab4-test-secret-not-for-production -e FILE_STORAGE_PROVIDER=local yogavibe-lab4-test pytest test/test_interface_contract.py -v
+docker run --rm -e SECRET_KEY=lab4-test-secret-not-for-production -e FILE_STORAGE_PROVIDER=local yogavibe-lab4-test pytest test/test_interface_contract.py -v -o addopts=-ra
 ```
 
 Dockerfile устанавливает зависимости из requirements.txt. Для всего backend замените путь теста на test. Рабочий сайт и внешние сервисы запускать не требуется.
@@ -41,6 +41,8 @@ Dockerfile устанавливает зависимости из requirements.t
 [interface-contract.yml](../.github/workflows/interface-contract.yml) запускается при открытии PR в main, новых коммитах и повторном открытии, а также при push в main. Фильтра по путям нет: изменения только документации тоже получают проверку. Python 3.11.9 → установка закреплённых зависимостей → flake8 для ошибок Python → восемь проверок контракта. JUnit-отчёт сохраняется как artifact note-contract-results даже при падении теста. Ошибки не подавляются.
 
 Существующий [Build and Test](../.github/workflows/build-and-test.yml) продолжает выполнять общий набор тестов, линтеры, frontend-сборку, Docker-сборки и проверку Compose. Его итоговый job теперь учитывает также lint-docker.
+
+Для отдельного набора контракта параметр -o addopts=-ra отключает унаследованный порог покрытия всего приложения из pytest.ini. Проверка общего покрытия остаётся в Build and Test; восемь тестов одного маршрута не должны оцениваться как покрытие всего backend.
 
 Описание события: [GitHub Docs — pull_request](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#pull_request).
 

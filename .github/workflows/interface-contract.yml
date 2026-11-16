@@ -37,7 +37,7 @@ jobs:
       - name: Check Python errors
         run: python -m flake8 app test/test_interface_contract.py --select=E9,F63,F7,F82 --show-source --statistics
       - name: Test note API contract
-        run: python -m pytest test/test_interface_contract.py -v --junitxml=contract-results.xml
+        run: python -m pytest test/test_interface_contract.py -v -o addopts=-ra --junitxml=contract-results.xml
       - name: Save test report
         if: always()
         uses: actions/upload-artifact@v4

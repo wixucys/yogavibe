@@ -9,7 +9,7 @@ def test_create_note_contract_success(client, auth_headers_factory):
     response = client.post("/api/v1/notes", headers=headers, json={
         "text": "  После занятия: 10 минут дыхательной практики.  ",
     })
-    assert response.status_code == 201  # Lab 4: intentional wrong expectation for the red CI run.
+    assert response.status_code == 200
     data = response.json()
     assert set(data) == {"id", "user_id", "text", "created_at", "updated_at"}
     assert isinstance(data["id"], int) and data["id"] > 0

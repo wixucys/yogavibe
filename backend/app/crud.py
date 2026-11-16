@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 import math
 from . import models_db as models
 from . import schemas
+from .pricing import calculate_booking_price
 from .utils import get_password_hash, verify_password
 
 
@@ -698,8 +699,9 @@ class BookingCRUD:
         if conflicting_booking:
             raise ValueError("На это время уже есть бронирование")
 
-        hours = math.ceil(booking_data.duration_minutes / 60)
-        price = mentor.price * hours
+        price = calculate_booking_price(
+            mentor.price, booking_data.duration_minutes, booking_data.session_type
+        )
 
         booking = models.Booking(
             user_id=user_id,
@@ -753,11 +755,12 @@ class BookingCRUD:
         if updates.session_type is not None:
             booking.session_type = updates.session_type
 
-        if updates.session_date is not None or updates.duration_minutes is not None:
+        if updates.duration_minutes is not None or updates.session_type is not None:
             mentor = MentorCRUD.get_mentor(db, booking.mentor_id)
             if mentor:
-                hours = math.ceil(booking.duration_minutes / 60)
-                booking.price = mentor.price * hours
+                booking.price = calculate_booking_price(
+                    mentor.price, booking.duration_minutes, booking.session_type
+                )
 
         booking.updated_at = datetime.now(timezone.utc)
 

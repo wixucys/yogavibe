@@ -2,15 +2,16 @@
 networks:
   yogavibe-network:
     driver: bridge
-    name: yogavibe-network
 
 # Services definition
 services:
   # MinIO S3-compatible object storage
   minio:
-    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: yogavibe-minio:RELEASE.2025-04-22T22-12-26Z
+    build:
+      context: ./infra/s3
+      target: server
     profiles: [s3]
-    container_name: yogavibe-minio
     restart: unless-stopped
     networks:
       - yogavibe-network
@@ -33,27 +34,28 @@ services:
 
   # MinIO initialization - creates buckets and sets policies
   minio-init:
-    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    image: yogavibe-mc:RELEASE.2025-04-16T18-13-26Z
+    build:
+      context: ./infra/s3
+      target: client
     profiles: [s3]
-    container_name: yogavibe-minio-init
     restart: "no"
     networks:
       - yogavibe-network
     depends_on:
       minio:
         condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      until mc alias set local http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin}; do
-        echo 'Waiting for MinIO to be ready...';
-        sleep 1;
-      done &&
-      echo 'Creating yogavibe-files bucket...' &&
-      mc mb --ignore-existing local/yogavibe-files &&
-      echo 'Setting bucket policy...' &&
-      mc anonymous set none local/yogavibe-files &&
-      echo 'MinIO initialization complete!'
-      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - |
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing local/yogavibe-files
+        mc anonymous set none local/yogavibe-files
+        echo 'MinIO initialization complete!'
 
   # FastAPI Backend
   backend:
@@ -62,7 +64,6 @@ services:
       dockerfile: backend/Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
-    container_name: yogavibe-backend
     restart: unless-stopped
     networks:
       - yogavibe-network
@@ -106,7 +107,6 @@ services:
       dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
-    container_name: yogavibe-frontend
     restart: unless-stopped
     networks:
       - yogavibe-network
@@ -128,7 +128,6 @@ services:
   # Nginx Reverse Proxy
   nginx:
     image: nginx:1.28.0-alpine
-    container_name: yogavibe-nginx
     restart: unless-stopped
     networks:
       - yogavibe-network

@@ -8,6 +8,7 @@ import type { MentorApi, BookingMentor } from '../../types/mentor';
 import { mapMentorToBooking } from '../../types/mentor';
 import { ROUTES } from '../../constants/routes';
 import { useSeo } from '../../hooks/useSeo';
+import { calculateBookingPrice } from '../../utils/bookingPrice';
 
 type SessionType = 'individual' | 'group';
 
@@ -123,11 +124,7 @@ const BookingScreen = () => {
   const calculateTotalPrice = useCallback((): number => {
     if (!mentor) return 0;
 
-    const basePrice = mentor.price;
-    const durationMultiplier = parseInt(bookingData.durationMinutes, 10) / 60;
-    const sessionTypeMultiplier = bookingData.sessionType === 'group' ? 0.7 : 1;
-
-    return Math.round(basePrice * durationMultiplier * sessionTypeMultiplier);
+    return calculateBookingPrice(mentor.price, Number(bookingData.durationMinutes), bookingData.sessionType);
   }, [mentor, bookingData]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
@@ -243,7 +240,7 @@ const BookingScreen = () => {
             </div>
             <div className="detail-item">
               <span className="detail-label">Цена</span>
-              <span className="detail-value price">{mentor.price} ₽</span>
+              <span className="detail-value price">{mentor.price} ₽ / час</span>
             </div>
           </div>
         </div>
@@ -308,7 +305,7 @@ const BookingScreen = () => {
                   onChange={handleInputChange}
                 >
                   <option value="individual">Индивидуально</option>
-                  <option value="group">Групповое</option>
+                  <option value="group">Групповое (скидка 30%)</option>
                 </select>
               </div>
             </div>

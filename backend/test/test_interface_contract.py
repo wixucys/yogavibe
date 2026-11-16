@@ -9,7 +9,7 @@ def test_create_note_contract_success(client, auth_headers_factory):
     response = client.post("/api/v1/notes", headers=headers, json={
         "text": "  После занятия: 10 минут дыхательной практики.  ",
     })
-    assert response.status_code == 200
+    assert response.status_code == 201  # Lab 4: intentional wrong expectation for the red CI run.
     data = response.json()
     assert set(data) == {"id", "user_id", "text", "created_at", "updated_at"}
     assert isinstance(data["id"], int) and data["id"] > 0
@@ -18,7 +18,11 @@ def test_create_note_contract_success(client, auth_headers_factory):
     assert datetime.fromisoformat(data["created_at"]).utcoffset() == timedelta(hours=3)
     assert data["updated_at"] is None
     saved = client.get(f"/api/v1/notes/{data['id']}", headers=headers)
+    assert saved.status_code == 200
     assert saved.json() == data
+    listed = client.get("/api/v1/notes", headers=headers).json()
+    assert listed["meta"]["total"] == 1
+    assert listed["items"][0] == data
 
 
 def test_create_note_contract_blank_error(client, auth_headers_factory):
@@ -33,6 +37,21 @@ def test_create_note_contract_blank_error(client, auth_headers_factory):
     assert error["input"] == "   "
     after = client.get("/api/v1/notes", headers=headers).json()["meta"]["total"]
     assert after == before
+
+
+@pytest.mark.parametrize("payload,error_type", [
+    ({}, "missing"),
+    ({"text": None}, "string_type"),
+    ({"text": 123}, "string_type"),
+])
+def test_create_note_contract_invalid_field(client, auth_headers_factory, payload, error_type):
+    _, headers = auth_headers_factory()
+    response = client.post("/api/v1/notes", headers=headers, json=payload)
+    assert response.status_code == 422
+    error = response.json()["detail"][0]
+    assert error["loc"] == ["body", "text"]
+    assert error["type"] == error_type
+    assert client.get("/api/v1/notes", headers=headers).json()["meta"]["total"] == 0
 
 
 @pytest.mark.parametrize("text, expected", [("а", 200), ("а" * 1000, 200), ("а" * 1001, 422)])

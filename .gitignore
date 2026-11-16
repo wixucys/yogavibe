@@ -140,3 +140,7 @@ temp/
 backend/app/.env
 backend/.env
 backend/.env.test
+
+# Isolated environment for lab 4
+.venv-lab4/
+backend/contract-results.xml

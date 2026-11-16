@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 import os
 from pathlib import Path
-import shutil
 import sys
 
 import pytest
@@ -25,7 +24,8 @@ from app.database import Base, get_db
 from app.main import app  
 import app.main as main_module 
 from app.services import weather_service  
-from app.services.object_storage_service import LOCAL_UPLOADS_DIR, ObjectStorageService 
+from app.services import object_storage_service
+from app.services.object_storage_service import ObjectStorageService
 
 
 @pytest.fixture(scope="function")
@@ -81,22 +81,10 @@ def client(testing_session_local, monkeypatch):
 
 
 @pytest.fixture(scope="function", autouse=True)
-def cleanup_local_uploads_dir():
-    LOCAL_UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-
-    for child in LOCAL_UPLOADS_DIR.iterdir():
-        if child.is_dir():
-            shutil.rmtree(child, ignore_errors=True)
-        else:
-            child.unlink(missing_ok=True)
-
-    yield
-
-    for child in LOCAL_UPLOADS_DIR.iterdir():
-        if child.is_dir():
-            shutil.rmtree(child, ignore_errors=True)
-        else:
-            child.unlink(missing_ok=True)
+def isolated_local_uploads_dir(tmp_path, monkeypatch):
+    uploads = tmp_path / "uploads"
+    uploads.mkdir()
+    monkeypatch.setattr(object_storage_service, "LOCAL_UPLOADS_DIR", uploads)
 
 
 @pytest.fixture(scope="function")
